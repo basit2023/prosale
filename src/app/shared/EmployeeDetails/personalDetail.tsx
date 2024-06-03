@@ -1,0 +1,294 @@
+// PersonalInfoView.js
+
+'use client';
+import UploadZone from '@/components/ui/file-upload/upload-zone';
+// import {logs,logsCreate} from './logs';
+import { logs } from '../account-settings/logs';
+import dynamic from 'next/dynamic';
+import toast from 'react-hot-toast';
+import { countries, roles, timezones,sim } from '@/data/forms/my-details';
+import { useSession } from 'next-auth/react';
+import { SubmitHandler, Controller } from 'react-hook-form';
+import { PiClock, PiEnvelopeSimple } from 'react-icons/pi';
+import { Form } from '@/components/ui/form';
+import { Text } from '@/components/ui/text';
+import { Input } from '@/components/ui/input';
+import Spinner from '@/components/ui/spinner';
+import FormGroup from '@/app/shared/form-group';
+import FormFooter from '@/components/form-footer';
+import { useEffect, useState } from 'react';
+import apiService from '@/utils/apiService';
+import {
+  defaultValues,
+  personalInfoFormSchema,
+  PersonalInfoFormTypes,
+} from '@/utils/validators/personal-info.schema';
+import AvatarUpload from '@/components/ui/file-upload/avatar-upload';
+import { Avatar } from '@/components/ui/avatar';
+// import AvatarUpload from './AvatarUpload';
+const SelectBox = dynamic(() => import('@/components/ui/select'), {
+  ssr: false,
+  loading: () => (
+    <div className="grid h-10 place-content-center">
+      <Spinner />
+    </div>
+  ),
+});
+const QuillEditor = dynamic(() => import('@/components/ui/quill-editor'), {
+  ssr: false,
+
+
+});
+interface Props {
+  id?: string;
+}
+export default function PersonalInfoView({id}:Props) {
+  const { data: session } = useSession();
+  const [value, setValue1] = useState<any>();
+  const [email, setEmail] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await apiService.get(`/emp-personalinfo/${id}`);
+        
+        const userData = response.data;
+        setValue1(userData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+      
+    };
+
+    if (session) {
+      fetchData();
+    }
+  }, [session]);
+
+  const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
+    setIsSubmitting(true);
+    try {
+      // Get the base64 image data from local storage
+      const avatarImage = localStorage.getItem('img');
+    //    console.log("the image form local storage:",avatarImage)
+      // Check if avatarImage is present and not empty
+      if (avatarImage) {
+        // const selectedFile = JSON.parse(avatarImage);
+
+    // Update data in the database, including the avatar
+    const result= await apiService.put(`/emp-personaleinfo/${id}`, {
+                                    ...data,
+                                    avatar: avatarImage, // Add the avatar property to the data object
+                                    })
+        toast.success(result.data.message);
+
+        localStorage.removeItem('img');
+        if(result.data.success){
+          // < ProfileSettingsView />
+          logs({ user: value?.user?.name, desc: 'Profile Details' });
+          setIsEditing(true)
+        }
+        
+      } else {
+        
+       const result= await apiService.put(`/emp-personaleinfo/${id}`, {
+            ...data})
+            
+        toast.success(result.data.message);
+        
+        if(result.data.success){
+          logs({ user: value?.user?.name, desc: 'Profile Details' });
+          setIsEditing(true)
+        }
+
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Error updating profile. Please try again.');
+    }
+    finally {
+      setIsSubmitting(false);
+    }
+  };
+  const handleEditProfileClick = () => {
+    // Toggle the state when the button is clicked
+    setIsEditing((prev) => !prev);
+  }
+  const first = value?.user?.first_name ;
+  const last = value?.user?.last_name;
+  // console.log("the first and last name is:",first,last)
+  
+  const sim1=`${value?.user?.isp}`
+  const gender1=`${value?.user?.gender}`
+
+//##################################### imag ######################
+const base64Image = value ? `${value.user.img}` : '';
+      // console.log('Base64 Image Data:', base64Image);
+
+      const parts = base64Image.split(';base64,');
+      const mimeType = parts[0].split(':')[1];
+      const imageData = parts[1];
+      // console.log("mimetype, imgdata:-->",mimeType +' by spacy '+ imageData)
+
+      const imageBuffer = imageData ? Buffer.from(imageData, 'base64') : undefined;
+    //  //src=imageBuffer?imageBuffer:"https://isomorphic-furyroad.s3.amazonaws.com/public/avatars-blur/avatar-11.webp"
+    //  src={imageBuffer ? `data:${mimeType};base64,${imageData}` : 'fallback_url'}
+    const gender:string=value?.user?.gender;
+ return(
+    <Form<PersonalInfoFormTypes>
+      validationSchema={personalInfoFormSchema}
+      onSubmit={onSubmit}
+      className="@container"
+     
+    >
+      {({ register, control, setValue, getValues, formState: { errors } }) => {
+        return (
+          <>
+            <FormGroup
+              title="Edit Basic Info"
+            //   description="Update your photo and personal details here"
+              className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+            />
+
+            <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
+              <FormGroup
+                title="Name"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+                
+              >
+                
+                 <Input
+
+                  {...register('first_name')}
+                  defaultValue={first}
+                  placeholder="First Name"
+                  error={errors.first_name?.message}
+                  className="flex-grow"
+                />
+                
+                <Input
+                  
+                  {...register('last_name')}
+                  defaultValue={last}
+                  placeholder="Last Name"
+                  error={errors.last_name?.message}
+                  className="flex-grow"
+                />
+              </FormGroup>
+
+              <FormGroup
+                title="Email Address"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <Input
+                defaultValue={value?.user?.email}
+                  placeholder="example@gmail.com"
+                  {...register('email')}
+                  error={errors.email?.message}
+                  className="flex-grow"
+                />
+              </FormGroup>
+              <FormGroup
+                title="Mobile Number"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <Input
+                  defaultValue={value?.user?.mobile}
+                  placeholder="03XXXXXXXXX"
+                  {...register('mobile')}
+                  // error={errors.mobile?.message}
+                  className="flex-grow"
+                />
+                <Controller
+                  control={control}
+                  name="isp"
+                  render={({ field: { value, onChange } }:any) => (
+                    <SelectBox
+                      // value={value?.user?.isp}
+                      defaultValue={`${value?.user?.isp}`}
+                      placeholder={sim1 ? sim1 : "SIM Provider"}
+                      options={sim}
+                      onChange={onChange}
+                      value={value}
+                      className="flex-grow"
+                      getOptionValue={(option:any) => option.value}
+                      displayValue={(selected) =>
+                        sim?.find((r:any) => r.value === selected)?.name ?? ''
+                      }
+                      // error={errors?.role?.message as string}
+                    />
+                  )}
+                />
+              </FormGroup>
+              <FormGroup
+                title="CNIC Number"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <Input
+                defaultValue={value?.user?.cnic}
+                  placeholder="XXXXX-XXXXXXX-X"
+                  {...register('cnic')}
+                  // error={errors.cnic?.message}
+                  className="flex-grow"
+                />
+              </FormGroup>
+
+              <FormGroup
+                title="Your Photo"
+                description="This will be displayed on your profile."
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <div className="flex flex-col gap-6 @container @3xl:col-span-2">
+                  <AvatarUpload
+                    name="image"
+                    // setValue={setValue}
+                    // getValues={getValues}
+                    defaultValue={imageBuffer ? `data:${mimeType};base64,${imageData}` : 'fallback_url'}
+                    // error={errors?.image?.message as string}
+                  />
+                  {/* <UploadPhoto/> */}
+                </div>
+              </FormGroup>
+
+              <FormGroup
+                title="Gender"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <Controller
+                  control={control}
+                  name="gender"
+                  render={({ field: { value, onChange } }) => (
+                    <SelectBox
+                    defaultValue={gender}
+                      placeholder={gender1? gender1: "Select Gender"}
+                      options={roles}
+                      onChange={onChange}
+                      value={value}
+                      className="col-span-full"
+                      getOptionValue={(option) => option.value}
+                      displayValue={(selected) =>
+                        roles?.find((r) => r.value === selected)?.name ?? ''
+                      }
+                      // error={errors?.role?.message as string}
+                    />
+                  )}
+                />
+              </FormGroup>
+              {isSubmitting && (
+                  <div className="absolute top-0 left-10 w-full flex items-center justify-center z-50">
+                    <Spinner />
+                  </div>
+                )}
+
+            
+            </div>
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" />
+          </>
+        );
+      }}
+    </Form>
+  );
+}
