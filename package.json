@@ -1,7 +1,7 @@
 {
   "name": "isomorphic",
   "version": "5.8.0",
-  "description": "",
+  "description": "Sale Application",
   "private": true,
   "scripts": {
     "clean": "rimraf -g \"{node_modules,.next,.cache}\"",
