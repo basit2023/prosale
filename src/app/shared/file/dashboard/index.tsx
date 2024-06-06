@@ -16,6 +16,7 @@ import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { encryptData } from '@/components/encriptdycriptdata';
+import { decryptData } from '@/components/encriptdycriptdata';
 interface UserType {
   first_name: string;
   last_name: string;
@@ -36,26 +37,27 @@ interface ValueType {
 export default function FileDashboard() {
 
   const { data: session } = useSession();
+  const encryptedData = localStorage.getItem('uData');
+  const userData: any =decryptData(encryptedData)
+
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await apiService.get(`/personalinfo/${session?.user?.email}`);
-       
-        const userData = response.data;
-       
-        const userData1=encryptData(userData)
-        
-        localStorage.setItem('uData', userData1);
+        if (!userData && session) {
+          const response = await apiService.get(`/personalinfo/${session.user.email}`);
+          const userData = response.data;
+          const encryptedUserData = encryptData(userData);
+          localStorage.setItem('uData', encryptedUserData);
+        }
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Error fetching user data. Please try again.');
       }
     };
 
-    if (session) {
-      fetchData();
-    }
-  }, [session]);
+    fetchData();
+  }, [session, userData]);
 
 
   return (

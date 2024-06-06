@@ -1,5 +1,3 @@
-// Import necessary dependencies and components
-'use client'
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { SubmitHandler, Controller } from 'react-hook-form';
@@ -23,16 +21,15 @@ const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ),
 });
 
-export default function ChangeStatus({ id }:any) {
+export default function ChangeStatus({ id }: any) {
   const { data: session } = useSession();
   const [labels, setLabels] = useState<any>();
   const [jobInfo, setJobInfo] = useState<any>();
   const [value, setValue] = useState<any>([]);
   const encryptedData = localStorage.getItem('uData');
-  const value1: any =decryptData(encryptedData)
+  const value1: any = decryptData(encryptedData)
   useEffect(() => {
     const fetchData = async () => {
-      
       try {
         const result = await apiService.get('/all-labels');
         setLabels(result.data.show_labels);
@@ -92,70 +89,62 @@ export default function ChangeStatus({ id }:any) {
   };
 
   return (
-    
-  <div className="flex flex-col-reverse sm:flex-row justify-end relative">
+    <div className="flex flex-col-reverse sm:flex-row justify-end relative">
+      <Form<LabelSchemaFormTypes>
+        validationSchema={LabelSchema}
+        onSubmit={onSubmit}
+        className="flex flex-col"
+        useFormProps={{
+          mode: 'onChange',
+          defaultValues,
+        }}
+      >
+        {({ register, control, setValue, getValues, formState: { errors } }) => (
+          <div className="mb-1">
+            <div className="flex items-center justify-between gap-4 w-full pr-3">
+              <Controller
+                control={control}
+                name="leads_label"
+                render={({ field: { value, onChange } }) => (
+                  <SelectBox
+                    defaultValue={jobInfo}
+                    placeholder={jobInfo ? jobInfo : 'Select label'}
+                    options={labels || []}
+                    onChange={onChange}
+                    value={value}
+                    className="w-32 sm:w-auto" // Adjust width for smaller screens
+                    getOptionValue={(option) => option.value}
+                    displayValue={(selected) =>
+                      labels?.find((r: any) => r.value === selected)?.name ?? ''
+                    }
+                  />
+                )}
+              />
+              <button
+                type="submit"
+                className={`bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20`}
+              >
+                Change Category
+              </button>
+            </div>
+          </div>
+        )}
+      </Form>
 
-   <Form<LabelSchemaFormTypes>
-  validationSchema={LabelSchema}
-  onSubmit={onSubmit}
-  className="flex flex-col"
-  useFormProps={{
-    mode: 'onChange',
-    defaultValues,
-  }}
->
-  {({ register, control, setValue, getValues, formState: { errors } }) => (
-    <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11 relative ">
-      <div className="flex items-center justify-between sm:justify-end gap-4">
-        <label className="w-28"></label>
-        <Controller
-          control={control}
-          name="leads_label"
-          render={({ field: { value, onChange } }) => (
-            <SelectBox
-              defaultValue={jobInfo}
-              placeholder={jobInfo ? jobInfo : 'Select label'}
-              options={labels || []}
-              onChange={onChange}
-              value={value}
-              className="col-span-full w-48 z-10"
-              getOptionValue={(option) => option.value}
-              displayValue={(selected) =>
-                labels?.find((r:any) => r.value === selected)?.name ?? ''
-              }
-              // error={errors?.role?.message as string}
-            />
-          )}
-        />
+      <div className="flex flex-col mb-10 sm:flex-row sm:items-center">
         <button
-          type="submit"
-          className={`bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 ${
-            window.innerWidth < 400 ? 'mx-auto' : window.innerWidth < 640 ? 'ml-0' : 'mr-3 sm:ml-auto'
-          }`}
+          className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 mb-3 sm:mb-0 sm:mr-3 sm:ml-0"
+          onClick={() => handleViewInvoice(id)}
         >
-          Change Category
+          Close Lead
+        </button>
+        <button
+          className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 ml-0"
+          onClick={handleButtonClick}
+        >
+          Call
         </button>
       </div>
     </div>
-  )}
-</Form>
-
-
-    <div className="flex flex-col mb-10 sm:flex-row sm:items-center">
-      <button
-        className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 mb-3 sm:mb-0 sm:mr-3 sm:ml-0"
-        onClick={() => handleViewInvoice(id)}
-      >
-        Close Lead
-      </button>
-      <button
-        className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 ml-0"
-        onClick={handleButtonClick}
-      >
-        Call
-      </button>
-    </div>
-  </div>
-);
-
+  );
 }

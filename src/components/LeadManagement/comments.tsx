@@ -69,7 +69,7 @@ export default function CustomerComments({ onComment, id }:any) {
               textareaClassName="h-20"
             />
           </div>
-          <FormFooter altBtnText="Cancel" submitBtnText="Save Comments" />
+          <FormFooter className="sxm:mb-0 mb-3 sxm:mt-0" altBtnText="Cancel" submitBtnText="Save Comments" />
         </>
       )}
     </Form>

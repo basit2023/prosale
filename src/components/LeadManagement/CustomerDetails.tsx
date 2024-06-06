@@ -141,7 +141,7 @@ export function InvoiceDetails({id}:any) {
     const formattedDate = `${('0' + date.getDate()).slice(-2)}/${('0' + (date.getMonth() + 1)).slice(-2)}/${date.getFullYear()}`;
 
   return (
-    <div className="grid items-start rounded-xl border border-gray-300 p-5 grid-cols-1 @2xl:grid-cols-3 @3xl:p-8 @5xl:grid-cols-3 gap-5 bg-transparent"> {/* Adjust grid-cols */}
+    <div className="grid items-start rounded-xl border border-gray-300 p-5 grid-cols-1 @2xl:grid-cols-3 @3xl:p-8 @5xl:grid-cols-3 gap-5 bg-transparent sxm:mb-0 mb-3 sxm:mt-0"> {/* Adjust grid-cols */}
   <ul className="grid gap-3 col-span-1 @3xl:col-span-1 @3xl:mb-2 @5xl:col-span-1 @5xl:mb-0"> {/* Adjust col-span */}
     <li className="flex items-center gap-3 @3xl:justify-between @5xl:justify-start">
       <span className="font-semibold text-gray-900">Lead Id :</span>
