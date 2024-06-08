@@ -86,7 +86,7 @@ const getAllCompany = async (req, res) => {
 const GetCompanies = async (req, res) => {
     try {
       const { email } = req.query;
-      console.log("the email is at get company:", email);
+     
   
       // Fetch company_id for the given email
       const [userRows] = await mysqlConnection.promise().query('SELECT company_id FROM users WHERE email = ?', [email]);
