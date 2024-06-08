@@ -50,7 +50,9 @@ export default function Sidebar({ className }: { className?: string }) {
           setSupper(userData);}
           else{
             const encryptedData = localStorage.getItem('superadmin');
+
             setSupper(encryptedData)
+
           }
           
         } catch (error) {
@@ -80,6 +82,7 @@ export default function Sidebar({ className }: { className?: string }) {
           else{
             const permission = localStorage.getItem('permission');
             setPerm_d(permission)
+
           }
         } catch (error) {
           console.error('Error fetching user data:', error);
