@@ -50,6 +50,7 @@ export default function Sidebar({ className }: { className?: string }) {
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
+        setIsLoading(false);
       };
       fetchData();
     }
@@ -71,6 +72,7 @@ export default function Sidebar({ className }: { className?: string }) {
         } catch (error) {
           console.error('Error fetching permission data:', error);
         }
+        setIsLoading(false);
       };
       fetchPermissionData();
     }
@@ -112,6 +114,7 @@ export default function Sidebar({ className }: { className?: string }) {
       } catch (error) {
         console.error('Error fetching menu items:', error);
       }
+      setIsLoading(false);
     };
     fetchDataAndLog();
   }, [perm_d]);
@@ -125,7 +128,8 @@ export default function Sidebar({ className }: { className?: string }) {
       </div>
       <SimpleBar className="h-[calc(100%-80px)]">
         <div className="mt-4 pb-3 3xl:mt-6">
-          {transformedItems.map((item, index) => {
+          {isLoading && <Spinner />}
+          {!isLoading && transformedItems.map((item, index) => {
             const isActive = pathname === item?.href;
             const pathnameExistInDropdowns = item?.dropdownItems?.filter((dropdownItem: any) => dropdownItem.href === pathname);
             const isDropdownOpen = Boolean(pathnameExistInDropdowns?.length);
@@ -174,7 +178,6 @@ export default function Sidebar({ className }: { className?: string }) {
               </Fragment>
             );
           })}
-          {isLoading && <Spinner />}
         </div>
       </SimpleBar>
     </aside>
