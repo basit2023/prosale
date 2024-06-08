@@ -26,8 +26,24 @@ export default function ChangeStatus({ id }: any) {
   const [labels, setLabels] = useState<any>();
   const [jobInfo, setJobInfo] = useState<any>();
   const [value, setValue] = useState<any>([]);
-  const encryptedData = localStorage.getItem('uData');
-  const value1: any = decryptData(encryptedData)
+  
+const [value1, setUserData]=useState<any>();
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
   useEffect(() => {
     const fetchData = async () => {
       try {

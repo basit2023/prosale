@@ -55,8 +55,23 @@ interface ValueType {
 export default function PersonalInfoView() {
   const { data: session } = useSession();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+  const [value, setUserData]=useState<any>();
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
  
 
   const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {

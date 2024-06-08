@@ -31,8 +31,24 @@ export default function LeadForTeamMember({id}:any) {
   const [allLabel, setAllLabel] = useState<any>([]);
   const [userType, setUserType] = useState<any>();
   const [leads,setLeades]=useState<any>();
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+  
+const [value, setUserData]=useState<any>();
+useEffect(() => {
+  const fetchUserData = async () => {
+    try {
+      const encryptedData = localStorage.getItem('uData');
+      if (encryptedData) {
+        const data = decryptData(encryptedData);
+        setUserData(data);
+      } 
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.error('Error fetching user data. Please try again.');
+    }
+  };
+
+  fetchUserData();
+}, [session]);
 
   useEffect(() => {
     const fetchData = async () => {

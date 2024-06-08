@@ -83,67 +83,96 @@ const getAllCompany = async (req, res) => {
 
 
 
-
 const GetCompanies = async (req, res) => {
     try {
-        const {email}=req.query;
-        console.log("the email is at get company:",email)
-        const [user] = await mysqlConnection.promise().query(`SELECT company_id from users where email=?`,[email])
-
-
-        const [rows, fields] = await mysqlConnection.promise().query(`
-        SELECT id, title from companies WHERE FIND_IN_SET(id, ?)>0
-        `,[user[0].company_id]);
-
-        const data = rows.map(row => ({
-          name: row.title,
-          value: row.id
+      const { email } = req.query;
+      console.log("the email is at get company:", email);
+  
+      // Fetch company_id for the given email
+      const [userRows] = await mysqlConnection.promise().query('SELECT company_id FROM users WHERE email = ?', [email]);
+  
+      if (userRows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No user found with the provided email',
+          data: []
+        });
+      }
+  
+      const companyIds = userRows[0].company_id;
+      if (!companyIds) {
+        return res.status(404).json({
+          success: false,
+          message: 'No companies associated with this user',
+          data: []
+        });
+      }
+  
+      // Fetch companies with the fetched company_ids
+      const [rows] = await mysqlConnection.promise().query('SELECT id, title FROM companies WHERE FIND_IN_SET(id, ?)', [companyIds]);
+  
+      const data = rows.map(row => ({
+        name: row.title,
+        value: row.id
       }));
-
-        res.status(200).json({
-            success: true,
-            message: 'Data fetched successfully', 
-            data: data,    
-        });
+  
+      res.status(200).json({
+        success: true,
+        message: 'Data fetched successfully',
+        data: data,
+      });
     } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error in fetching data',
-            error: error.message,
-        });
+      console.error('Error fetching data:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error in fetching data',
+        error: error.message,
+      });
     }
-};
-
-const GetSingleCompany = async (req, res) => {
+  };
+  
+  const GetSingleCompany = async (req, res) => {
     try {
-        const {id}=req.query;
-        // console.log("the email is at get company:",email)
-        // const [user] = await mysqlConnection.promise().query(`SELECT company_id from users where email=?`,[email])
-
-
-        const [rows, fields] = await mysqlConnection.promise().query(`
-        SELECT id, title from companies WHERE FIND_IN_SET(id, ?)>0
-        `,[id]);
-
-        const data = rows.map(row => ({
-          name: row.title,
+      const { id } = req.query;
+  
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: 'Company ID is required',
+          data: []
+        });
+      }
+  
+      // Fetch company with the given id
+      const [rows] = await mysqlConnection.promise().query('SELECT id, title FROM companies WHERE id = ?', [id]);
+  
+      if (rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No company found with the provided ID',
+          data: []
+        });
+      }
+  
+      const data = rows.map(row => ({
+        name: row.title,
       }));
-
-        res.status(200).json({
-            success: true,
-            message: 'Data fetched successfully', 
-            data: data,    
-        });
+  
+      res.status(200).json({
+        success: true,
+        message: 'Data fetched successfully',
+        data: data,
+      });
     } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error in fetching data',
-            error: error.message,
-        });
+      console.error('Error fetching data:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error in fetching data',
+        error: error.message,
+      });
     }
-};
+  };
+  
 
 
 module.exports = { getAllCompany, GetCompanies,GetSingleCompany};

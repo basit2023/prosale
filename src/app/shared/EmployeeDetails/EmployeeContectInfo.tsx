@@ -75,7 +75,7 @@ export default function EmployeeContectInfo({id}:any) {
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [days, setDays] = useState<any>();
   // const [startDate, setStartDate] = useState(new Date());
-  
+  const [value, setUserData]=useState<any>();
   const [offerLetterValue, setOfferLetterValue] = useState('No'); // Step 1
 
   const handlechange = () => {
@@ -84,8 +84,23 @@ export default function EmployeeContectInfo({id}:any) {
     console.log("i'm pressed")
     setOfferLetterValue(updatedValue);
   };
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
+
   
 
 

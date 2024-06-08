@@ -19,10 +19,25 @@ import { decryptData } from '@/components/encriptdycriptdata';
 export default function CustomerComments({ onComment, id }:any) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<any[]>([]);
+  const [userData, setUserData]=useState<any>();
   const router = useRouter();
-  const encryptedData = localStorage.getItem('uData');
-  const userData: any =decryptData(encryptedData)
  
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
   const onSubmit: SubmitHandler<CommentsFormTypes> = async (data) => {
     try {
       const result = await apiService.post(`/comments/${id}`, {
@@ -42,6 +57,7 @@ export default function CustomerComments({ onComment, id }:any) {
       toast.error('Error adding comment. Please try again.');
     }
   };
+  
 
   if (!userData) {
     return <Spinner />;

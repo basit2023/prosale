@@ -5,4 +5,5 @@ export const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 export const lexendDeca = Lexend_Deca({
   subsets: ['latin'],
   variable: '--font-lexend',
+  
 });

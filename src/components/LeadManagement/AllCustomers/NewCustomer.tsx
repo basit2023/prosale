@@ -40,8 +40,25 @@ export default function NewLeadCustomer() {
   const { back } = useRouter();
   const [country, setCountry] = useState<any>([]);
   const [company, setCompany] = useState<any>();
-  const encryptedData = localStorage.getItem('uData');
-  const userValue: any =decryptData(encryptedData)
+  const [userValue, setUserData]=useState<any>();
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
+
+
   useEffect(() => {
     const fetchData = async () => {
       try {

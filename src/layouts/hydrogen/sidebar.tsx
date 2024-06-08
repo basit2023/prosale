@@ -12,11 +12,13 @@ import { getMenuItems  } from '@/layouts/hydrogen/menu-items';
 import Logo from '@/components/logo';
 import StatusBadge from '@/components/get-status-badge';
 import { useEffect, useState } from 'react';
-import { fetchUserPermissions } from '@/layouts/hydrogen/permission';
+
 import { routes } from '@/config/routes';
 import { useSession } from 'next-auth/react';
 import apiService from '@/utils/apiService';
 import Spinner from '@/components/ui/spinner';
+import { encryptData } from '@/components/encriptdycriptdata';
+import { decryptData } from '@/components/encriptdycriptdata';
 
 
 export default function Sidebar({ className }: { className?: string }) {
@@ -24,18 +26,29 @@ export default function Sidebar({ className }: { className?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const [transformedItems, setTransformedItems] = useState<any[]>([]);
-  const [perm_d, setPerm_d] = useState<any[]>([]);
-  const [supper, setSupper] = useState<any>();
+  // const [perm_d, setPerm_d] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState<any>(false);
+  //super ad min store in the local storage
+  const encryptedData = localStorage.getItem('superadmin');
+  const userData: any =decryptData(encryptedData)
+  const [supper, setSupper] = useState<any>(userData);
+
+  
+  //permmission store in the local sotrage
+  const permission = localStorage.getItem('permission');
+  const per: any =decryptData(permission)
+  const [perm_d, setPerm_d] = useState<any>(per);
 
   useEffect(() => {
     if (session) {
       const fetchData = async () => {
         try {
-          const response = await apiService.get(`/supperadmin/${session?.user?.email}`);
+          if(!userData){const response = await apiService.get(`/supperadmin/${session?.user?.email}`);
           const userData = response?.data;
-          // console.log("the supper admin is:", userData.user.user_type, userData.user.company_creator);
-          setSupper(userData);
+          const encryptedUserData = encryptData(userData);
+             localStorage.setItem('superadmin', encryptedUserData);
+          setSupper(userData);}
+          
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
@@ -49,15 +62,17 @@ export default function Sidebar({ className }: { className?: string }) {
       return router.push(routes.signIn);
     }
      else if (supper?.user?.user_type === 'super_admin' && supper?.user?.company_creator === null) {
-      console.log("Condition met. Redirecting to onboarding...lll");
+      
       router.push(routes.auth.onboarding);
     } 
     else {
       const fetchData = async () => {
         try {
-          const response = await apiService.get(`/permission/${session?.user?.email}`);
+          if(!per){const response = await apiService.get(`/permission/${session?.user?.email}`);
           const userData = response.data.results;
-          setPerm_d(userData);
+          const encryptedUserData = encryptData(userData);
+             localStorage.setItem('permission', encryptedUserData);
+          setPerm_d(userData);}
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
@@ -72,7 +87,6 @@ export default function Sidebar({ className }: { className?: string }) {
         if (perm_d.length > 0) {
           
           const items: any = await getMenuItems();
-          // console.log("is i'm reaching with link: !!!!!!!!!!",items)
           const userPermissions = perm_d[0].permission_level;
           const transformedItems = items.reduce((acc:any, item:any) => {
             if (item.dropdownItems) {

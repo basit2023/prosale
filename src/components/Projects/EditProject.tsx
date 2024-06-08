@@ -37,8 +37,24 @@ export default function EditProject({id}:any) {
   const [department, setDepartment] = useState<any>([]);
   const [startDate, setStartDate] = useState<Date>(new Date());
   const { back } = useRouter();
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+  const [value, setUserData]=useState<any>();
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {

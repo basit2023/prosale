@@ -14,8 +14,8 @@ export const fetchUserPermissions = async () => {
 
     // Decrypt the user data
     const decryptedData = AES.decrypt(encryptedData, 'encryptionSecret');
-    const userData = JSON.parse(decryptedData.toString(enc.Utf8));
-    console.log("the dycrypted data is:",userData.user.user_type)
+    const userData:any = JSON.parse(decryptedData.toString(enc.Utf8));
+    
     // Include user data in the request
     
     const response = await apiService.post('/permission', {

@@ -37,9 +37,26 @@ interface SelectOption {
 export default function AssignedTeam({ id }:any) {
   const { data: session } = useSession();
   const [team, setTeam] = useState<any>();
+  
+const [value, setUserData]=useState<any>();
 
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+useEffect(() => {
+  const fetchUserData = async () => {
+    try {
+      const encryptedData = localStorage.getItem('uData');
+      if (encryptedData) {
+        const data = decryptData(encryptedData);
+        setUserData(data);
+      } 
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      toast.error('Error fetching user data. Please try again.');
+    }
+  };
+
+  fetchUserData();
+}, [session]);
+
 
   useEffect(() => {
     const fetchData = async () => {

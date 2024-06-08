@@ -39,9 +39,23 @@ export default function EmployeeJobInfo({ id }:any) {
   const [jobInfo, setJobInfo] = useState<any>();
   const [dropDownOffice, setDropDownOffice] = useState<any>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [value, setUserData]=useState<any>();
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
 
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+    fetchUserData();
+  }, [session]);
   useEffect(() => {
     const fetchData = async () => {
      

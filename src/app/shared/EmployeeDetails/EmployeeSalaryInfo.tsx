@@ -61,6 +61,7 @@ export default function EmployeeSalaryInfo({id}:any) {
   const [travelAllowanceStatus, setTravelAllowanceStatus] = useState(false);
   const [selectedSign, setSelectedSign] = useState(sign && sign.length > 0 ? sign[0].value : '');
   const [totalSalary, setTotalSalary]=useState<any>()
+  const [value, setUserData]=useState<any>();
   const insHandler= () => {
     // Step 3
     const updatedValue = insurance == 'N' ? 'Y' : 'N';
@@ -69,8 +70,22 @@ export default function EmployeeSalaryInfo({id}:any) {
   };
   // const [startDate, setStartDate] = useState(new Date());
 
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
 
 
   //useEffect for the user

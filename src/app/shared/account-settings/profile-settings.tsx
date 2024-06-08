@@ -32,9 +32,24 @@ export default function ProfileSettingsView() {
   const { data: session } = useSession();
   // const [value, setValue] = useState<any>();
   const [isEditing, setIsEditing] = useState(true);
+  const [value, setUserData]=useState<any>();
   
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
 
 
 

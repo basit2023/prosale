@@ -23,10 +23,24 @@ export default function AddTeamMemberModalView() {
   const { closeModal } = useModal();
   const [reset, setReset] = useState<any>({});
   const [isLoading, setLoading] = useState(false);
- 
+  const [userValue, setUserData]=useState<any>();
   const { data: session } = useSession();
-  const encryptedData = localStorage.getItem('uData');
-  const userValue: any =decryptData(encryptedData)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
   
 
 

@@ -29,10 +29,25 @@ export default function PasswordSettingsView({
   const [isLoading, setLoading] = useState(false);
   const [reset, setReset] = useState<any>({});
   const { data: session } = useSession<any>();
+  const [value, setUserData]=useState<any>();
 
 
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data = decryptData(encryptedData);
+          setUserData(data);
+        } 
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+    };
+
+    fetchUserData();
+  }, [session]);
  
   const onSubmit: SubmitHandler<PasswordFormTypes> = async (data) => {
     const currentP= crypto.createHash('sha256').update(data.currentPassword).digest('hex');
