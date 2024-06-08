@@ -48,6 +48,10 @@ export default function Sidebar({ className }: { className?: string }) {
           const encryptedUserData = encryptData(userData);
              localStorage.setItem('superadmin', encryptedUserData);
           setSupper(userData);}
+          else{
+            const encryptedData = localStorage.getItem('superadmin');
+            setSupper(encryptedData);
+          }
           
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -71,8 +75,11 @@ export default function Sidebar({ className }: { className?: string }) {
           if(!per){const response = await apiService.get(`/permission/${session?.user?.email}`);
           const userData = response.data.results;
           const encryptedUserData = encryptData(userData);
-             localStorage.setItem('permission', encryptedUserData);
-          setPerm_d(userData);}
+          const permission = localStorage.getItem('permission');
+          setPerm_d(permission);}
+          else{
+            setPerm_d(userData);
+          }
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
