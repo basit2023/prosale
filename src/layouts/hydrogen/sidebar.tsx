@@ -48,6 +48,10 @@ export default function Sidebar({ className }: { className?: string }) {
           const encryptedUserData = encryptData(userData);
              localStorage.setItem('superadmin', encryptedUserData);
           setSupper(userData);}
+          else{
+            const encryptedData = localStorage.getItem('superadmin');
+            setSupper(encryptedData)
+          }
           
         } catch (error) {
           console.error('Error fetching user data:', error);
@@ -73,6 +77,10 @@ export default function Sidebar({ className }: { className?: string }) {
           const encryptedUserData = encryptData(userData);
              localStorage.setItem('permission', encryptedUserData);
           setPerm_d(userData);}
+          else{
+            const permission = localStorage.getItem('permission');
+            setPerm_d(permission)
+          }
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
