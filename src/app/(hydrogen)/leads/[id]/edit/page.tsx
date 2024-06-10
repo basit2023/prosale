@@ -51,7 +51,7 @@ export default function InvoiceEditPage({ params }: any) {
           <CustomerDetails id={params.id} />
         </div>
         <div className="col-span-12 sm:col-span-8 z-[-999]">
-          <div className="mt-3 flex gap-2 gap-y-6 @container sm:gap-y-10 col-span-8">
+          <div className="mt-5 flex gap-2 gap-y-6 @container sm:gap-y-10 col-span-8">
             <InvoiceDetails id={params.id} />
           </div>
         </div>
