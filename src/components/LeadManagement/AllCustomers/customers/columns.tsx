@@ -239,7 +239,7 @@ export const getColumns = ({
             color="invert"
           >
             
-            <Link href="{routes.leads.viewCustomer(row.id)}">
+            <Link href={routes.leads.viewCustomer(row.id)}>
               <ActionIcon
                 tag="span"
                 size="sm"

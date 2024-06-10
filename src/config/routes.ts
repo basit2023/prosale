@@ -47,7 +47,7 @@ export const routes = {
 
     customers:'/leads/customers',
     editCustomer: (id: string) => `/leads/customers/${id}/edit`,
-    // viewCustomer: (id: string) => `/leads/customers/${id}/view`,
+    viewCustomer: (id: string) => `/leads/customers/${id}/view`,
     newcustomer:'/leads/customers/new-customer',
     
     
