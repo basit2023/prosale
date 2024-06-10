@@ -154,7 +154,7 @@ export default function ChangeStatus({ id }: any) {
               />
               <button
                 type="submit"
-                className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 sm:py-0"
+                className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20"
               >
                 Change Category
               </button>
