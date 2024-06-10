@@ -26,8 +26,8 @@ export default function ChangeStatus({ id }: any) {
   const [labels, setLabels] = useState<any>();
   const [jobInfo, setJobInfo] = useState<any>();
   const [value, setValue] = useState<any>([]);
-  
-const [value1, setUserData]=useState<any>();
+  const [value1, setUserData] = useState<any>();
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -35,7 +35,7 @@ const [value1, setUserData]=useState<any>();
         if (encryptedData) {
           const data = decryptData(encryptedData);
           setUserData(data);
-        } 
+        }
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Error fetching user data. Please try again.');
@@ -44,6 +44,7 @@ const [value1, setUserData]=useState<any>();
 
     fetchUserData();
   }, [session]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -128,17 +129,32 @@ const [value1, setUserData]=useState<any>();
                     options={labels || []}
                     onChange={onChange}
                     value={value}
-                    className="w-32 sm:w-auto" // Adjust width for smaller screens
+                    className="w-48" // Adjust width for smaller screens
                     getOptionValue={(option) => option.value}
                     displayValue={(selected) =>
                       labels?.find((r: any) => r.value === selected)?.name ?? ''
                     }
+                    style={{
+                      control: (base:any) => ({
+                        ...base,
+                        minHeight: '35px',
+                      }),
+                      menu: (base:any) => ({
+                        ...base,
+                        zIndex: 9999, // Ensure the dropdown is above other elements
+                      }),
+                      menuList: (base:any) => ({
+                        ...base,
+                        maxHeight: '150px', // Limit the height of the dropdown list
+                        overflowY: 'auto', // Enable scrolling
+                      }),
+                    }}
                   />
                 )}
               />
               <button
                 type="submit"
-                className={`bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20`}
+                className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 sm:py-0"
               >
                 Change Category
               </button>
