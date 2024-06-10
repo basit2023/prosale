@@ -19,8 +19,8 @@ export default function PageHeader({
 }: React.PropsWithChildren<PageHeaderTypes>) {
 
     const { data: session } = useSession();
-    const [value, setValue] = useState(title);
-    const [value1, setValue1] = useState([]);
+    const [value, setValue] = useState<any>("All");
+    const [value1, setValue1] = useState<any>([]);
    
     //check if the title value is undefined 
     

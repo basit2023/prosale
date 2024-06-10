@@ -147,11 +147,12 @@ const GetCompanies = async (req, res) => {
       const [rows] = await mysqlConnection.promise().query('SELECT id, title FROM companies WHERE id = ?', [id]);
   
       if (rows.length === 0) {
-        return res.status(404).json({
-          success: false,
-          message: 'No company found with the provided ID',
-          data: []
-        });
+        return;
+        // res.status(404).json({
+        //   success: false,
+        //   message: 'No company found with the provided ID',
+        //   data: []
+        // });
       }
   
       const data = rows.map(row => ({
