@@ -93,7 +93,7 @@ export default function SignInForm() {
       } else {
         throw new Error('Login failed');
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error('Error during login:', error);
       toast.error(error.response.data.message);
     } finally {
