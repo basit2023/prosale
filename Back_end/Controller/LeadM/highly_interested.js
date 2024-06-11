@@ -37,7 +37,7 @@ const highly_interested_table = async (req, res) => {
     FROM users_types ut 
     JOIN users u ON u.user_type = ut.type where u.email=?`,[email])
     let company_id;
-    console.log("the result!",company)
+ 
     company_id=perm[0].company_id;
     if(company && ((perm[0].permission)>9)){
       
@@ -56,6 +56,7 @@ if(parseFloat(perm[0].permission)>=9)
         main.status,
         main.view_dt,
         main.user,
+        main.assigned_on,
         label.label AS label,
         company.title AS company_title,
         label.bg AS bg_color
@@ -87,6 +88,7 @@ if(parseFloat(perm[0].permission)>=9)
         main.status,
         main.view_dt,
         main.user,
+        main.assigned_on,
         label.label AS label,
         company.title AS company_title,
         label.bg AS bg_color
@@ -118,6 +120,7 @@ if(parseFloat(perm[0].permission)>=9)
         main.status,
         main.view_dt,
         main.user,
+        main.assigned_on,
         label.label AS label,
         company.title AS company_title,
         label.bg AS bg_color
@@ -149,6 +152,7 @@ if(parseFloat(perm[0].permission)>=9)
         interested_in.unit AS interested_in,
         main.status,
         main.view_dt,
+        main.assigned_on,
         main.user,
         label.label AS label,
         company.title AS company_title,
@@ -219,6 +223,7 @@ const SpecificTeamMemberLeads = async (req, res) => {
         main.status,
         main.view_dt,
         main.user,
+        main.assigned_on,
         label.label AS label,
         label.bg AS bg_color,
         company.title AS company_title
@@ -251,6 +256,7 @@ const SpecificTeamMemberLeads = async (req, res) => {
         main.status,
         main.view_dt,
         main.user,
+        main.assigned_on,
         label.label AS label,
         label.bg AS bg_color,
         company.title AS company_title
@@ -284,6 +290,7 @@ const SpecificTeamMemberLeads = async (req, res) => {
         main.user,
         label.label AS label,
         label.bg AS bg_color,
+        main.assigned_on,
         company.title AS company_title
       FROM
         leads_main AS main
@@ -413,6 +420,7 @@ const AllCustomers = async (req, res) => {
               customer.country AS country,
               main.status,
               main.view_dt,
+              main.assigned_on,
               main.user,
               label.label AS label,
               label.bg AS bg_color,

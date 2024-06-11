@@ -53,9 +53,9 @@ const ZoneData = async (req, res) => {
     
       
   
-      console.log("the company id is:",userRows[0])
+      
       const { company_id } = userRows[0];
-      console.log("the company id at the team is:",company_id,id)
+
 
       const [team] = await mysqlConnection.promise().query(
         `SELECT 

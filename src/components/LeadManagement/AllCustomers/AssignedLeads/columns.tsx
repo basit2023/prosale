@@ -161,6 +161,49 @@ export const useGetColumns = ({
         </Text>
       ),
     },
+    {
+      title: (
+        <HeaderCell
+          title="Assigned On"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'assigned_on'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('assigned_on'),
+      dataIndex: 'assigned_on',
+      key: 'assigned_on',
+      width: 200,
+      render: (value:any) => {
+        if (value === undefined) {
+          return <Text className="font-medium text-gray-700 dark:text-gray-600">N/A</Text>;
+        }
+        
+        let date = new Date(value * 1000);
+    
+        // Define an array of month names
+        let monthNames = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+    
+        // Get the components of the date
+        let year = date.getUTCFullYear();
+        let month = monthNames[date.getUTCMonth()];
+        let day = date.getUTCDate();
+    
+        // Format the date as Month Day, Year
+        let formattedDate = `${month} ${day}, ${year}`;
+    
+        return (
+          <Text className="font-medium text-gray-700 dark:text-gray-600">
+            {formattedDate}
+          </Text>
+        );
+      },
+    },
+    
     
     {
       title: (
