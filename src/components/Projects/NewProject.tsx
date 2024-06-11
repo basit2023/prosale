@@ -256,7 +256,7 @@ export default function AddNewProject() {
                 />
               </FormGroup>
 
-              {/* <FormGroup
+              <FormGroup
                 title="Date"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
@@ -282,7 +282,7 @@ export default function AddNewProject() {
                       />
                     )}
                   />
-              </FormGroup> */}
+              </FormGroup>
 
               <FormGroup
                 title="Select Photo"
