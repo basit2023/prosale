@@ -23,6 +23,7 @@ export const NewProjectInfoFormSchema = z.object({
 // generate form types from zod validation schema
 export type NewProjectInfoFormTypes = z.infer<typeof NewProjectInfoFormSchema>;
 const getCurrentTimestamp = () => Math.floor(new Date().getTime() / 1000).toString();
+const formatDate = (date:any) => date.toISOString().substring(0, 10);
 export const defaultValues = {
   name:undefined,
   Whatsapp_Status: undefined,
@@ -33,7 +34,7 @@ export const defaultValues = {
   Image: undefined,
   Whatsapp_Sort: undefined,
   description:undefined,
-  date:undefined,
+  date:formatDate(new Date()),
   company_id:undefined,
   dt:getCurrentTimestamp(),
   del:"N",

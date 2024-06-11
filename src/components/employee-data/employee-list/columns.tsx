@@ -9,10 +9,11 @@ import { HeaderCell } from '@/components/ui/table';
 import { ActionIcon } from '@/components/ui/action-icon';
 import PencilIcon from '@/components/icons/pencil';
 import DeletePopover from '@/app/shared/delete-popover1';
+import ActivatePopover from '@/app/shared/active-popover';
 import EyeIcon from './../../icons/eye';
-import { useModal } from '@/app/shared/modal-views/use-modal';
 import useModalHook from './modelHook';
 import { useEmployeeData } from '@/components/employee-data/employeeList';
+import { PiGearThin } from "react-icons/pi";
 
 type Columns = {
   data: any[];
@@ -227,13 +228,13 @@ export const useGetColumns = ({
               className="hover:!border-gray-900 hover:text-gray-700"
             >
               <button onClick={() => handleViewInvoice(row.id)}>
-                <EyeIcon className="h-4 w-4" />
+                <PiGearThin className="h-4 w-4" />
               </button>
             </ActionIcon>
           </Tooltip>
-          <Tooltip
+           <Tooltip
             size="sm"
-            content={() => row.del === 'Y' ? 'Inactive employee' : 'Delete Employee'}
+            content={() => row.del === 'Y' ? 'Activate Employee' : 'Delete Employee'}
             placement="top"
             color="invert"
           >
@@ -242,7 +243,7 @@ export const useGetColumns = ({
                 tag="span"
                 size="sm"
                 variant="outline"
-                className={`hover:!border-gray-900 hover:text-gray-700 ${row.del === 'Y' ? 'cursor-not-allowed opacity-50' : ''}`}
+                className="hover:!border-gray-900 hover:text-gray-700"
               >
                 {row.del !== 'Y' && (
                   <DeletePopover
@@ -253,24 +254,19 @@ export const useGetColumns = ({
                     table={`users`}
                     name={`Employee`}
                     inactive={"No"}
-                  
                   />
                 )}
-              
-              {row.del === 'Y' && (
-                <span className="absolute inset-0 flex items-center justify-center text-xs text-gray-500 bg-gray-100">
-                  <DeletePopover
-                    title={`Inactive Employee`}
-                    description={`Are you sure you want to inactive this #${row.id} employee?`}
+                {row.del === 'Y' && (
+                  <ActivatePopover
+                    title={`Activate Employee`}
+                    description={`Are you sure you want to activate this #${row.id} employee?`}
                     onDelete={() => onDeleteItem(row.id)}
                     id={row.id}
                     table={`users`}
                     name={`Employee`}
                     inactive={"Yes"}
-                 
                   />
-                </span>
-              )}
+                )}
               </ActionIcon>
             </div>
           </Tooltip>
