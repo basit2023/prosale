@@ -91,7 +91,7 @@ export function CustomerDetails({ id }: any) {
 export function InvoiceDetails({ id }: any) {
   const { data: session } = useSession();
   const [value, setValue] = useState<any>([]);
-  const [value1, setValue1] = useState<any>([]);
+ 
 
   useEffect(() => {
     const fetchData = async () => {
