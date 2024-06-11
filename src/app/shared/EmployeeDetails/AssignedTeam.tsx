@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { SubmitHandler, Controller } from 'react-hook-form';
+import { useRouter } from 'next/navigation';
 import { Form } from '@/components/ui/form';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
@@ -37,7 +38,7 @@ interface SelectOption {
 export default function AssignedTeam({ id }:any) {
   const { data: session } = useSession();
   const [team, setTeam] = useState<any>();
-  
+  const { back } = useRouter();
 const [value, setUserData]=useState<any>();
 
 useEffect(() => {
@@ -170,7 +171,7 @@ useEffect(() => {
               </FormGroup>
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update team" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update team" altBtnOnClick={() => back()}/>
           </>
         );}
       }}

@@ -22,6 +22,7 @@ import { decryptData } from '@/components/encriptdycriptdata';
 import { EmployeeSalaryInfoFormSchema,EmployeeSalaryInfoFormTypes,defaultValues } from '@/utils/validators/Employee-salaryinfo.schema';
 import { Checkbox } from '@/components/ui/checkbox';
 import Select from 'react-select'
+import { useRouter } from 'next/navigation';
 // import { Select } from '@/components/ui/selectbox';
 import { NumberInput, NumberInputField, NumberInputStepper, NumberIncrementStepper, NumberDecrementStepper } from "@chakra-ui/react";
 
@@ -58,6 +59,7 @@ export default function EmployeeSalaryInfo({id}:any) {
   const [days, setDays] = useState<any>();
   const [sign, setSign] = useState<any>();
   const [insurance, setInsurance]=useState<any>('N')
+  const { back } = useRouter();
   const [travelAllowanceStatus, setTravelAllowanceStatus] = useState(false);
   const [selectedSign, setSelectedSign] = useState(sign && sign.length > 0 ? sign[0].value : '');
   const [totalSalary, setTotalSalary]=useState<any>()
@@ -798,7 +800,7 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
 
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Salary Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Salary Info" altBtnOnClick={() => back()}/>
           </>
         );
       }}

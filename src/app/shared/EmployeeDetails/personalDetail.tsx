@@ -6,6 +6,7 @@ import UploadZone from '@/components/ui/file-upload/upload-zone';
 import { logs } from '../account-settings/logs';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import { countries, roles, timezones,sim } from '@/data/forms/my-details';
 import { useSession } from 'next-auth/react';
 import { SubmitHandler, Controller } from 'react-hook-form';
@@ -45,6 +46,7 @@ interface Props {
 export default function PersonalInfoView({id}:Props) {
   const { data: session } = useSession();
   const [value, setValue1] = useState<any>();
+  const { back } = useRouter();
   const [email, setEmail] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -285,7 +287,7 @@ const base64Image = value ? `${value.user.img}` : '';
 
             
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" altBtnOnClick={() => back()} />
           </>
         );
       }}

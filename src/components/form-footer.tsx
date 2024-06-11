@@ -8,6 +8,7 @@ interface FormFooterProps {
   isLoading?: boolean;
   handleAltBtn?: () => void;
   onCancel?: () => void;
+  altBtnOnClick?: () => void;
 }
 
 export const negMargin = '-mx-4 md:-mx-5 lg:-mx-6 3xl:-mx-8 4xl:-mx-10';
@@ -19,6 +20,7 @@ export default function FormFooter({
   className,
   handleAltBtn,
   onCancel,
+  altBtnOnClick,
 }: FormFooterProps) {
   return (
     <div
@@ -31,7 +33,7 @@ export default function FormFooter({
       <Button
         variant="outline"
         className="w-full @xl:w-auto"
-        onClick={handleAltBtn}
+        onClick={altBtnOnClick}
       >
         {altBtnText}
       </Button>

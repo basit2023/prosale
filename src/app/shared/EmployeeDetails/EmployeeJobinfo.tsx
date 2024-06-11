@@ -13,6 +13,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import apiService from '@/utils/apiService';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import {
   defaultValues,
   employeeJobSchema,
@@ -32,7 +33,7 @@ const SelectBox = dynamic(() => import('@/components/ui/select'), {
 
 export default function EmployeeJobInfo({ id }:any) {
   const { data: session } = useSession();
- 
+  const { back } = useRouter();
   const [days, setDays] = useState<any>();
   const [startTimeIn, setStartTimeIn] = useState<Date>();
   const [startTimeOut, setStartTimeOut] = useState<Date>();
@@ -331,7 +332,7 @@ if (hasHeadOffice && hasCorporateOffice) {
                 )}
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Job Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Job Info" altBtnOnClick={() => back()}/>
           </>
         );
       }}

@@ -350,7 +350,7 @@ export default function AddNewProject() {
               
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Save" />
+            <FormFooter altBtnText="Cancel" altBtnOnClick={() => back()} submitBtnText="Save" />
           </>
         );
       }}

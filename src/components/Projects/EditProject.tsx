@@ -1,5 +1,3 @@
-// PersonalInfoView.js
-
 'use client';
 import { logs, logsCreate } from '@/app/shared/account-settings/logs'; 
 import dynamic from 'next/dynamic';
@@ -14,10 +12,11 @@ import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
 import { useEffect, useState } from 'react';
 import apiService from '@/utils/apiService';                                          
-import { NewProjectInfoFormSchema,NewProjectInfoFormTypes,defaultValues } from '@/utils/validators/new-project.schema';
+import { NewProjectInfoFormSchema, NewProjectInfoFormTypes, defaultValues } from '@/utils/validators/new-project.schema';
 import AvatarUpload from '@/components/ui/file-upload/avatar-project';
 import { useRouter } from 'next/navigation';
 import { decryptData } from '@/components/encriptdycriptdata';
+
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ssr: false,
   loading: () => (
@@ -30,14 +29,14 @@ const QuillEditor = dynamic(() => import('@/components/ui/quill-editor'), {
   ssr: false,
 });
 
-
-export default function EditProject({id}:any) {
+export default function EditProject({ id }: any) {
   const { data: session } = useSession();
   const [project, setProject] = useState<any>();
   const [department, setDepartment] = useState<any>([]);
   const [startDate, setStartDate] = useState<Date>(new Date());
   const { back } = useRouter();
-  const [value, setUserData]=useState<any>();
+  const [value, setUserData] = useState<any>();
+
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -63,12 +62,11 @@ export default function EditProject({id}:any) {
         setDepartment(userData.data);
       } catch (error) {
         console.error('Error fetching department data:', error);
-        toast.error('Error fetching deparments data. Please try again.');
+        toast.error('Error fetching departments data. Please try again.');
       }
       try {
         const response = await apiService.get(`/get-project/${id}`);
         const userData = response.data;
-   
         setProject(userData);
       } catch (error) {
         console.error('Error fetching project data:', error);
@@ -84,46 +82,39 @@ export default function EditProject({id}:any) {
   const onSubmit: SubmitHandler<NewProjectInfoFormTypes> = async (data) => {
     try {
       const avatarImage = localStorage.getItem('img');
-      console.log("the data is at the new project:", {...data,Image:avatarImage,user:value?.user?.name})
+      console.log("the data is at the new project:", { ...data, Image: avatarImage, user: value?.user?.name });
       if (avatarImage) {
         const result = await apiService.put(`/update-project/${id}`, {
-          ...data,user: value?.user?.name
-       
+          ...data, user: value?.user?.name
         });
         toast.success(result.data.message);
         if (result.data.success) {
           localStorage.removeItem('img');
           logs({ user: value?.user?.name, desc: 'Edit Project' });
-          back()
-        } 
-
+          back();
+        }
       } else {
         const result = await apiService.put(`/update-project/${id}`, {
-          ...data,user: value?.user?.name
+          ...data, user: value?.user?.name
         });
         toast.success(result.data.message);
         if (result.data.success) {
           logs({ user: value?.user?.name, desc: 'Edit Project' });
-          back()
-        } 
+          back();
+        }
       }
-    } catch (error:any) {
+    } catch (error: any) {
       console.error('Error updating Project:', error);
       toast.error(error.response.data.message);
     }
   };
-  
- 
 
   const status_value = [
     { name: "Active", value: "N" },
     { name: "Inactive", value: "Y" }
   ];
-  
 
-
-    
- return  (
+  return (
     <Form<NewProjectInfoFormTypes>
       validationSchema={NewProjectInfoFormSchema}
       onSubmit={onSubmit}
@@ -143,27 +134,23 @@ export default function EditProject({id}:any) {
             />
 
             <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
-              
-            <FormGroup
+              <FormGroup
                 title="Project Name"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
-                 defaultValue={project?.user?.name}
+                  defaultValue={project?.user?.name}
                   placeholder="Enter Project name"
                   {...register('name')}
                   error={errors.name?.message}
                   className="col-span-full"
                 />
               </FormGroup>
-              
-              
+
               <FormGroup
                 title="WhatsApp Status"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                
               >
-                
                 <Controller
                   control={control}
                   name="Whatsapp_Status"
@@ -177,25 +164,24 @@ export default function EditProject({id}:any) {
                       className="col-span-full"
                       getOptionValue={(option) => option.value}
                       displayValue={(selected) =>
-                        status_value?.find((r:any) => r.value === selected)?.name ?? ''
+                        status_value?.find((r: any) => r.value === selected)?.name ?? ''
                       }
                       // error={errors?.status_value?.message as string}
                     />
                   )}
                 />
-                
-                
               </FormGroup>
+
               <FormGroup
                 title="Portal Status"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
-                 <Controller
+                <Controller
                   control={control}
                   name="Portal_Status"
                   render={({ field: { value, onChange } }) => (
                     <SelectBox
-                    defaultValue={project?.user?.Portal_Status ?? ''}
+                      defaultValue={project?.user?.Portal_Status ?? ''}
                       placeholder="Select Status"
                       options={status_value}
                       onChange={onChange}
@@ -203,7 +189,7 @@ export default function EditProject({id}:any) {
                       className="col-span-full"
                       getOptionValue={(option) => option.value}
                       displayValue={(selected) =>
-                        status_value?.find((r:any) => r.value === selected)?.name ?? ''
+                        status_value?.find((r: any) => r.value === selected)?.name ?? ''
                       }
                       // error={errors?.status_value?.message as string}
                     />
@@ -215,15 +201,15 @@ export default function EditProject({id}:any) {
                 title="Location"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
-                  <Input
-
-                    {...register('Location')}
-                    defaultValue={project?.user?.Location}
-                    placeholder="Add Location"
-                    error={errors.Location?.message}
-                    className="col-span-full"
-                    />
+                <Input
+                  {...register('Location')}
+                  defaultValue={project?.user?.Location}
+                  placeholder="Add Location"
+                  error={errors.Location?.message}
+                  className="col-span-full"
+                />
               </FormGroup>
+
               <FormGroup
                 title="Status"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
@@ -233,49 +219,21 @@ export default function EditProject({id}:any) {
                   name="status"
                   render={({ field: { value, onChange } }) => (
                     <SelectBox
-                    defaultValue={project?.user?.status ?? ''}
+                      defaultValue={project?.user?.status ?? ''}
                       placeholder="Select Status"
                       options={department}
                       onChange={onChange}
                       value={value}
                       className="col-span-full"
-                      getOptionValue={(option:any) => option.value}
-                      displayValue={(selected:any) =>
-                        department?.find((r:any) => r.value === selected)?.name ?? ''
+                      getOptionValue={(option: any) => option.value}
+                      displayValue={(selected: any) =>
+                        department?.find((r: any) => r.value === selected)?.name ?? ''
                       }
                       // error={errors?.department?.message as string}
                     />
                   )}
                 />
               </FormGroup>
-
-              {/* <FormGroup
-                title="Date"
-                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-              >
-                <Controller
-                    name="date"
-                    control={control}
-                    rules={{ required: 'Date of Birth is required' }}
-                    render={({ field }) => (
-                      <DatePicker
-                        className="h-6 w-6 text-gray-500 form-control border-none"
-                        selected={startDate}
-                        onChange={(date: Date) => {
-                          setStartDate(date);
-                          setValue('date', date.toISOString().substring(0, 10), { shouldValidate: true });
-                        }}
-                        dateFormat="MM/dd/yyyy" // Adjust the format to match "09/21/1996"
-                        placeholderText="Select Date"
-                        popperPlacement="bottom-end"
-                        // @ts-ignore
-                        value={startDate}
-                        // className="" // Use Bootstrap utility classes
-                        style={{ height: 'auto' }}
-                      />
-                    )}
-                  />
-              </FormGroup> */}
 
               <FormGroup
                 title="Select Photo"
@@ -286,13 +244,11 @@ export default function EditProject({id}:any) {
                   <AvatarUpload
                     name="Image"
                     setValue={setValue}
-                    
-                   
                     error={errors?.Image?.message as string}
                   />
-                  {/* <UploadPhoto/> */}
                 </div>
               </FormGroup>
+
               <FormGroup
                 title="Description"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
@@ -301,7 +257,7 @@ export default function EditProject({id}:any) {
                   control={control}
                   name="description"
                   defaultValue={project?.user?.description}
-                  render={({ field: { onChange, value } }:any) => (
+                  render={({ field: { onChange, value } }: any) => (
                     <QuillEditor
                       value={value}
                       onChange={onChange}
@@ -311,12 +267,9 @@ export default function EditProject({id}:any) {
                   )}
                 />
               </FormGroup>
-            
-            
-              
-             
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Save" />
+            // @ts-ignore
+            <FormFooter altBtnText="Cancel" submitBtnText="Save" altBtnOnClick={() => back()} />
           </>
         );
       }}
