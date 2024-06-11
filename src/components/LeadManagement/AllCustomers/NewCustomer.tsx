@@ -258,7 +258,7 @@ export default function NewLeadCustomer() {
               </FormGroup>}
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" />
+            <FormFooter altBtnText="Cancel" altBtnOnClick={() => back()} submitBtnText="Update Basic Info" />
           </>
         );
       }}

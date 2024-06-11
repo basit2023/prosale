@@ -24,7 +24,7 @@ import FileUpload from '@/app/shared/EmployeeDetails/file-upload';
 import UploadButton from './upload-button';
 // import UploadButton from '@/app/shared/upload-button';
 import { decryptData } from '@/components/encriptdycriptdata';
-
+import { useRouter } from 'next/navigation';
 
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
     ssr: false,
@@ -77,7 +77,7 @@ export default function EmployeeContectInfo({id}:any) {
   // const [startDate, setStartDate] = useState(new Date());
   const [value, setUserData]=useState<any>();
   const [offerLetterValue, setOfferLetterValue] = useState('No'); // Step 1
-
+  const { back } = useRouter();
   const handlechange = () => {
     // Step 3
     const updatedValue = offerLetterValue == 'No' ? 'Yes' : 'No';
@@ -372,7 +372,7 @@ const onSubmit: SubmitHandler<EmployeeContectInfoFormTypes> = async (data) => {
                 )}
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Contect Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Contect Info" altBtnOnClick={() => back()}/>
           </>
         );
       }}

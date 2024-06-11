@@ -19,6 +19,7 @@ import { PiBuildingsThin,PiLinkedinLogoBold,PiFacebookLogoBold,PiHouseLineThin  
 import { FaFacebook,FaFacebookF, FaWhatsapp, FaInstagram, FaTwitter, FaLinkedin,FaHome,  } from 'react-icons/fa';
 import { logs, logsCreate} from '../account-settings/logs';
 import { defaultValues,PersonalInfoFormTypes,personalInfoFormSchema } from '@/utils/validators/my-details.schema';
+import { useRouter } from 'next/navigation';
 interface EmployeeDetailsProps {
   id: any;
 }
@@ -50,6 +51,7 @@ export default function EmployeeDetails({id}:any) {
   const [startDate, setStartDate] = useState<Date>(new Date());
 const [isSubmitting, setIsSubmitting] = useState(false);
   // const [startDate, setStartDate] = useState(new Date());
+  const { back } = useRouter();
   
 // for the user_details
   useEffect(() => {
@@ -317,7 +319,7 @@ const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
                 )}
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Personal Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Personal Info" altBtnOnClick={() => back()}/>
           </>
         );
       }}

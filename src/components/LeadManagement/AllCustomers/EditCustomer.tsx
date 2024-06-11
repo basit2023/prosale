@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import apiService from '@/utils/apiService';
 import { decryptData } from '@/components/encriptdycriptdata';
@@ -38,6 +39,7 @@ export default function EditCustomer({id}:any) {
   const [value, setValue1] = useState<any>();
   const [country, setCountry] = useState<any>([]);
   const [userValue, setUserData]=useState<any>();
+  const { back } = useRouter();
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -224,7 +226,7 @@ export default function EditCustomer({id}:any) {
               </FormGroup>
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" altBtnOnClick={() => back()} />
           </>
         );
       }}

@@ -23,7 +23,7 @@ import AvatarUpload from '@/components/ui/file-upload/avatar-upload';
 import { Avatar } from '@/components/ui/avatar';
 const crypto = require('crypto');
 import { decryptData } from '@/components/encriptdycriptdata';
-
+import { useRouter } from 'next/navigation';
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ssr: false,
   loading: () => (
@@ -49,7 +49,7 @@ interface SelectOption {
 
 export default function CreateNewEmployee() {
   const { data: session } = useSession();
-
+  const { back } = useRouter();
   const [department, setDepartment] = useState<any>([]);
   const [designation, setDesignation] = useState<any>([]);
   const [userType, setUserType] = useState<any>([]);
@@ -496,7 +496,7 @@ const base64Image = value ? `${value.user.img}` : '';
               </FormGroup>}
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Save" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Save" altBtnOnClick={() => back()}/>
           </>
         );
       }}
