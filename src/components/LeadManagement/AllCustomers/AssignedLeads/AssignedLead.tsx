@@ -39,6 +39,7 @@ export const useEmployeeData = ({ id }:any) => {
           const response = await apiService.get(`/highly-interested-tabel/${id}?field=customer&email=${session?.user?.email}&company=${comanpy_id}`
          );
           const userData = response.data.leads;
+         
           
           setValue(userData);
         }
@@ -62,6 +63,7 @@ export const useEmployeeData = ({ id }:any) => {
     view_dt: user.view_dt,
     status:user.status,
     company_title:user.company_title,
+    assigned_on: user.assigned_on,
  
    
 
