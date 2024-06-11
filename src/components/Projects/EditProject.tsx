@@ -33,7 +33,7 @@ export default function EditProject({ id }: any) {
   const { data: session } = useSession();
   const [project, setProject] = useState<any>();
   const [department, setDepartment] = useState<any>([]);
-  const [startDate, setStartDate] = useState<Date>(new Date());
+  // const [startDate, setStartDate] = useState<Date>(new Date());
   const { back } = useRouter();
   const [value, setUserData] = useState<any>();
 
@@ -268,7 +268,7 @@ export default function EditProject({ id }: any) {
                 />
               </FormGroup>
             </div>
-            // @ts-ignore
+          
             <FormFooter altBtnText="Cancel" submitBtnText="Save" altBtnOnClick={() => back()} />
           </>
         );
