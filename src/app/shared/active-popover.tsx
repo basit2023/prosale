@@ -8,6 +8,7 @@ import { PiTrashFill } from 'react-icons/pi';
 import apiService from '@/utils/apiService';
 import toast from 'react-hot-toast';
 import { FaTrashRestore } from "react-icons/fa";
+import { PiArrowsCounterClockwiseThin } from "react-icons/pi";
 import useSWR, { mutate } from 'swr';
 import { useRouter } from 'next/navigation';
 import { routes } from '@/config/routes';
@@ -23,7 +24,7 @@ type DeletePopoverProps = {
   inactive:string;
 };
 
-export default function DeletePopover({
+export default function ActivatePopover({
   id,
   title,
   description,
@@ -72,7 +73,7 @@ export default function DeletePopover({
             as="h6"
             className="mb-0.5 flex items-start text-sm text-gray-700 sm:items-center"
           >
-            <PiTrashFill className="me-1 h-[17px] w-[17px]" /> {title}
+            <PiArrowsCounterClockwiseThin className="me-1 h-[17px] w-[17px]" /> {title}
           </Title>
           <Text className="mb-2 leading-relaxed text-gray-500">
             {description}
@@ -96,10 +97,10 @@ export default function DeletePopover({
       <ActionIcon
         size="sm"
         variant="outline"
-        aria-label={'Activate Item'}
+        aria-label={'Delete Item'}
         className="hover:!border-none hover:!shadow-none focus:!outline-none focus-visible:!outline-none focus-visible:!shadow-none border:!none"
       >
-        <TrashIcon className="h-4 w-4" />
+        <PiArrowsCounterClockwiseThin className="h-4 w-4" />
       </ActionIcon>
     </Popover>
   );

@@ -62,7 +62,7 @@ export function CustomerDetails({ id }: any) {
   }, [session, id]);
 
   return (
-    <WidgetCard childrenWrapperClass="py-7 lg:py-8 flex sm:px-3">
+    <WidgetCard childrenWrapperClass="py-7 py-7 lg:py-7 flex sm:px-0 lg:px-1">
       <div className="relative aspect-square h-16 w-16 shrink-0 lg:h-20 lg:w-20">
         <Image
           fill
