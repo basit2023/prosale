@@ -52,7 +52,7 @@ export default function BasicTableWidget({
   title,
   data = [],
   getColumns,
-  pageSize = 7,
+  pageSize = 1000,
   setPageSize,
   enablePagination,
   variant = 'modern',

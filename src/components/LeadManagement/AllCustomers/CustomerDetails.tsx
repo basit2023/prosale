@@ -160,7 +160,9 @@ export function InvoiceDetails({id}:any) {
               {value?.city ? value?.city : "N/A"}
             </span>
           </li>
-          {/* Commented out items removed */}
+          
+          
+        
         </ul>
       </div>
     );

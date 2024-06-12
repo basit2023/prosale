@@ -62,29 +62,35 @@ export function CustomerDetails({ id }: any) {
   }, [session, id]);
 
   return (
-    <WidgetCard childrenWrapperClass="py-7 py-7 lg:py-7 flex sm:px-0 lg:px-1">
-      <div className="relative aspect-square h-16 w-16 shrink-0 lg:h-20 lg:w-20">
-        <Image
-          fill
-          alt="avatar"
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw"
-          src="https://isomorphic-furyroad.s3.amazonaws.com/public/avatar.png"
-        />
-      </div>
-      <div className="ps-4 lg:ps-6">
-        <Title as="h3" className="mb-2.5 text-base font-semibold xl:text-lg">
-          {value[0]?.customer_name}
-        </Title>
-        <Text as="p" className="mb-2 break-all last:mb-0">
-          {value[0]?.email}
-        </Text>
-        <Text as="p" className="mb-2 last:mb-0">
-          {value[0]?.mobile}
-        </Text>
-      </div>
+
+    <WidgetCard
+    childrenWrapperClass="py-7 @5xl:py-8 flex"
+    >
+    <div className="relative aspect-square h-16 w-16 shrink-0 @5xl:h-20 @5xl:w-20">
+      <Image
+        fill
+        alt="avatar"
+        className="object-cover"
+        sizes="(max-width: 768px) 100vw"
+        src="https://isomorphic-furyroad.s3.amazonaws.com/public/avatar.png"
+      />
+    </div>
+    <div className="ps-4 @5xl:ps-6">
+      <Title
+        as="h3"
+        className="mb-2.5 text-base font-semibold @7xl:text-lg"
+      >
+         {value[0]?.customer_name}
+      </Title>
+      <Text as="p" className="mb-2 break-all last:mb-0">
+         {value[0]?.email}
+      </Text>
+      <Text as="p" className="mb-2 last:mb-0">
+         {value[0]?.mobile}
+      </Text>
+    </div>
     </WidgetCard>
-  );
+  )
 }
 
 // InvoiceDetails Component
@@ -99,6 +105,8 @@ export function InvoiceDetails({ id }: any) {
         if (session) {
           const response = await apiService.get(`/get-highlyinterest-by-id/${id}`);
           const userData = response.data.leads;
+         
+
           setValue(userData);
         }
       } catch (error) {
@@ -116,25 +124,24 @@ export function InvoiceDetails({ id }: any) {
   const formattedDate = `${('0' + date.getDate()).slice(-2)}/${('0' + (date.getMonth() + 1)).slice(-2)}/${date.getFullYear()}`;
 
   return (
-    <div className="grid items-start rounded-xl border border-gray-300 p-5 gap-5 bg-transparent sm:mb-0 mb-3 sm:mt-0 grid-cols-2 lg:grid-cols-3 lg:p-6">
-      <ul className="grid gap-3 col-span-1">
-        <li className="flex items-center gap-3">
-          <span className="font-semibold text-gray-900">Lead Id :</span>
+    <div className="rounded-xl border border-gray-300 p-5 w-full bg-transparent">
+      <ul className="grid grid-cols-2 gap-3"> 
+        <li className="flex items-center gap-3 justify-start sm:gap-2">
+        <span className="font-semibold text-gray-900">Lead Id:</span>
           <span className="font-semibold text-gray-900">
             {value[0]?.main_id}
           </span>
         </li>
-        <li className="flex items-center gap-3">
+        <li className="flex items-center gap-3 justify-start sm:gap-2">
           <span className="font-semibold text-gray-900">Category:</span>
-          <span
-            className="px-2 py-1 rounded-md text-xs"
-            style={{ backgroundColor: `#${value[0]?.bg_color.split(',')[0]}` }}
-          >
-            {value[0]?.label ? value[0]?.label : "N/A"}
+          <span className="text-base font-semibold text-gray-900 sm:text-sm px-1 rounded-sm"
+          style={{ backgroundColor: `#${value[0]?.bg_color.split(',')[0]}`, color: `#${value[0]?.color}` }}>
+          {value[0]?.label ? value[0]?.label : "N/A"}
           </span>
         </li>
-        <li className="flex items-center gap-3">
-          <span className="font-semibold text-gray-900">Status :</span>
+        <li className="flex items-center gap-3 justify-start sm:gap-2">
+          <span className="font-semibold text-gray-900">Status:</span>
+          <span className="text-base font-semibold text-gray-900">
           {value[0]?.status === 'open' ? (
             <Badge color="success" rounded="md">
               {value[0]?.status}
@@ -144,25 +151,24 @@ export function InvoiceDetails({ id }: any) {
               {value[0]?.status}
             </Badge>
           )}
-        </li>
-      </ul>
-      <ul className="grid gap-3 col-span-1">
-        <li className="flex items-center gap-3">
-          <span className="font-semibold text-gray-900">Project :</span>
-          <span className="font-semibold text-gray-900">
-            {value[0]?.project_name ? value[0]?.project_name : "N/A"}
           </span>
         </li>
-        <li className="flex items-center gap-3 ">
-          <span className="font-semibold text-gray-900">Interested In :</span>
-          <span className="font-semibold text-gray-900">
-            {value[0]?.category ? value[0]?.category : "N/A"}
+        <li className="flex items-center gap-3 justify-start sm:gap-3">
+          <span className="font-semibold text-gray-900">Project:</span> 
+          <span className="text-base font-semibold text-gray-900 sm:text-sm">
+            {value[0]?.project_name ? value[0]?.project_name : "N/A"} 
           </span>
         </li>
-        <li className="flex items-center gap-3">
-          <span className="font-semibold text-gray-900">Assigned On :</span>
-          <span className="font-semibold text-gray-900">
-            {value[0]?.assigned_on ? formattedDate : "N/A"}
+        <li className="flex items-center gap-3 justify-start sm:gap-3">
+          <span className="font-semibold text-gray-900">Interested In:</span> 
+          <span className="text-base font-semibold text-gray-900 sm:text-sm">
+            {value[0]?.category ? value[0]?.category : "N/A"} 
+          </span>
+        </li>
+        <li className="flex items-center gap-3 justify-start sm:gap-3">
+          <span className="font-semibold text-gray-900">Assigned On:</span> 
+          <span className="text-base font-semibold text-gray-900 sm:text-sm">
+          {value[0]?.assigned_on ? formattedDate : "N/A"}
           </span>
         </li>
       </ul>

@@ -138,8 +138,8 @@ const DeleteComments = async (req, res) => {
 const AllLabels = async (req, res) => {
   try {
     // Use a connection pool to handle connections
-    const [rows, fields] = await mysqlConnection.promise().query('SELECT label FROM leads_labels');
-
+    const [rows, fields] = await mysqlConnection.promise().query('SELECT label FROM leads_labels WHERE dropdown = "Y"');
+   
     // Extract names from the result and construct objects with same name and value
     const show_labels = rows.map(label => ({ name: label.label, value: label.label }));
 
