@@ -353,7 +353,8 @@ const SpecificTeamMemberLeads = async (req, res) => {
           main.investment_budget,
           main.user,
           label.label AS label,
-          label.bg AS bg_color
+          label.bg AS bg_color,
+          label.color AS color
         FROM
           leads_main AS main
         INNER JOIN

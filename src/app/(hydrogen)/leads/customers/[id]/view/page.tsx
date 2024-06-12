@@ -16,7 +16,7 @@ type Props = {
 };
 
 let pageHeader = {
-  title: 'Leads View',
+  title: 'Customer Leads',
   breadcrumb: [
     {
       name: 'Lead',

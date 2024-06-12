@@ -43,16 +43,13 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
     }
   }, [session, id,comments,update]);
 
-  const handleDeleteComment = async (commentId:any, leadId:any) => {
+  const handleDeleteComment = async (commentId: any, leadId: any) => {
     try {
       const response = await apiService.put(`/delete-comments/${commentId}`);
       if (response.status === 200) {
         toast.success('Comment deleted successfully.');
-        
-        setTimeout(() => {
-          fetchComments();
-          router.refresh();
-        }, 1000);
+        // Remove the deleted comment from state
+        setComments((prevComments:any) => prevComments.filter((comment: any) => comment.id !== commentId));
       } else {
         console.error('Error Deleting comment:', response.statusText);
         toast.error('Error Deleting comment. Please try again.');
@@ -62,6 +59,7 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
       toast.error('Error Deleting comment. Please try again.');
     }
   };
+  
 
   if (loading) {
     return <Text>Loading...</Text>;

@@ -1,5 +1,3 @@
-// PersonalInfoView.js
-
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
@@ -8,7 +6,7 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { SubmitHandler } from 'react-hook-form';
 import { CommentsFormTypes, CommentsFormSchema, defaultValues } from '@/utils/validators/comments.schema';
-import FormFooter from '@/components/form-footer';
+import FormFooter from '@/components/form1-footer';
 import { Form } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import Spinner from '@/components/ui/spinner';
@@ -20,6 +18,8 @@ export default function CustomerComments({ onComment, id }:any) {
   const { data: session } = useSession();
   const [comments, setComments] = useState<any[]>([]);
   const [userData, setUserData]=useState<any>();
+  const [isLoading, setIsLoading] = useState(false); 
+  const [commentValue, setCommentValue] = useState('');
   const router = useRouter();
  
   useEffect(() => {
@@ -40,6 +40,7 @@ export default function CustomerComments({ onComment, id }:any) {
   }, [session]);
   const onSubmit: SubmitHandler<CommentsFormTypes> = async (data) => {
     try {
+      setIsLoading(true); 
       const result = await apiService.post(`/comments/${id}`, {
         ...data,
         user: userData?.user?.name,
@@ -51,14 +52,20 @@ export default function CustomerComments({ onComment, id }:any) {
         setComments([...comments, data.comments]); // Update comments state with the new comment
         logs({ user: userData?.user?.name, desc: 'add comments' });
         router.refresh()
+        setCommentValue('');
       }
     } catch (error) {
       console.error('Error adding comment:', error);
       toast.error('Error adding comment. Please try again.');
+    }finally {
+      setIsLoading(false); // Stop loading
     }
   };
   
-
+  const onCancel = () => {
+    
+    setCommentValue('');
+  };
   if (!userData) {
     return <Spinner />;
   }
@@ -85,7 +92,9 @@ export default function CustomerComments({ onComment, id }:any) {
               textareaClassName="h-20"
             />
           </div>
-          <FormFooter className="sxm:mb-0 mb-3 sxm:mt-0" altBtnText="Cancel" submitBtnText="Save Comments" />
+          <FormFooter className="sxm:mb-0 mb-3 sxm:mt-0"  submitBtnText="Save Comments" 
+          
+          isLoading={isLoading}/>
         </>
       )}
     </Form>
