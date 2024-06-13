@@ -35,6 +35,7 @@ export default function FormFooter({
         variant="outline"
         className="w-full @xl:w-auto"
         onClick={altBtnOnClick}
+       
       >
         {altBtnText}
       </Button>
