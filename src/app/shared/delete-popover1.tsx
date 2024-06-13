@@ -34,7 +34,8 @@ export default function DeletePopover({
 
 }: DeletePopoverProps) {
   const router = useRouter();
-  
+  const actionIconClassName = "rizzui-action-icon-root inline-flex items-center justify-center active:enabled:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50 transition-colors duration-200 p-0.5 w-7 h-7 rounded-md bg-transparent border-0 focus-visible:ring-offset-2 border-gray-300 hover:enabled:border-0 focus-visible:enabled:border-0 focus-visible:ring-gray-900/30";
+
   const handleDelete = async (setOpen: Function) => {
     try {
       
@@ -97,9 +98,9 @@ export default function DeletePopover({
         size="sm"
         variant="outline"
         aria-label={'Activate Item'}
-        className="hover:!border-none hover:!shadow-none focus:!outline-none focus-visible:!outline-none focus-visible:!shadow-none border:!none"
+        className={actionIconClassName}
       >
-        <TrashIcon className="h-4 w-4" />
+        <TrashIcon className="h-4 w-4 border:none" />
       </ActionIcon>
     </Popover>
   );

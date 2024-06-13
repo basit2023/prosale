@@ -49,7 +49,7 @@ export default function EmployeeDetails({id}:any) {
   const [userValue, setUserValue] = useState<any>();
   const [isEditing, setIsEditing] = useState(false);
   const [startDate, setStartDate] = useState<Date>(new Date());
-const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   // const [startDate, setStartDate] = useState(new Date());
   const { back } = useRouter();
   
@@ -94,7 +94,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
 // console.log("the user data is:--->",userValue)
 const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
   // console.log("onSubmit function is called with data:", data);
-  setIsSubmitting(true)
+  setIsLoading(true); 
   try {
     // console.log("created data user_id is:", value?.user_id);
 
@@ -132,7 +132,7 @@ const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
     toast.error('Error updating profile. Please try again.');
   }
   finally {
-    setIsSubmitting(false);
+    setIsLoading(false);
   }
 };
   const handleEditProfileClick = () => {
@@ -312,14 +312,10 @@ const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
                     // error={errors.linkedin?.message}
                   />
                 </FormGroup>
-                {isSubmitting && (
-                  <div className="absolute top-0 left-10 w-full flex items-center justify-center z-50">
-                    <Spinner />
-                  </div>
-                )}
+                
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Personal Info" altBtnOnClick={() => back()}/>
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Personal Info" altBtnOnClick={() => back()} isLoading={isLoading}/>
           </>
         );
       }}

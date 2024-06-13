@@ -243,7 +243,7 @@ export const useGetColumns = ({
                 tag="span"
                 size="sm"
                 variant="outline"
-                className="hover:!border-gray-900 hover:text-gray-700"
+                className="hover:!border-gray-900 hover:text-gray-700 border:none"
               >
                 {row.del !== 'Y' && (
                   <DeletePopover

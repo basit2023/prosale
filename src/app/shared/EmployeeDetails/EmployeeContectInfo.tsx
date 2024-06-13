@@ -69,7 +69,7 @@ const SelectBox = dynamic(() => import('@/components/ui/select'), {
 
 export default function EmployeeContectInfo({id}:any) {
   const { data: session } = useSession();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const [userValue, setUserValue] = useState<UserType | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [startDate, setStartDate] = useState<Date>(new Date());
@@ -132,15 +132,14 @@ export default function EmployeeContectInfo({id}:any) {
   }, [session]);
 // console.log("the user data is:--->",userValue)
 const onSubmit: SubmitHandler<EmployeeContectInfoFormTypes> = async (data) => {
-  setIsSubmitting(true)
+  setIsLoading(true);
 
   try {
     // console.log("created data user_id is:", value?.user_id);
 
     // Format the date to match "MM/dd/yyyy"
     const formattedDate = format(startDate, 'MM/dd/yyyy');
-   console.log("the formated data is:",formattedDate)
-  console.log("the value of the preesed at sumbit time:",offerLetterValue)
+   
 
     if (userValue?.results[0]?.user_id) {
           const result = await apiService.put(`/update_employee-contect-info/${id}`, {
@@ -175,7 +174,7 @@ const onSubmit: SubmitHandler<EmployeeContectInfoFormTypes> = async (data) => {
     console.error('Error updating profile:', error);
     toast.error('Error updating profile. Please try again.');
   }finally {
-    setIsSubmitting(false);
+    setIsLoading(false);
   }
 };
   const handleEditProfileClick = () => {
@@ -365,14 +364,10 @@ const onSubmit: SubmitHandler<EmployeeContectInfoFormTypes> = async (data) => {
                 value={offerLetterValue}
               />
             </FormGroup>
-            {isSubmitting && (
-                  <div className="absolute top-0 left-10 w-full flex items-center justify-center z-50">
-                    <Spinner />
-                  </div>
-                )}
+            
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Contect Info" altBtnOnClick={() => back()}/>
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Contect Info" altBtnOnClick={() => back()} isLoading={isLoading}/>
           </>
         );
       }}

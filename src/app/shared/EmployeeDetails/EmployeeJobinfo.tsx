@@ -40,6 +40,7 @@ export default function EmployeeJobInfo({ id }:any) {
   const [jobInfo, setJobInfo] = useState<any>();
   const [dropDownOffice, setDropDownOffice] = useState<any>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); 
   const [value, setUserData]=useState<any>();
   useEffect(() => {
     const fetchUserData = async () => {
@@ -93,7 +94,7 @@ export default function EmployeeJobInfo({ id }:any) {
   }, [session]);
 
   const onSubmit: SubmitHandler<employeeJobSchemaFormTypes> = async (data) => {
-    setIsSubmitting(true)
+    setIsLoading(true); 
     let result = '';
     if(data.assigned_offices){
      const options = data.assigned_offices
@@ -138,7 +139,7 @@ if (hasHeadOffice && hasCorporateOffice) {
       console.error('Error updating job information:', error);
       toast.error('Error updating jobinformation. Please try again.');
     }finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -325,14 +326,10 @@ if (hasHeadOffice && hasCorporateOffice) {
                 />
               </FormGroup>
 
-              {isSubmitting && (
-                  <div className="absolute top-0 left-10 w-full flex items-center justify-center z-50">
-                    <Spinner />
-                  </div>
-                )}
+              
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Job Info" altBtnOnClick={() => back()}/>
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Job Info" altBtnOnClick={() => back()} isLoading={isLoading}/>
           </>
         );
       }}

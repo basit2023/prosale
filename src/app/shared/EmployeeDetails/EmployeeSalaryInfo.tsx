@@ -64,6 +64,7 @@ export default function EmployeeSalaryInfo({id}:any) {
   const [selectedSign, setSelectedSign] = useState(sign && sign.length > 0 ? sign[0].value : '');
   const [totalSalary, setTotalSalary]=useState<any>()
   const [value, setUserData]=useState<any>();
+  const [isLoading, setIsLoading] = useState(false);
   const insHandler= () => {
     // Step 3
     const updatedValue = insurance == 'N' ? 'Y' : 'N';
@@ -126,7 +127,7 @@ export default function EmployeeSalaryInfo({id}:any) {
   }, [session]);
 // console.log("the user data is:--->",userValue)
 const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
-  setIsSubmitting(true)
+  setIsLoading(true); 
   //############################### Caculation##########################################
 
   let {basic_salary, health_check, health_type, health_value,
@@ -243,7 +244,7 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
 //****************************************************************************************** */
   try {
    
-   
+    
 
     if (userValue?.results[0]?.user_id) {
           const result = await apiService.put(`/update_employee-salary-info/${id}`, {
@@ -273,7 +274,7 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
     toast.error('Error updating Salary. Please try again.');
   }
   finally {
-    setIsSubmitting(false);
+    setIsLoading(false);
   }
 };
   
@@ -791,16 +792,11 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
                 </div>
               </FormGroup>
                 
-                
-              {isSubmitting && (
-                  <div className="absolute top-0 left-10 w-full flex items-center justify-center z-50">
-                    <Spinner />
-                  </div>
-                )}
+              
 
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Salary Info" altBtnOnClick={() => back()}/>
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Salary Info" altBtnOnClick={() => back()} isLoading={isLoading} />
           </>
         );
       }}

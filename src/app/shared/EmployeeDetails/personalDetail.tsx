@@ -50,7 +50,7 @@ export default function PersonalInfoView({id}:Props) {
   const [email, setEmail] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(false); 
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -71,7 +71,7 @@ export default function PersonalInfoView({id}:Props) {
   }, [session]);
 
   const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
-    setIsSubmitting(true);
+    setIsLoading(true);
     try {
       // Get the base64 image data from local storage
       const avatarImage = localStorage.getItem('img');
@@ -112,7 +112,7 @@ export default function PersonalInfoView({id}:Props) {
       toast.error('Error updating profile. Please try again.');
     }
     finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
   const handleEditProfileClick = () => {
@@ -279,15 +279,11 @@ const base64Image = value ? `${value.user.img}` : '';
                   )}
                 />
               </FormGroup>
-              {isSubmitting && (
-                  <div className="absolute top-0 left-10 w-full flex items-center justify-center z-50">
-                    <Spinner />
-                  </div>
-                )}
+              
 
             
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" altBtnOnClick={() => back()} />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" altBtnOnClick={() => back()} isLoading={isLoading}/>
           </>
         );
       }}
