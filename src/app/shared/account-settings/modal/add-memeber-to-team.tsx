@@ -75,7 +75,7 @@ export default function AddTeamMemberModalView() {
     <div className="m-auto p-6">
       <div className="flex justify-between items-center">
         <Title as="h3" className="mb-6 text-lg">
-          Add New Zone
+          Add New Team Member
         </Title>
         <button onClick={() => closeModal()} className="text-xl font-bold">✕</button>
       </div>
@@ -125,7 +125,7 @@ export default function AddTeamMemberModalView() {
                     </svg>
                   </span>
                 ) : (
-                  'Add Manager'
+                  'Add Member'
                 )}
               </Button>
             </div>
