@@ -39,6 +39,7 @@ export default function EditZone({id}:any) {
   const [country, setCountry] = useState<any>([]);
   const { back } = useRouter();
   const [userValue, setUserData]=useState<any>();
+  const [isLoading, setIsLoading] = useState(false); 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -86,7 +87,7 @@ export default function EditZone({id}:any) {
   }, [session]);
 // console.log("the user data is:--->",value)
   const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
-    
+    setIsLoading(true); 
     try {
        
        const result= await apiService.put(`/zones-teams/${id}/?table=users_zones`, {
@@ -103,6 +104,9 @@ export default function EditZone({id}:any) {
     } catch (error) {
       console.error('Error updating Customer details:', error);
       toast.error('Error updating Customer details. Please try again.');
+    }
+    finally {
+      setIsLoading(false);
     }
   };
  
@@ -179,7 +183,7 @@ export default function EditZone({id}:any) {
 
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Zone Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Zone Info" isLoading={isLoading}/>
           </>
         );
       }}

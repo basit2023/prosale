@@ -3,8 +3,9 @@ import { routes } from '@/config/routes';
 import InvoiceTable from '@/components/AllZons/TeamMembers/table';
 import { AllTeamMembers } from '@/components/AllZons/TeamMembers/AllMembers'; 
 import ManagerInfo from '@/components/AllZons/TeamMembers/ManagerTable'
-import TableLayout from '../../table-layout';
+import TableLayout from './table-layout';
 import { metaObject } from '@/config/site.config';
+import { Empty } from "rizzui";
 
 type Props = {
   params: { id: string };
@@ -25,7 +26,13 @@ export default function EnhancedTablePage({ params }: Props) {
       renderComponents();
     }, 1000);
 
-    return null; 
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '24px' }}>
+        
+        
+        <Empty text="No Team Member found" textClassName="mt-2" />;
+      </div>
+    );
   }
 
   // If not empty, render the components immediately

@@ -1,8 +1,8 @@
 'use client';
 
-import PageHeader, { PageHeaderTypes } from '@/app/shared/page-header';
+import PageHeader, { PageHeaderTypes } from '@/app/shared/page-header-team';
 import { useModal } from '@/app/shared/modal-views/use-modal';
-import AddTeamMemberModalView from '@/app/shared/account-settings/modal/add-team-manager';
+import AddTeamMemberModalView from '@/app/shared/account-settings/modal/add-memeber-to-team';
 import { PiPlusBold } from 'react-icons/pi';
 import { Button } from '@/components/ui/button';
 import { useSession } from 'next-auth/react';

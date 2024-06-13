@@ -38,7 +38,7 @@ interface SelectOption {
 export default function EditTeam({id}:any) {
   const { data: session } = useSession();
   const [value1, setValue1] = useState<any>();
- 
+  const [isLoading, setIsLoading] = useState(false); 
   const [country, setCountry] = useState<any>([]);
   const [userValue, setUserData]=useState<any>();
   const { back } = useRouter();
@@ -91,7 +91,7 @@ export default function EditTeam({id}:any) {
   }, [session]);
 // console.log("the user data is:--->",value)
   const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
-    
+    setIsLoading(true);
     try {
        
        const result= await apiService.put(`/zones-teams/${id}?table=users_teams`, {
@@ -107,6 +107,8 @@ export default function EditTeam({id}:any) {
     } catch (error) {
       console.error('Error updating Customer details:', error);
       toast.error('Error updating Customer details. Please try again.');
+    }finally {
+      setIsLoading(false);
     }
   };
  
@@ -214,7 +216,7 @@ export default function EditTeam({id}:any) {
 
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Team Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Team Info" altBtnOnClick={() => back()} isLoading={isLoading}/>
           </>
         );
       }}

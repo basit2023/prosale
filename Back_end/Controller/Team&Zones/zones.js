@@ -551,7 +551,12 @@ const CreateZoneTeam = async (req, res) => {
 
     // Extract fields from the request body
     const { title, zonal_manager, manager_id, zone_id, del, user, dt } = req.body;
-
+    if (!title || title.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Kindly add title',
+      });
+    }
     let sql = `INSERT INTO ${table} SET `;
     const values = [];
 
@@ -624,13 +629,13 @@ const CreateZoneTeam = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: `${table} table Created successfully`,
+      message: `${table? table:""} table Created successfully`,
     });
   } catch (error) {
     console.error('Error inserting into zone team:', error);
     res.status(500).json({
       success: false,
-      message: `Error in inserting into ${table}`,
+      message: `Error in inserting into ${table?table :"table"}`,
       error: error.message,
     });
   }
