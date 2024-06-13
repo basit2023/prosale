@@ -40,6 +40,7 @@ export default function AssignedTeam({ id }:any) {
   const [team, setTeam] = useState<any>();
   const { back } = useRouter();
 const [value, setUserData]=useState<any>();
+const [isLoading, setIsLoading] = useState(false); 
 
 useEffect(() => {
   const fetchUserData = async () => {
@@ -83,7 +84,7 @@ useEffect(() => {
     
 
     try {
-      
+      setIsLoading(true); 
         const data1={...data, user:value?.user?.name}
         console.log("the data for the employee team is:",data1)
         const result = await apiService.put(`/update-employee-team/${id}`,data1);
@@ -97,6 +98,8 @@ useEffect(() => {
     } catch (error) {
       console.error('Error updating Employee Team:', error);
       toast.error('Error updating Employee Team. Please try again.');
+    }finally {
+      setIsLoading(false);
     }
   };
 
@@ -171,7 +174,8 @@ useEffect(() => {
               </FormGroup>
               
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update team" altBtnOnClick={() => back()}/>
+            <FormFooter altBtnText="Cancel" submitBtnText="Update team" altBtnOnClick={() => back()} 
+       isLoading={isLoading}/>
           </>
         );}
       }}

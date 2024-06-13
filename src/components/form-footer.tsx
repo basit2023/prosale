@@ -34,7 +34,7 @@ export default function FormFooter({
       <Button
         variant="outline"
         className="w-full @xl:w-auto"
-        onClick={altBtnOnClick}
+        onClick={onCancel}
        
       >
         {altBtnText}

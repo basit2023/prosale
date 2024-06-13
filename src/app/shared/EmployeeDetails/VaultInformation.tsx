@@ -40,7 +40,7 @@ interface VaultInformationProps {
 export default function Vaultinformation({id}:VaultInformationProps) {
   const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
+  const [isLoading, setIsLoading] = useState(false); 
   const [userType, setUserType] = useState<any[]>([]);
 
   const [value, setUserData]=useState<any>();
@@ -82,7 +82,7 @@ export default function Vaultinformation({id}:VaultInformationProps) {
 // console.log("the user data is:--->",value)
   const onSubmit: SubmitHandler<VaultInfoFormTypes> = async (data) => {
     
-    setIsSubmitting(true)
+    setIsLoading(true); 
     const {password}=data
     const currentP= crypto.createHash('sha256').update(password).digest('hex');
     data.password=currentP;
@@ -109,7 +109,7 @@ export default function Vaultinformation({id}:VaultInformationProps) {
       toast.error('Error updating profile. Please try again.');
     }
     finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
@@ -190,14 +190,10 @@ export default function Vaultinformation({id}:VaultInformationProps) {
                   )}
                 />
               </FormGroup>
-              {isSubmitting && (
-                  <div className="absolute top-0 left-10 w-full flex items-center justify-center z-50">
-                    <Spinner />
-                  </div>
-                )}
+              
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Vault Info" />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Vault Info" isLoading={isLoading}/>
           </>
         );
       }}
