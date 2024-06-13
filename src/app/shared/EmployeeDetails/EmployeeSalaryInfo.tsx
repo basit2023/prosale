@@ -449,7 +449,7 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
                             
                             <Select
                             // styles={customStyles}
-                            className="border flex-shrink-0 border-black hover:border-black bg-transparent w-250px"
+                            className="border flex-shrink-0 rounded focus:border-black focus:ring-0 hover:border-black bg-transparent w-250px"
                               options={sign || []}
                               onChange={(selected) => {
                                 console.log('Selected value:', selected);
@@ -528,7 +528,7 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
                            
                             <Select
                             // styles={customStyles}
-                            className="border flex-shrink-0 border-black hover:border-black bg-transparent w-250px"
+                            className="border flex-shrink-0 rounded focus:border-black focus:ring-0 hover:border-black bg-transparent w-250px"
                               options={sign || []}
                               onChange={(selected) => {
                                 console.log('Selected value:', selected);
@@ -606,7 +606,7 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
                             
                             <Select
                             // styles={customStyles}
-                            className="border flex-shrink-0 border-black hover:border-black bg-transparent w-250px"
+                            className="border flex-shrink-0 rounded focus:border-black focus:ring-0 hover:border-black bg-transparent w-250px"
                             styles={{  control: (provided, state) => ({
                                 ...provided,
                                 backgroundColor: 'transparent',
@@ -658,7 +658,7 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
                             />
                             <Select
                             // styles={customStyles}
-                            className="border flex-shrink-0 border-black hover:border-black bg-transparent w-250px"
+                            className="border flex-shrink-0 rounded focus:border-black focus:ring-0 hover:border-black bg-transparent w-250px"
                              styles={{  control: (provided, state) => ({
                                 ...provided,
                                 backgroundColor: 'transparent',
@@ -725,7 +725,7 @@ const onSubmit: SubmitHandler<EmployeeSalaryInfoFormTypes> = async (data) => {
                             
                             <Select
                             // styles={customStyles}
-                            className="border border-black hover:border-black bg-transparent flex-shrink-0 w-250px"
+                           className="border flex-shrink-0 rounded focus:border-black focus:ring-0 hover:border-black bg-transparent w-250px"
                               options={sign || []}
                               onChange={(selected) => {
                                 console.log('Selected value:', selected);
