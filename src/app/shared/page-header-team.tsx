@@ -71,7 +71,7 @@ export default function PageHeader({
             ))}
           </Breadcrumb>
         </div>
-        {/* {children} */}
+        {children}
       </div>
     </header>
   );

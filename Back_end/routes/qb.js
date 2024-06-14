@@ -27,7 +27,7 @@ const { CreateComments, GetComments, DeleteComments, AllLabels, SelectForBox, Up
 const { ClosedLeadController, ViewLead } = require("../Controller/LeadM/closeLeads");
 const { EditLeadCustomer, UpdateLeadCustomer, GetCountrycode, CreateLeadCustomer, GetCustomerById } = require("../Controller/LeadM/EditLeadCustomer");
 const { ZoneData, GetTeamMemeber, UpdateZoneTeam, TeamData, GetzoneMemeber, ZoneTeamData, CreateZoneTeam } = require("../Controller/Team&Zones/zones");
-const { Getteamates, TeamForEmployee, UpdateTeamForEmployee } = require("../Controller/Team&Zones/Team");
+const { Getteamates, TeamForEmployee, UpdateTeamForEmployee, AddTeamMember } = require("../Controller/Team&Zones/Team");
 const { projectData, GetStatus, CreateNewProject, GetProjectDetails, UpdateProject } = require("../Controller/Project/project");
 const { ReassinedLead } = require("../Controller/LeadM/ReassignedLead");
 const { SignUpHandler, OnBordingHandler } = require("../Controller/Signup");
@@ -166,6 +166,8 @@ Router.get('/api/all-labels/', AllLabels);
 Router.get('/api/all-contrycode/', GetCountrycode);
 //get all the members
 Router.get('/api/all-members/', GetTeamMemeber);
+//add team members
+Router.put('/api/add-team-member/:id', AddTeamMember);
 Router.get('/api/all-teams', GetzoneMemeber);
 //select companies
 Router.get('/api/select-company', GetCompanies);

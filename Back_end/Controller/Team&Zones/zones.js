@@ -374,7 +374,7 @@ const ZoneTeamData = async (req, res) => {
     try {
         // Use a connection pool to handle connections
         const {email,table}=req.query;
-        console.log("the table is:",table,email)
+     
         const [user] = await mysqlConnection.promise().query('SELECT company_id from users where email=?',[email])
         let rows;
         if(table=='footer'){

@@ -271,5 +271,61 @@ const UpdateTeamForEmployee = async (req, res) => {
 };
 
 
-  module.exports = { Getteamates, TeamForEmployee,UpdateTeamForEmployee };
+
+
+
+
+
+const AddTeamMember = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'No Manager Found',
+      });
+    }
+
+    // Extract fields from the request body
+    const { member } = req.body;
+
+    // Query to get the team id from users_teams table
+    const [team] = await mysqlConnection.promise().query(
+      `SELECT id FROM users_teams WHERE manager_id = ?`, [id]
+    );
+
+    if (!team[0] || !team[0].id) {
+      return res.status(400).json({
+        success: false,
+        message: 'No team found for the given manager',
+      });
+    }
+
+    const teamId = team[0].id;
+
+    // Update query to assign the team to the user
+    const [result] = await mysqlConnection.promise().query(
+      `UPDATE users SET assigned_team = ? WHERE id = ?`, [teamId, member]
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `New Member successfully added to Team`,
+    });
+  } catch (error) {
+    console.error('Error in adding New Member to team:', error);
+    res.status(500).json({
+      success: false,
+      message: `Error in adding New Member to team`,
+      error: error.message,
+    });
+  }
+};
+
+
+
+
+
+  module.exports = { Getteamates, TeamForEmployee,UpdateTeamForEmployee,AddTeamMember };
   

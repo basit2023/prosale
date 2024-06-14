@@ -44,6 +44,7 @@ export default function EnhancedTablePage({ params }: Props) {
         title={pageHeader({ params }).title}
         breadcrumb={pageHeader({ params }).breadcrumb}
         data={invoiceData}
+        id1={params.id}
         fileName="invoice_data"
         header="ID,Name,Email, Mobile,CNIC,Designation,Department,Assigned Office,Status"
       >

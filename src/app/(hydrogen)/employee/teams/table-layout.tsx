@@ -20,7 +20,7 @@ export default function TableLayout({
     <>
       <PageHeader {...props}>
         <div className="mt-4 flex items-center gap-3 @lg:mt-0">
-        gggggggggg
+    
         </div>
       </PageHeader>
 
