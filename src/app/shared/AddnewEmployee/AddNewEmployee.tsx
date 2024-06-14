@@ -169,26 +169,14 @@ export default function CreateNewEmployee() {
       setIsLoading(false);
     }
   };
-  const handleEditProfileClick = () => {
-    // Toggle the state when the button is clicked
-    setIsEditing((prev) => !prev);
-  }
+ 
   
 
 //##################################### imag ######################
-const base64Image = value ? `${value.user.img}` : '';
-      // console.log('Base64 Image Data:', base64Image);
-
-      const parts = base64Image.split(';base64,');
-      const mimeType = parts[0].split(':')[1];
-      const imageData = parts[1];
-      // console.log("mimetype, imgdata:-->",mimeType +' by spacy '+ imageData)
-
-      const imageBuffer = imageData ? Buffer.from(imageData, 'base64') : undefined;
+const base64Image = localStorage.getItem('img1');
+const imageBuffer = base64Image ? `data:image/jpeg;base64,${base64Image}` : null;
   
- return isEditing ? (
-    <ProfileSettingsView />
-  ) : (
+ return (
     <Form<NewEmployeeInfoFormTypes>
       validationSchema={NewEmployeeInfoFormSchema}
       onSubmit={onSubmit}
@@ -232,7 +220,7 @@ const base64Image = value ? `${value.user.img}` : '';
                  <Input
 
                   {...register('first_name')}
-                  // defaultValue={first}
+                 
                   placeholder="First Name"
                   error={errors.first_name?.message}
                   className="flex-grow"
@@ -241,7 +229,7 @@ const base64Image = value ? `${value.user.img}` : '';
                 <Input
                   
                   {...register('last_name')}
-                  // defaultValue={last}
+               
                   placeholder="Last Name"
                   error={errors.last_name?.message}
                   className="flex-grow"
@@ -272,7 +260,7 @@ const base64Image = value ? `${value.user.img}` : '';
                   type="email"
                   prefix={<PiEnvelopeSimple className="w-5" />}
                   {...register('email')}
-                  // defaultValue={session?.user?.email}
+                 
                   placeholder="example@gmail.com"  
                   error={errors?.email?.message}
                   className="flex-grow"
@@ -359,7 +347,7 @@ const base64Image = value ? `${value.user.img}` : '';
                     name="image"
                     // setValue={setValue}
                     // getValues={getValues}
-                    defaultValue={imageBuffer ? `data:${mimeType};base64,${imageData}` : 'fallback_url'}
+                    defaultValue={imageBuffer ? imageBuffer : 'fallback_url'}
                     // error={errors?.image?.message as string}
                   />
                   {/* <UploadPhoto/> */}
