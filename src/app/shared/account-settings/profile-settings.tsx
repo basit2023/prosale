@@ -172,7 +172,7 @@ export default function ProfileSettingsView() {
       </Form>
     </>
      ) : (
-      < PersonalInfoView/>
+      < PersonalInfoView />
       
       )}
       </>

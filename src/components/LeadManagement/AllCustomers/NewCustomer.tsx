@@ -41,6 +41,7 @@ export default function NewLeadCustomer() {
   const [country, setCountry] = useState<any>([]);
   const [company, setCompany] = useState<any>();
   const [userValue, setUserData]=useState<any>();
+  const [isLoading, setIsLoading] = useState(false); 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -88,7 +89,7 @@ export default function NewLeadCustomer() {
   }, [session]);
 // console.log("the user data is:--->",value)
   const onSubmit: SubmitHandler<customerInfoFormTypes> = async (data) => {
-    
+    setIsLoading(true); 
     try {
       if(company?.user_data?.number<=1){
         data.company_id=company?.user_data?.company_id;
@@ -108,6 +109,9 @@ export default function NewLeadCustomer() {
     } catch (error:any) {
       console.error('Error updating Customer details:', error);
       toast.error(error.response.data.message);
+    }
+    finally {
+      setIsLoading(false);
     }
   };
  
@@ -258,7 +262,7 @@ export default function NewLeadCustomer() {
               </FormGroup>}
              
             </div>
-            <FormFooter altBtnText="Cancel" altBtnOnClick={() => back()} submitBtnText="Update Basic Info" />
+            <FormFooter altBtnText="Cancel" altBtnOnClick={() => back()} submitBtnText="Add New Customer" isLoading={isLoading}/>
           </>
         );
       }}
