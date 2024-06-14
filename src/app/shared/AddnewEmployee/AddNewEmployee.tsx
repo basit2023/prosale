@@ -56,6 +56,7 @@ export default function CreateNewEmployee() {
   const [isEditing, setIsEditing] = useState(false);
   const [value, setUserData]=useState<any>();
   const [team, setTeam] = useState<any>();
+  const [isLoading, setIsLoading] = useState(false); 
   const [company, setCompany] = useState<any>();
   useEffect(() => {
     const fetchUserData = async () => {
@@ -126,7 +127,7 @@ export default function CreateNewEmployee() {
   }, [session]);
 
   const onSubmit: SubmitHandler<NewEmployeeInfoFormTypes> = async (data) => {
-    
+    setIsLoading(true); 
     
     const {password}=data
     const currentP= crypto.createHash('sha256').update(password).digest('hex');
@@ -161,9 +162,11 @@ export default function CreateNewEmployee() {
         }
 
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error('Error updating profile:', error);
-      toast.error('Error updating profile. Please try again.');
+      toast.error(error.response.data.message);
+    }finally {
+      setIsLoading(false);
     }
   };
   const handleEditProfileClick = () => {
@@ -182,7 +185,7 @@ const base64Image = value ? `${value.user.img}` : '';
       // console.log("mimetype, imgdata:-->",mimeType +' by spacy '+ imageData)
 
       const imageBuffer = imageData ? Buffer.from(imageData, 'base64') : undefined;
-      console.log("the company data is:--->",company?.user_data?.number)
+  
  return isEditing ? (
     <ProfileSettingsView />
   ) : (
@@ -496,7 +499,7 @@ const base64Image = value ? `${value.user.img}` : '';
               </FormGroup>}
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Save" altBtnOnClick={() => back()}/>
+            <FormFooter altBtnText="Cancel" submitBtnText="Save" altBtnOnClick={() => back()} isLoading={isLoading}/>
           </>
         );
       }}

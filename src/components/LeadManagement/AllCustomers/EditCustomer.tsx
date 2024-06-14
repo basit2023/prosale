@@ -40,6 +40,7 @@ export default function EditCustomer({id}:any) {
   const [country, setCountry] = useState<any>([]);
   const [userValue, setUserData]=useState<any>();
   const { back } = useRouter();
+  const [isLoading, setIsLoading] = useState(false); 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -87,6 +88,7 @@ export default function EditCustomer({id}:any) {
   }, [session]);
 // console.log("the user data is:--->",value)
   const onSubmit: SubmitHandler<customerInfoFormTypes> = async (data) => {
+    setIsLoading(true); 
     try {
        const result= await apiService.put(`/update-customer/${id}`, {
             ...data})
@@ -102,6 +104,8 @@ export default function EditCustomer({id}:any) {
     } catch (error) {
       console.error('Error updating Customer details:', error);
       toast.error('Error updating Customer details. Please try again.');
+    }finally {
+      setIsLoading(false);
     }
   };
  
@@ -226,7 +230,7 @@ export default function EditCustomer({id}:any) {
               </FormGroup>
              
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Basic Info" altBtnOnClick={() => back()} />
+            <FormFooter altBtnText="Cancel" submitBtnText="Update Customer" altBtnOnClick={() => back()} isLoading={isLoading}/>
           </>
         );
       }}

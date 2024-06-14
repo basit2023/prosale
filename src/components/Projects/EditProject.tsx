@@ -30,6 +30,7 @@ const QuillEditor = dynamic(() => import('@/components/ui/quill-editor'), {
 });
 
 export default function EditProject({ id }: any) {
+  const [isLoading, setIsLoading] = useState(false);
   const { data: session } = useSession();
   const [project, setProject] = useState<any>();
   const [department, setDepartment] = useState<any>([]);
@@ -80,6 +81,7 @@ export default function EditProject({ id }: any) {
   }, [session]);
 
   const onSubmit: SubmitHandler<NewProjectInfoFormTypes> = async (data) => {
+    setIsLoading(true); 
     try {
       const avatarImage = localStorage.getItem('img');
       console.log("the data is at the new project:", { ...data, Image: avatarImage, user: value?.user?.name });
@@ -106,6 +108,8 @@ export default function EditProject({ id }: any) {
     } catch (error: any) {
       console.error('Error updating Project:', error);
       toast.error(error.response.data.message);
+    }finally {
+      setIsLoading(false);
     }
   };
 
@@ -269,7 +273,7 @@ export default function EditProject({ id }: any) {
               </FormGroup>
             </div>
           
-            <FormFooter altBtnText="Cancel" submitBtnText="Save" altBtnOnClick={() => back()} />
+            <FormFooter altBtnText="Cancel" submitBtnText="Save" altBtnOnClick={() => back()} isLoading={isLoading}/>
           </>
         );
       }}

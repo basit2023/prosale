@@ -41,6 +41,7 @@ export default function AddNewProject() {
   const [department, setDepartment] = useState<any>([]);
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [company, setCompany] = useState<any>();
+  const [isLoading, setIsLoading] = useState(false); 
   const { back } = useRouter();
   const [value, setUserData]=useState<any>();
   useEffect(() => {
@@ -87,6 +88,7 @@ export default function AddNewProject() {
   }, [session]);
 
   const onSubmit: SubmitHandler<NewProjectInfoFormTypes> = async (data) => {
+    setIsLoading(true); 
     try {
       const avatarImage = localStorage.getItem('img');
       if(company?.user_data?.number<=1){
@@ -117,6 +119,8 @@ export default function AddNewProject() {
     } catch (error:any) {
       console.error('Error updating profile:', error);
       toast.error(error.response.data.message);
+    }finally {
+      setIsLoading(false);
     }
   };
   
@@ -350,7 +354,7 @@ export default function AddNewProject() {
               
              
             </div>
-            <FormFooter altBtnText="Cancel" altBtnOnClick={() => back()} submitBtnText="Save" />
+            <FormFooter altBtnText="Cancel" altBtnOnClick={() => back()} submitBtnText="Save Project" isLoading={isLoading}/>
           </>
         );
       }}
