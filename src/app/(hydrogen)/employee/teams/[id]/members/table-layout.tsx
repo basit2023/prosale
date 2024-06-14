@@ -1,5 +1,6 @@
 'use client';
 
+// import PageHeader, { PageHeaderTypes } from '@/app/shared/page-header';
 import PageHeader, { PageHeaderTypes } from '@/app/shared/page-header-team';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import AddTeamMemberModalView from '@/app/shared/account-settings/modal/add-memeber-to-team';
@@ -12,12 +13,14 @@ type TableLayoutProps = {
   data: unknown[];
   header: string;
   fileName: string;
+  id1:any;
 } & PageHeaderTypes;
 
 export default function TableLayout({
   data,
   header,
   fileName,
+  id1,
   children,
   ...props
 }: React.PropsWithChildren<TableLayoutProps>) {
@@ -29,7 +32,7 @@ export default function TableLayout({
       
       try {
         const response = await apiService.get(`/all-permission/${session?.user?.email}`);
-        const userData = response?.data?.permission[0]        ;
+        const userData = response?.data?.permission[0];
     
         setUserValue(userData);
       } catch (error) {
@@ -55,12 +58,12 @@ export default function TableLayout({
             className="dark:bg-gray-100 dark:text-white"
             onClick={() =>
               openModal({
-                view: <AddTeamMemberModalView />,
+                view: <AddTeamMemberModalView id={id1}/>,
               })
             }
           >
             <PiPlusBold className="me-1.5 h-4 w-4" />
-            Add Team
+            Add Member
           </Button>
         </div>
          )}

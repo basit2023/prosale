@@ -12,6 +12,7 @@ export const editTeamZoneFormSchema = z.object({
   del: z.string().optional(),
   user:z.string().optional(), //validateEmail,
   dt: z.string().optional(),
+  member: z.string().optional(),
   
 });
 
@@ -25,5 +26,6 @@ export const defaultValues = {
   user: undefined,
   manager_id: undefined,
   zone_id:undefined,
+  member:undefined,
   dt: getCurrentTimestamp(),
 };

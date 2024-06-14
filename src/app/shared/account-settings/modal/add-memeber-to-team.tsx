@@ -1,29 +1,31 @@
 'use client';
-import { logsCreate } from '@/app/shared/account-settings/logs';
+import { logsCreate,logs } from '@/app/shared/account-settings/logs';
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { Controller, SubmitHandler } from 'react-hook-form';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import { Text, Title } from '@/components/ui/text';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Form } from '@/components/ui/form';
 import SelectBox from '@/components/ui/select';
 import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
 import { decryptData } from '@/components/encriptdycriptdata';
+
+import { useRouter } from 'next/navigation';
 import {
   editTeamZoneFormTypes,
   editTeamZoneFormSchema,
   defaultValues,
 } from '@/utils/validators/team-zones.schema';
 
-export default function AddTeamMemberModalView() {
+export default function AddTeamMemberModalView({id}:any) {
   const { closeModal } = useModal();
   const [reset, setReset] = useState<any>({});
   const [isLoading, setLoading] = useState(false);
   const [userValue, setUserData] = useState<any>();
   const { data: session } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -45,20 +47,21 @@ export default function AddTeamMemberModalView() {
   const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
     try {
       setLoading(true);
-      const result = await apiService.post(`/create-zone-team/?table=users_zones`, {
+      const result = await apiService.put(`/add-team-member/${id}`, {
         ...data,
         user: userValue?.user?.name,
       });
       toast.success(result.data.message);
 
       if (result.data.success) {
-        logsCreate({ user: userValue?.user?.name, desc: `Created new Zone` });
+        logs({ user: userValue?.user?.name, desc: `Created new Member` });
       }
     } catch (error) {
       console.error('Error Creating team:', error);
       toast.error('Error Creating Team. Please try again.');
     } finally {
       setLoading(false);
+      router.refresh()
       closeModal();
     }
 
@@ -159,7 +162,7 @@ export function MemberForm({ register, control, errors }: any) {
       try {
         const response = await apiService.get(`/all-teams`);
         const userData = response.data.data;
-        console.log("all the team is:", userData);
+        
         setValue1(userData);
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -175,7 +178,7 @@ export function MemberForm({ register, control, errors }: any) {
   return (
     <div className="flex flex-col gap-4 text-gray-700">
       <div className="flex flex-col gap-4 xs:flex-row xs:items-center">
-        <Input
+        {/* <Input
           type="text"
           label="Title"
           placeholder="Zone"
@@ -183,19 +186,19 @@ export function MemberForm({ register, control, errors }: any) {
           {...register('title')}
           error={errors?.title?.message}
           className="flex-grow"
-        />
+        /> */}
       </div>
 
       <Controller
         control={control}
-        name="zonal_manager"
+        name="member"
         render={({ field: { value, onChange } }: any) => {
           const selectedOption: any = manager?.find((item: any) => String(item.value) === value);
 
           return (
             <SelectBox
               value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null}
-              label="Select Manager"
+              label="Select Member"
               labelClassName="text-sm font-medium text-gray-900"
               placeholder="Select Zone Manager"
               options={manager?.map((item: any) => ({ label: item.name, value: String(item.value) }))}
