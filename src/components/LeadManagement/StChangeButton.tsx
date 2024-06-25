@@ -1,23 +1,18 @@
 // PersonalInfoView.js
 
 'use client';
-// import { logs,logsCreate } from '../account-settings/logs';
+
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
 import { SubmitHandler, Controller } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
-import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
-import FormGroup from '@/app/shared/form-group';
-import FormFooter from '@/components/form-footer';
 import { useEffect, useState } from 'react';
 import apiService from '@/utils/apiService';
-import { Password } from '@/components/ui/password';
 import { CloseLeadFormSchema,CloseLeadFormTypes, defaultValues } from '@/utils/validators/close-lead.schema';
 import { DatePicker } from '@/components/ui/datepicker';
-import UploadButton from './FileUpladButton';
 import FileUpload from './file-upload';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import { PiXBold } from 'react-icons/pi'; 
@@ -33,16 +28,16 @@ const SelectBox = dynamic(() => import('@/components/ui/select'), {
 
 export default function StChangeButton({ id }:any) {
   const { data: session } = useSession();
-  const [value, setValue1] = useState();
+
   const [userType, setUserType] = useState([]);
   const [userValue, setUserValue] = useState<any>();
   const [startDate, setStartDate] = useState<Date>(new Date());
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
   const [meeting, setMeeting] = useState(false);
   const [meetingInitiated, setMeetingInitiated] = useState(false);
   const [offerLetterValue, setOfferLetterValue] = useState('No'); // Step 1
   const { closeModal } = useModal();
-  const [isFileInputOpen, setIsFileInputOpen] = useState(false);
+ 
   const handlechange = () => {
     // Step 3
     const updatedValue = offerLetterValue == 'No' ? 'Yes' : 'No';
@@ -53,16 +48,7 @@ export default function StChangeButton({ id }:any) {
 
   useEffect(() => {
     const fetchData = async () => {
-      // try {
-      //   const response = await apiService.get(`/employee-status-info/${id}`);
-      //   const userData = response.data;
-      //   console.log("the user is:", userData)
-      //   setValue1(userData);
-      //   setDatePickerOpen(false)
-      // } catch (error) {
-      //   console.error('Error fetching user data:', error);
-      //   toast.error('Error fetching user data. Please try again.');
-      // }
+      
       try {
         const response = await apiService.get(`/all-user-type`);
 
@@ -145,9 +131,8 @@ export default function StChangeButton({ id }:any) {
                             displayValue={(selected) =>
                               status?.find((r:any) => r.value === selected)?.name ?? ''
                             }
-                            // error={errors?.status?.message as string}
-                            onFocus={() => setDatePickerOpen(true)}
-                            onBlur={() => setDatePickerOpen(false)}
+                          
+                           
                           />
                           {value === 'Y' && (
                             <>
@@ -175,7 +160,7 @@ export default function StChangeButton({ id }:any) {
                       <td className="border border-dashed border-slate-300 text-center bg-transparent h-8 ...">
                         <Input
                           className="w-full bg-transparent"
-                          defaultValue={userValue?.results[0]?.travel_value}
+                          // defaultValue={userValue?.results[0]?.travel_value}
                           placeholder="Meeting Location"
                           {...register('meeting_location')}
                           // error={errors.city?.message}
@@ -206,8 +191,7 @@ export default function StChangeButton({ id }:any) {
                               value={startDate}
                               showTimeSelect
                               timeFormat="HH:mm"
-                              onFocus={() => setDatePickerOpen(true)}
-                              onBlur={() => setDatePickerOpen(false)}
+                              
                             />
                           )}
                         />

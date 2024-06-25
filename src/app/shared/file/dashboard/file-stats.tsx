@@ -12,58 +12,81 @@ import TrendingDownIcon from '@/components/icons/trending-down';
 import { routes } from '@/config/routes';
 import { useSession } from 'next-auth/react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useState,useEffect } from 'react';
+import apiService from '@/utils/apiService';
+import toast from 'react-hot-toast';
 type FileStatsType = {
   className?: string;
 };
 
-const filesStatData = [
-  {
-    id: 1,
-    title: 'Total Images',
-    metric: '36,476 GB',
-    fill: '#3872FA',
-    percentage: 32,
-    increased: true,
-    decreased: false,
-    value: '+32.40',
-  },
-  {
-    id: 2,
-    title: 'Total Videos',
-    metric: '53,406 GB',
-    fill: '#3872FA',
-    percentage: 48,
-    increased: false,
-    decreased: true,
-    value: '-18.45',
-  },
-  {
-    id: 3,
-    title: 'Total Documents',
-    metric: '90,875 GB',
-    fill: '#EE0000',
-    percentage: 89,
-    increased: true,
-    decreased: false,
-    value: '+20.34',
-  },
-  {
-    id: 4,
-    title: 'Total Musics',
-    metric: '63,076 GB',
-    fill: '#3872FA',
-    percentage: 54,
-    increased: true,
-    decreased: false,
-    value: '+14.45',
-  },
-];
+
 
 export function FileStatGrid({ className }: { className?: string }) {
   const { data: session } = useSession();
+  const [count, setCount]=useState<any>();
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await apiService.get(`/total-items`);
+        
+        const userData = response.data.data;
+        console.log("teh total data is:",userData)
+        setCount(userData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
+     
+    };
+
+    if (session) {
+      fetchData();
+    }
+  }, [session]);
+  const filesStatData = [
+    {
+      id: 1,
+      title: 'Total Leads',
+      metric: count?.Total_Leads,
+      fill: '#3872FA',
+      percentage: count?.LastMonthLeadsPercentage,
+      increased: true,
+      decreased: false,
+      value: `+${count?.LastMonthLeadsPercentage}`,
+    },
+    {
+      id: 2,
+      title: 'Closed Leads',
+      metric: count?.Close_Leads,
+      fill: '#3872FA',
+      percentage: count?.LastMonthCloseLeadsPercentage,
+      increased: false,
+      decreased: true,
+      value: `-${count?.LastMonthCloseLeadsPercentage}`,
+    },
+    {
+      id: 3,
+      title: 'Total Employees',
+      metric: count?.Total_Employee,
+      fill: '#EE0000',
+      percentage: count?.TotalNewEmployeesPercentage,
+      increased: true,
+      decreased: false,
+      value: `+${count?.TotalNewEmployeesPercentage}`,
+    },
+    {
+      id: 4,
+      title: 'Active Projects',
+      metric: count?.Total_Projects,
+      fill: '#3872FA',
+      percentage: 54,
+      increased: true,
+      decreased: false,
+      value: '+14.45',
+    },
+  ];
   const router = useRouter();
   if (!session) {
-    console.log("turn to sign in page:",session)
     router.push(routes.signIn)
   }
   else{

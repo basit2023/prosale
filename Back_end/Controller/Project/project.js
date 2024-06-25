@@ -18,6 +18,7 @@ const projectData = async (req, res) => {
             lp.Portal_Status,
             lp.Image,
             lp.Location,
+            lp.del,
             c.title AS company_title
         FROM 
             lead_projects lp

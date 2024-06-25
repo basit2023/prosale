@@ -245,13 +245,13 @@ export const getColumns = ({
           title="Status"
           sortable
           ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'status'
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'del'
           }
         />
       ),
-      onHeaderCell: () => onHeaderCellClick('Status'),
-      dataIndex: 'status',
-      key: 'status',
+      onHeaderCell: () => onHeaderCellClick('del'),
+      dataIndex: 'del',
+      key: 'del',
       width: 100,
       render: (value: string | undefined) => (
         <div className="font-medium text-gray-700 dark:text-gray-600">
@@ -318,6 +318,7 @@ export const getColumns = ({
               id={row.id}
               table={`lead_projects`}
               name={`Project`}
+              inactive="Yes"
             />
           </div>
         );
