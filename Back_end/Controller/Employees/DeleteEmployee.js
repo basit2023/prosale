@@ -34,14 +34,15 @@ const DeleteEmployee = async (req, res) => {
     // Extract fields from the request parameters and query
     const { id } = req.params;
     const { table, name,inactive } = req.query;
-     console.log("table and the name are:",table, name)
+
     let sql = `UPDATE ${table} SET `;
     let values = [];
 
     // Assign hard-coded values
-    const status = "Y";
+    var status = "N";
     var del = "Y";
     if(inactive==="Yes"){
+      var status = "Y";
       var del="N"
     }
     

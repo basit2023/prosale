@@ -54,6 +54,7 @@ export const ProjectData = () => {
     Location: user.Location,
     Image: user.Image,
     company_title:user.company_title,
+    del:user.del
   }));
 
   return productsData;
