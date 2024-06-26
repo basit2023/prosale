@@ -47,39 +47,41 @@ export default function FileListTable({
   const { visibleColumns } = useColumn(columns);
 
   return (
-    <div className={className}>
-      <div className="mb-3 flex items-center justify-between 2xl:mb-5">
-        <Title
-          as="h3"
-          className="text-lg font-semibold text-gray-900 xl:text-xl"
-        >
-          All Files
-        </Title>
-        <Link
-          href={routes.file.manager}
-          className="text-sm font-medium text-gray-900 hover:underline"
-        >
-          View all
-        </Link>
-      </div>
-      <ControlledTable
-        isLoading={isLoading}
-        data={tableData}
-        // @ts-ignore
-        columns={visibleColumns}
-        scroll={{ x: 1300 }}
-        variant="modern"
-        tableLayout="fixed"
-        rowKey={(record) => record.id}
-        className="overflow-hidden rounded-lg border border-gray-200 text-sm"
-        paginatorOptions={{
-          pageSize,
-          setPageSize,
-          total: totalItems,
-          current: currentPage,
-          onChange: (page: number) => handlePaginate(page),
-        }}
-      />
-    </div>
+    // <div className={className}>
+    //   <div className="mb-3 flex items-center justify-between 2xl:mb-5">
+    //     <Title
+    //       as="h3"
+    //       className="text-lg font-semibold text-gray-900 xl:text-xl"
+    //     >
+    //       All Files
+    //     </Title>
+    //     <Link
+    //       href={routes.file.manager}
+    //       className="text-sm font-medium text-gray-900 hover:underline"
+    //     >
+    //       View all
+    //     </Link>
+    //   </div>
+    //   <ControlledTable
+    //     isLoading={isLoading}
+    //     data={tableData}
+    //     // @ts-ignore
+    //     columns={visibleColumns}
+    //     scroll={{ x: 1300 }}
+    //     variant="modern"
+    //     tableLayout="fixed"
+    //     rowKey={(record) => record.id}
+    //     className="overflow-hidden rounded-lg border border-gray-200 text-sm"
+    //     paginatorOptions={{
+    //       pageSize,
+    //       setPageSize,
+    //       total: totalItems,
+    //       current: currentPage,
+    //       onChange: (page: number) => handlePaginate(page),
+    //     }}
+    //   />
+    // </div>
+    <>
+    </>
   );
 }

@@ -19,35 +19,26 @@ const mockdata = [
       name: 'Employee Sheet',
       image: FolderIcon,
     },
+    link: '/employee/list', // Add link property
   },
   {
     id: 2,
     file: {
-      name: 'Employee history.pdf',
-      image: PDFIcon,
+      name: 'Lead Customer',
+      image: FolderIcon,
     },
+    link: '/leads/customers',
   },
   {
     id: 3,
     file: {
-      name: 'Final Changes.doc',
-      image: DocIcon,
+      name: 'Lead Management',
+      image: FolderIcon,
     },
+    link: '/leads/management',
   },
-  {
-    id: 4,
-    file: {
-      name: 'Office Setup.img',
-      image: ImageIcon,
-    },
-  },
-  {
-    id: 5,
-    file: {
-      name: 'Salary Statement.xls',
-      image: XMLIcon,
-    },
-  },
+  
+  
 ];
 
 export function QuickAccessCard({
@@ -58,12 +49,10 @@ export function QuickAccessCard({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        className,
-        'relative flex flex-col items-center justify-center rounded-lg bg-gray-50 p-7 dark:bg-gray-100/50'
-      )}
-    >
+    <Link href={item.link} className={cn(
+      className,
+      'relative flex flex-col items-center justify-center rounded-lg bg-gray-50 p-7 dark:bg-gray-100/50'
+    )}>
       {item?.file?.image && (
         <div className="w-14">
           <item.file.image />
@@ -72,7 +61,7 @@ export function QuickAccessCard({
       <Text className="mt-5 w-full truncate text-center text-sm font-medium text-gray-700">
         {item?.file?.name}
       </Text>
-    </div>
+    </Link>
   );
 }
 
@@ -91,12 +80,12 @@ export default function QuickAccess({ className }: { className?: string }) {
         <Title as="h3" className="text-lg font-semibold xl:text-xl">
           Quick Access
         </Title>
-        <Link
+        {/* <Link
           href={'/file-manager'}
           className="text-sm font-medium text-gray-900 hover:underline"
         >
           View all
-        </Link>
+        </Link> */}
       </div>
       <div className="relative">
         <Button

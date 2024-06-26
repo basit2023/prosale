@@ -32,7 +32,7 @@ const { projectData, GetStatus, CreateNewProject, GetProjectDetails, UpdateProje
 const { ReassinedLead } = require("../Controller/LeadM/ReassignedLead");
 const { SignUpHandler, OnBordingHandler } = require("../Controller/Signup");
 const { customMiddleware } = require("../Controller/middleware/middleware");
-const { getCounts } = require("../Controller/Dashboard/Dashboard");
+const { getCounts, getTopLead } = require("../Controller/Dashboard/Dashboard");
 
 
 
@@ -53,6 +53,7 @@ Router.get('/api/permission/:email',Userpermission)
 //dashboard getCounts
 
 Router.get('/api/total-items',getCounts)
+Router.get('/api/top-leads',getTopLead)
 
 
 
