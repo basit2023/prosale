@@ -108,9 +108,9 @@ export default function TrackingOverview({ className }: { className?: string }){
             const formattedDate = date.toLocaleDateString('en-US', options);
             let icon;
             if (item.log_type === 'Create') {
-              icon = <PiCheckCircle className="h-6 w-6 text-orange" />;
+              icon = <PiCheckCircle className="h-6 w-6 text-green" />;
             } else if (item.log_type === 'Edit') {
-              icon = <PiNotePencilLight className="h-6 w-6 text-green" />;
+              icon = <PiNotePencilLight className="h-6 w-6 text-orange" />;
             }
            else if (item.log_type === 'Delete') {
             icon = <IoMdCloseCircleOutline className="h-6 w-6 text-red" />;

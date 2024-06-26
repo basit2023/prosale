@@ -119,22 +119,24 @@ export default function RecentActivities({
   className?: string;
 }) {
   return (
-    <div className={className}>
-      <Title
-        as="h3"
-        className="mb-3 text-lg font-semibold text-gray-900 xl:text-xl 2xl:mb-5"
-      >
-        Recent Activities
-      </Title>
-      <WidgetCard title="" headerClassName="hidden">
-        {activities.map((activity, index) => (
-          <ActivityThreads
-            key={`thread-${index}`}
-            title={activity.title}
-            threads={activity.threads}
-          />
-        ))}
-      </WidgetCard>
-    </div>
+    // <div className={className}>
+    //   <Title
+    //     as="h3"
+    //     className="mb-3 text-lg font-semibold text-gray-900 xl:text-xl 2xl:mb-5"
+    //   >
+    //     Recent Activities
+    //   </Title>
+    //   <WidgetCard title="" headerClassName="hidden">
+    //     {activities.map((activity, index) => (
+    //       <ActivityThreads
+    //         key={`thread-${index}`}
+    //         title={activity.title}
+    //         threads={activity.threads}
+    //       />
+    //     ))}
+    //   </WidgetCard>
+    // </div>
+    <>
+    </>
   );
 }

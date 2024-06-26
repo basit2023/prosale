@@ -2,7 +2,7 @@
 import { usePathname, redirect,useRouter } from 'next/navigation'; // Corrected import
 import { useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-
+import { encryptData, decryptData } from '@/components/encriptdycriptdata';
 export default function RouteProtect(Component: any) {
     return function RouteProtectWrapper(props: any) { // Fixed typo in parameter name
         const pathname:any = usePathname();
@@ -13,8 +13,9 @@ export default function RouteProtect(Component: any) {
         }
         const checkPermission = (pathname: string) => {
             const transformedItemsString = localStorage.getItem('sidebar');
-            const transformedItems: any = transformedItemsString ? JSON.parse(transformedItemsString) : [];
-            console.log("the local storage items is:", transformedItems);
+            const decr:any=decryptData(transformedItemsString)
+            const transformedItems: any = transformedItemsString ? decr : [];
+            
             const matchedRoute = transformedItems?.find((route: any) => {
                 if (route.href && typeof route.href === 'string') {
                     const hrefWords = route.href.split('/');
@@ -29,7 +30,7 @@ export default function RouteProtect(Component: any) {
                 router.push('/')
             } else {
                 if (matchedRoute) {
-                    console.log("the route is----->:", matchedRoute);
+                    
                     if (matchedRoute.permission <= Permissions) { // Define or pass permission as a parameter
                         console.log('Permission granted for route:', matchedRoute.name);
                         // Do something if permission is granted
