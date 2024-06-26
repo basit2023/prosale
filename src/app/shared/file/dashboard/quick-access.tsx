@@ -2,10 +2,10 @@
 
 import FolderIcon from '@/components/icons/folder-solid';
 import { Title, Text } from '@/components/ui/text';
-import PDFIcon from '@/components/icons/pdf-solid';
-import DocIcon from '@/components/icons/doc-solid';
-import ImageIcon from '@/components/icons/image-solid';
-import XMLIcon from '@/components/icons/xml-solid';
+// import PDFIcon from '@/components/icons/pdf-solid';
+// import DocIcon from '@/components/icons/doc-solid';
+// import ImageIcon from '@/components/icons/image-solid';
+// import XMLIcon from '@/components/icons/xml-solid';
 import cn from '@/utils/class-names';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';

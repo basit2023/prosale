@@ -75,7 +75,7 @@ export default function LeadReport({ className }: { className?: string }) {
       try {
         const response = await apiService.get('/top-leads'); // Replace with actual API endpoint
         const transformedData = transformData(response.data); // Transform fetched data
-        console.log("the top leads is:", transformedData);
+        
         setLeadData(transformedData);
       } catch (error) {
         console.error('Error fetching lead data:', error);

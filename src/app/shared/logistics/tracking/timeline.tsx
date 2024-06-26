@@ -5,12 +5,12 @@ import { Link } from 'react-scroll';
 import { Title, Text } from '@/components/ui/text';
 import cn from '@/utils/class-names';
 import { PiArrowDownBold, PiTriangle } from 'react-icons/pi';
-
+//
 const statusColors: {
   [key: string]: string;
 } = {
-  Edit: 'text-green',
-  Create: 'text-orange',
+  Edit: 'text-yellow',
+  Create: 'text-green',
   Delete: 'text-red',
 };
 
