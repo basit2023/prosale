@@ -30,7 +30,7 @@ export function FileStatGrid({ className }: { className?: string }) {
         const response = await apiService.get(`/total-items`);
         
         const userData = response.data.data;
-        console.log("teh total data is:",userData)
+        
         setCount(userData);
       } catch (error) {
         console.error('Error fetching user data:', error);

@@ -86,7 +86,7 @@ const getTopLead = async (req, res) => {
     const [rows] = await mysqlConnection.promise().query(`
       SELECT 
           sub.month,
-          sub.assigned_to AS employee,
+          CONCAT(u.first_name, ' ', u.last_name) AS employee,
           sub.lead_count
       FROM (
           SELECT 
@@ -107,7 +107,8 @@ const getTopLead = async (req, res) => {
           ) AS inner_query
           CROSS JOIN (SELECT @rank := 0, @current_month := '') AS vars
       ) AS sub
-      WHERE sub.rk <= 4 -- Filter to get only the top 4 employees per month
+      JOIN users u ON sub.assigned_to = u.name
+      WHERE sub.rk <= 4 
       ORDER BY sub.month, sub.rk;
     `);
 

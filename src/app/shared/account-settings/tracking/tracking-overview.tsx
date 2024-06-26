@@ -86,9 +86,9 @@ export default function TrackingOverview({ className }: { className?: string }){
         if (session?.user?.email) {
           const response = await apiService.get(`/logs/${session?.user?.email}`);
           const userData = response.data.results;
-          console.log("user details are:", userData);
+        
           setValue2(userData);
-          console.log("the value2 is:",value2)
+          
           const newTimelineData = userData.map((item:any, index:any) => {
             const timestamp = item.dt;
             const date = new Date(timestamp * 1000);
@@ -176,7 +176,7 @@ export function TrackingSummary() {
         if (session?.user?.email) {
           const response = await apiService.get(`/logs/${session?.user?.email}`);
           const userData = response.data.results[0];
-          console.log("user details are:", userData);
+          
           setValue(userData);
         } else {
           // Handle the case when there is no user email in the session
