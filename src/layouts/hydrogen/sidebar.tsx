@@ -29,8 +29,9 @@ export default function Sidebar({ className }: { className?: string }) {
   const userData = encryptedSuperAdmin ? decryptData(encryptedSuperAdmin) : null;
 
   const encryptedPermission = localStorage.getItem('permission');
+  
   const permissionData = encryptedPermission ? decryptData(encryptedPermission) : null;
-
+  
   const [supper, setSupper] = useState<any>(userData);
   const [perm_d, setPerm_d] = useState<any>(permissionData);
 
@@ -108,7 +109,8 @@ export default function Sidebar({ className }: { className?: string }) {
             }
             return acc;
           }, []);
-          localStorage.setItem('sidebar', JSON.stringify(transformedItems));
+          localStorage.setItem('sidebar',encryptData(transformedItems));
+          
           setTransformedItems(transformedItems);
         }
       } catch (error) {

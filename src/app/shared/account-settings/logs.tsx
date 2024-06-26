@@ -26,7 +26,7 @@ import apiService from '@/utils/apiService';
     // Log entry schema definition
     const payload = {
       log_type: 'Edit',
-      log_descp: `${user} updated ${desc}`,
+      log_descp: `${user}: ${desc}`,
       user: user,
       dt: getCurrentTimestamp(),
       ipAddress: '',
@@ -49,7 +49,7 @@ import apiService from '@/utils/apiService';
     // Log entry schema definition
     const payload = {
       log_type: 'Create',
-      log_descp: `${user} created: ${desc}`,
+      log_descp: `${user}: ${desc}`,
       user: user,
       dt: getCurrentTimestamp(),
       ipAddress: '',

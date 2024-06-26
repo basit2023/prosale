@@ -10,7 +10,7 @@ import FormFooter from '@/components/form1-footer';
 import { Form } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
 import Spinner from '@/components/ui/spinner';
-import { logs } from '@/app/shared/account-settings/logs';
+import { logs, logsCreate} from '@/app/shared/account-settings/logs';
 import { decryptData } from '@/components/encriptdycriptdata';
 
 
@@ -50,7 +50,7 @@ export default function CustomerComments({ onComment, id }:any) {
         toast.success(result.data.message);
         
         setComments([...comments, data.comments]); // Update comments state with the new comment
-        logs({ user: userData?.user?.name, desc: 'add comments' });
+        logsCreate({ user: userData?.user?.name, desc: 'added comments' });
         router.refresh()
         setCommentValue('');
       }
