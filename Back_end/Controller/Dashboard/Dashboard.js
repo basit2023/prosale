@@ -80,7 +80,48 @@ const getCounts = async (req, res) => {
   }
 };
 
-module.exports = { getCounts };
+const getTopLead = async (req, res) => {
+ 
+  try {
+    const [rows] = await mysqlConnection.promise().query(`
+      SELECT 
+          sub.month,
+          sub.assigned_to AS employee,
+          sub.lead_count
+      FROM (
+          SELECT 
+              month,
+              assigned_to,
+              lead_count,
+              @rank := IF(@current_month = month, @rank + 1, 1) AS rk,
+              @current_month := month AS current_month
+          FROM (
+              SELECT 
+                  DATE_FORMAT(FROM_UNIXTIME(assigned_on), '%Y-%m') AS month,
+                  assigned_to,
+                  COUNT(*) AS lead_count
+              FROM leads_main
+              WHERE assigned_on >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL 12 MONTH))
+              GROUP BY month, assigned_to
+              ORDER BY month, lead_count DESC
+          ) AS inner_query
+          CROSS JOIN (SELECT @rank := 0, @current_month := '') AS vars
+      ) AS sub
+      WHERE sub.rk <= 4 -- Filter to get only the top 4 employees per month
+      ORDER BY sub.month, sub.rk;
+    `);
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Error fetching lead counts:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching top leads',
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { getCounts, getTopLead };
 
 
-module.exports = { getCounts };

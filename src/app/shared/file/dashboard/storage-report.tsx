@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import WidgetCard from '@/components/cards/widget-card';
-import { Title, Text } from '@/components/ui/text';
+import { Title } from '@/components/ui/text';
 import {
   BarChart,
   Bar,
@@ -9,106 +9,29 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Legend,
 } from 'recharts';
-import { Badge } from '@/components/ui/badge';
 import { useMedia } from '@/hooks/use-media';
-import cn from '@/utils/class-names';
-import { CustomTooltip } from '@/components/charts/custom-tooltip';
-import TrendingUpIcon from '@/components/icons/trending-up';
 import SimpleBar from '@/components/ui/simplebar';
+import apiService from '@/utils/apiService';
 
-interface StorageData {
+// Define the type/interface for the fetched data
+interface LeadData {
   month: string;
-  image: number;
-  video: number;
-  document: number;
-  music: number;
+  employee1?: { name: string; lead_count: number };
+  employee2?: { name: string; lead_count: number };
+  employee3?: { name: string; lead_count: number };
+  employee4?: { name: string; lead_count: number };
 }
 
-const initialData: StorageData[] = [
+// Initial data for development or default display
+const initialData: LeadData[] = [
   {
     month: 'Jan',
-    image: 5000,
-    video: 1500,
-    document: 1500,
-    music: 1500,
-  },
-  {
-    month: 'Feb',
-    image: 8500,
-    video: 1600,
-    document: 5798,
-    music: 2000,
-  },
-  {
-    month: 'Mar',
-    image: 7000,
-    video: 8300,
-    document: 3000,
-    music: 1375,
-  },
-  {
-    month: 'Apr',
-    image: 3908,
-    video: 1780,
-    document: 6798,
-    music: 5780,
-  },
-  {
-    month: 'May',
-    image: 4890,
-    video: 2500,
-    document: 1500,
-    music: 5000,
-  },
-  {
-    month: 'Jun',
-    image: 8000,
-    video: 3200,
-    document: 7800,
-    music: 4890,
-  },
-  {
-    month: 'Jul',
-    image: 8500,
-    video: 2500,
-    document: 2500,
-    music: 4890,
-  },
-  {
-    month: 'Aug',
-    image: 3780,
-    video: 3908,
-    document: 9908,
-    music: 2800,
-  },
-  {
-    month: 'Sep',
-    image: 7800,
-    video: 2800,
-    document: 8500,
-    music: 1908,
-  },
-  {
-    month: 'Oct',
-    image: 5780,
-    video: 1908,
-    document: 7208,
-    music: 2780,
-  },
-  {
-    month: 'Nov',
-    image: 4780,
-    video: 1920,
-    document: 2930,
-    music: 1500,
-  },
-  {
-    month: 'Dec',
-    image: 7500,
-    video: 3000,
-    document: 9000,
-    music: 1700,
+    employee1: { name: 'Tanzeel', lead_count: 7 },
+    employee2: { name: 'hasratjabeen', lead_count: 6 },
+    employee3: { name: 'zainabaziz', lead_count: 5 },
+    employee4: { name: 'muhammadrafi', lead_count: 2 },
   },
 ];
 
@@ -116,86 +39,105 @@ function CustomYAxisTick({ x, y, payload }: any) {
   return (
     <g transform={`translate(${x},${y})`}>
       <text x={0} y={0} dy={16} textAnchor="end" className="fill-gray-500">
-        {`${payload.value.toLocaleString()}`}GB
+        {`${payload.value.toLocaleString()}`}
       </text>
     </g>
   );
 }
 
-export default function StorageReport({ className }: { className?: string }) {
+// Custom Tooltip Component
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="custom-tooltip bg-white p-2 border border-gray-300 rounded shadow-lg">
+        <p className="label">{`Month: ${label}`}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={`item-${index}`} className="intro">
+            {`${entry.payload[`employee${index + 1}`]?.name}: ${entry.value}`}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export default function LeadReport({ className }: { className?: string }) {
   const isMobile = useMedia('(max-width: 768px)', false);
   const isDesktop = useMedia('(max-width: 1440px)', false);
   const is2xl = useMedia('(max-width: 1780px)', false);
-  const isTablet = useMedia('(max-width: 800px)', false);
 
-  const [storageData, setStorageData] = useState<StorageData[]>(initialData);
+  const [leadData, setLeadData] = useState<LeadData[]>(initialData);
 
   useEffect(() => {
-    // Fetch data dynamically and update the state...
-    const fetchDataAndUpdateState = async () => {
+    const fetchLeadData = async () => {
       try {
-        const response = await fetch('YOUR_API_ENDPOINT');
-        const data = await response.json() as StorageData[];
-        setStorageData(data);
+        const response = await apiService.get('/top-leads'); // Replace with actual API endpoint
+        const transformedData = transformData(response.data); // Transform fetched data
+        console.log("the top leads is:", transformedData);
+        setLeadData(transformedData);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching lead data:', error);
       }
     };
 
-    fetchDataAndUpdateState();
+    fetchLeadData();
   }, []);
+
+  const transformData = (data: any[]) => {
+    const transformed: LeadData[] = [];
+    const groupedByMonth: { [key: string]: LeadData } = {};
+
+    data.forEach((item) => {
+      const { month, employee, lead_count } = item;
+      if (!groupedByMonth[month]) {
+        groupedByMonth[month] = { month };
+      }
+      if (!groupedByMonth[month].employee1) {
+        groupedByMonth[month].employee1 = { name: employee, lead_count };
+      } else if (!groupedByMonth[month].employee2) {
+        groupedByMonth[month].employee2 = { name: employee, lead_count };
+      } else if (!groupedByMonth[month].employee3) {
+        groupedByMonth[month].employee3 = { name: employee, lead_count };
+      } else if (!groupedByMonth[month].employee4) {
+        groupedByMonth[month].employee4 = { name: employee, lead_count };
+      }
+    });
+
+    for (const key in groupedByMonth) {
+      transformed.push(groupedByMonth[key]);
+    }
+
+    return transformed;
+  };
 
   return (
     <WidgetCard
-      title={'Total Storage used'}
+      title={'Lead Report'}
       titleClassName="font-normal text-gray-700 sm:text-base font-inter"
       description={
         <div className="flex items-center justify-start">
           <Title as="h2" className="me-2 font-semibold">
-            105 GB
+            Lead Count by Month
           </Title>
-          <Text className="flex items-center leading-none text-gray-500">
-            <Text
-              as="span"
-              className={cn(
-                'me-2 inline-flex items-center font-medium text-green'
-              )}
-            >
-              <TrendingUpIcon className="me-1 h-4 w-4" />
-              32.40%
-            </Text>
-            last year
-          </Text>
         </div>
       }
       descriptionClassName="text-gray-500 mt-1.5"
       action={
         <div className="hidden @2xl:block">
-          <Badge renderAsDot className="me-0.5 bg-[#282ECA]" /> Image
-          <Badge renderAsDot className="me-0.5 ms-4 bg-[#4052F6]" /> Video
-          <Badge renderAsDot className="me-0.5 ms-4 bg-[#96C0FF]" /> Documents
-          <Badge
-            renderAsDot
-            className="me-0.5 ms-4 bg-[#DEEAFC] dark:bg-[#7c88b2]"
-          />{' '}
-          Musics
+          {/* Action buttons or elements */}
         </div>
       }
       className={className}
     >
       <SimpleBar>
         <div className="h-96 w-full pt-9">
-          <ResponsiveContainer
-            width="100%"
-            height="100%"
-            {...(isTablet && { minWidth: '700px' })}
-          >
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart
-              data={storageData} // Use dynamic data
+              data={leadData}
               barSize={isMobile ? 16 : isDesktop ? 28 : is2xl ? 32 : 46}
-              margin={{
-                left: 16,
-              }}
+              margin={{ left: 16 }}
               className="[&_.recharts-tooltip-cursor]:fill-opacity-20 dark:[&_.recharts-tooltip-cursor]:fill-opacity-10 [&_.recharts-cartesian-axis-tick-value]:fill-gray-500 [&_.recharts-cartesian-axis.yAxis]:-translate-y-3 rtl:[&_.recharts-cartesian-axis.yAxis]:-translate-x-12 [&_.recharts-cartesian-grid-vertical]:opacity-0"
             >
               <CartesianGrid strokeDasharray="8 10" strokeOpacity={0.435} />
@@ -206,10 +148,12 @@ export default function StorageReport({ className }: { className?: string }) {
                 tick={<CustomYAxisTick />}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="image" fill="#282ECA" stackId="a" />
-              <Bar dataKey="video" stackId="a" fill="#4052F6" />
-              <Bar dataKey="document" stackId="a" fill="#96C0FF" />
-              <Bar dataKey="music" stackId="a" fill="#DEEAFC" />
+              <Legend />
+              
+              <Bar dataKey="employee1.lead_count" name={"Top Employee"} fill="#8884d8" />
+              <Bar dataKey="employee2.lead_count" name={"2nd Employee"} fill="#82ca9d" />
+              <Bar dataKey="employee3.lead_count" name={"3rd Employee"} fill="#ffc658" />
+              <Bar dataKey="employee4.lead_count" name={"4th Employee"} fill="#ff8042" />
             </BarChart>
           </ResponsiveContainer>
         </div>
