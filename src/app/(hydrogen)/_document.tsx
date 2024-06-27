@@ -1,7 +1,7 @@
 import './globals.css';
 
 export const metadata = {
-  title: 'My PWA',
+  title: 'My PWA Application',
   description: 'A Progressive Web App built with Next.js',
 };
 
