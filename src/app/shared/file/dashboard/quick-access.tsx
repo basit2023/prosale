@@ -35,22 +35,22 @@ const mockdata = [
     },
     link: '/leads/management',
   },
-  {
-    id: 4,
-    file: {
-      name: 'Project List',
-      image: FolderIcon,
-    },
-    link: '/project/list',
-  },
-  {
-    id: 5,
-    file: {
-      name: 'New Employee',
-      image: FolderIcon,
-    },
-    link: '/employee/new',
-  },
+  // {
+  //   id: 4,
+  //   file: {
+  //     name: 'Project List',
+  //     image: FolderIcon,
+  //   },
+  //   link: '/project/list',
+  // },
+  // {
+  //   id: 5,
+  //   file: {
+  //     name: 'New Employee',
+  //     image: FolderIcon,
+  //   },
+  //   link: '/employee/new',
+  // },
 ];
 
 export function QuickAccessCard({
@@ -62,34 +62,6 @@ export function QuickAccessCard({
   className?: string;
   userPermissions: number;
 }) {
-  // Retrieve sidebar items from localStorage
-  const transformedItemsString = localStorage.getItem('sidebar');
-  let transformedItems;
-
-  try {
-    const decryptedString = decryptData(transformedItemsString);
-    transformedItems = transformedItemsString ? (decryptedString) : [];
-  } catch (error) {
-    console.error('Error decrypting or parsing sidebar data:', error);
-    transformedItems = [];
-  }
-
-  // Check if the item or its dropdownItems match the permissions
-  const hasPermission = transformedItems.some((transformedItem: any) => {
-    if (transformedItem.href === item.link && (userPermissions >= transformedItem.permission_level || userPermissions >= transformedItem.permission)) {
-      return true;
-    }
-    if (transformedItem.dropdownItems) {
-      return transformedItem.dropdownItems.some((dropdownItem: any) => {
-        return dropdownItem.href === item.link && userPermissions >= dropdownItem.permission_level;
-      });
-    }
-    return false;
-  });
-
-  // Show only if the user has the required permissions
-  if (!hasPermission) return null;
-
   return (
     <Link
       href={item.link}
@@ -119,24 +91,30 @@ export default function QuickAccess({ className }: { className?: string }) {
     scrollToTheLeft,
   } = useScrollableSlider();
 
-  // Retrieve encrypted permission data from localStorage
-  const encryptedPermission = localStorage.getItem('permission');
+  const [userPermissions, setUserPermissions] = useState<number | null>(null);
+  const [transformedItems, setTransformedItems] = useState<any[]>([]);
 
-  let permissionData;
-  try {
-    permissionData = encryptedPermission ? decryptData(encryptedPermission) : null;
-  } catch (error) {
-    console.error('Error decrypting permission data:', error);
-    permissionData = null;
-  }
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedPermission = localStorage.getItem('permission');
+        const permissionData:number = encryptedPermission ? decryptData(encryptedPermission) : null;
+        setUserPermissions(permissionData ? permissionData[0].permission_level : null);
 
-  // Initialize state for user permissions
-  const [perm_d, setPerm_d] = useState<any>(permissionData);
-  const userPermissions = perm_d ? perm_d[0].permission_level : null;
+        const transformedItemsString = localStorage.getItem('sidebar');
+        const decryptedString:any = transformedItemsString ? decryptData(transformedItemsString) : '[]';
+        setTransformedItems((decryptedString));
+      } catch (error: any) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
 
   return (
     <div className={className}>
-      <div className="col-span-full mb-3 flex items-center justify-between 2xl:mb-5">
+      <div className="col-span-full mb-3 flex items-center justify-between 2xl:mb-5 mt-4">
         <Title as="h3" className="text-lg font-semibold xl:text-xl">
           Quick Access
         </Title>
@@ -158,19 +136,11 @@ export default function QuickAccess({ className }: { className?: string }) {
           >
             {mockdata
               .filter((item) => {
-                const transformedItemsString = localStorage.getItem('sidebar');
-                let transformedItems;
-
-                try {
-                  const decryptedString = decryptData(transformedItemsString);
-                  transformedItems = transformedItemsString ? (decryptedString) : [];
-                } catch (error) {
-                  console.error('Error decrypting or parsing sidebar data:', error);
-                  transformedItems = [];
-                }
-
                 const hasPermission = transformedItems.some((transformedItem: any) => {
-                  if (transformedItem.href === item.link && (userPermissions >= transformedItem.permission_level || userPermissions >= transformedItem.permission)) {
+                  if (
+                    transformedItem.href === item.link &&
+                    (userPermissions >= transformedItem.permission_level || userPermissions >= transformedItem.permission)
+                  ) {
                     return true;
                   }
                   // Check dropdownItems

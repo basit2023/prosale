@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import WidgetCard from '@/components/cards/widget-card';
 import { Title } from '@/components/ui/text';
+import { decryptData } from '@/components/encriptdycriptdata';
+import QuickAccess from '@/app/shared/file/dashboard/quick-access';
 import {
   BarChart,
   Bar,
@@ -69,21 +71,49 @@ export default function LeadReport({ className }: { className?: string }) {
   const is2xl = useMedia('(max-width: 1780px)', false);
 
   const [leadData, setLeadData] = useState<LeadData[]>(initialData);
+  const [projects, setProjects] = useState<LeadData[]>([]);
+  const [userValue, setUserData] = useState<any>();
 
   useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data: any = decryptData(encryptedData);
+          console.log('the data is:', data?.user?.company_id);
+          setUserData(data);
+        }
+      } catch (error: any) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    if (!userValue) return;
+
     const fetchLeadData = async () => {
       try {
-        const response = await apiService.get('/top-leads'); // Replace with actual API endpoint
-        const transformedData = transformData(response.data); // Transform fetched data
-        
+        const response = await apiService.get(`/top-leads/?company_id=${userValue.user.company_id}`);
+        const transformedData = transformData(response.data);
         setLeadData(transformedData);
       } catch (error) {
         console.error('Error fetching lead data:', error);
       }
+
+      try {
+        const response = await apiService.get(`/projects/?company_id=${userValue.user.company_id}`);
+        console.log('the project is:', response.data);
+        setProjects(response.data);
+      } catch (error) {
+        console.error('Error fetching project data:', error);
+      }
     };
 
     fetchLeadData();
-  }, []);
+  }, [userValue]);
 
   const transformData = (data: any[]) => {
     const transformed: LeadData[] = [];
@@ -113,6 +143,7 @@ export default function LeadReport({ className }: { className?: string }) {
   };
 
   return (
+    <>
     <WidgetCard
       title={'Lead Report'}
       titleClassName="font-normal text-gray-700 sm:text-base font-inter"
@@ -149,15 +180,16 @@ export default function LeadReport({ className }: { className?: string }) {
               />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              
-              <Bar dataKey="employee1.lead_count" name={"Top Employee"} fill="#8884d8" />
-              <Bar dataKey="employee2.lead_count" name={"2nd Employee"} fill="#82ca9d" />
-              <Bar dataKey="employee3.lead_count" name={"3rd Employee"} fill="#ffc658" />
-              <Bar dataKey="employee4.lead_count" name={"4th Employee"} fill="#ff8042" />
+              <Bar dataKey="employee1.lead_count" name={'Top Employee'} fill="#8884d8" />
+              <Bar dataKey="employee2.lead_count" name={'2nd Employee'} fill="#82ca9d" />
+              <Bar dataKey="employee3.lead_count" name={'3rd Employee'} fill="#ffc658" />
+              <Bar dataKey="employee4.lead_count" name={'4th Employee'} fill="#ff8042" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </SimpleBar>
     </WidgetCard>
+    <QuickAccess />
+    </>
   );
 }

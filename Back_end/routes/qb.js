@@ -28,7 +28,7 @@ const { ClosedLeadController, ViewLead } = require("../Controller/LeadM/closeLea
 const { EditLeadCustomer, UpdateLeadCustomer, GetCountrycode, CreateLeadCustomer, GetCustomerById } = require("../Controller/LeadM/EditLeadCustomer");
 const { ZoneData, GetTeamMemeber, UpdateZoneTeam, TeamData, GetzoneMemeber, ZoneTeamData, CreateZoneTeam } = require("../Controller/Team&Zones/zones");
 const { Getteamates, TeamForEmployee, UpdateTeamForEmployee, AddTeamMember } = require("../Controller/Team&Zones/Team");
-const { projectData, GetStatus, CreateNewProject, GetProjectDetails, UpdateProject } = require("../Controller/Project/project");
+const { projectData, GetStatus, CreateNewProject, GetProjectDetails, UpdateProject, GetProjects } = require("../Controller/Project/project");
 const { ReassinedLead } = require("../Controller/LeadM/ReassignedLead");
 const { SignUpHandler, OnBordingHandler } = require("../Controller/Signup");
 const { customMiddleware } = require("../Controller/middleware/middleware");
@@ -146,6 +146,7 @@ Router.put('/api/update-employee-team/:id', UpdateTeamForEmployee);
 Router.post('/api/add-to-new-team/:id',UpdateZoneTeam) 
 Router.post('/api/create-zone-team/',CreateZoneTeam) 
 //Project details 
+Router.get('/api/projects', GetProjects);
 Router.get('/api/project-data', projectData);
 Router.post('/api/create-new-project', CreateNewProject);
 Router.get('/api/get-project/:id', GetProjectDetails);
