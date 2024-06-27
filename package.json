@@ -6,7 +6,7 @@
   "scripts": {
     "clean": "rimraf -g \"{node_modules,.next,.cache}\"",
     "dev": "next dev",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "generate-icons": "node generate-icons-data.js",
