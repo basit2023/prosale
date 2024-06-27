@@ -1,3 +1,6 @@
+import withPWA from 'next-pwa';
+import './src/env.mjs';
+/** @type {import('next').NextConfig} */
 import './src/env.mjs';
 /** @type {import('next').NextConfig} */
 
@@ -56,4 +59,13 @@ const nextConfig = {
 
 };
 
-export default nextConfig;
+export default withPWA({
+  pwa: {
+    dest: 'public',
+    register: true,
+    skipWaiting: true,
+
+    buildExcludes: [/middleware-manifest.json$/],
+  },
+  ...nextConfig,
+});

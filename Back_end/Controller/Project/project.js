@@ -328,4 +328,34 @@ const GetProjectDetails = async (req, res) => {
   };
 //delete project
 
-module.exports = { projectData,GetStatus, CreateNewProject,GetProjectDetails,UpdateProject };
+
+//get projects name 
+const GetProjects = async (req, res) => {
+
+    try {
+        const {company_id}=req.query;
+        // Use a connection pool to handle connections
+        const [rows, fields] = await mysqlConnection.promise().query(`SELECT name FROM lead_projects WHERE 
+            FIND_IN_SET(company_id, ?) > 0;`, [company_id]);
+
+        // Respond with an array of objects containing name and sign
+        const data = rows.map(row => ({
+            name: row.name,
+            value: 1,
+        }));
+
+        res.status(200).json({
+            success: true,
+            message: 'Data fetched successfully',
+            data: data,
+        });
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error in fetching data',
+            error: error.message,
+        });
+    }
+};
+module.exports = { projectData,GetStatus, CreateNewProject,GetProjectDetails,UpdateProject,GetProjects};

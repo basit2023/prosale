@@ -3,11 +3,10 @@
 import { Title, Text } from '@/components/ui/text';
 import WidgetCard from '@/components/cards/widget-card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Label } from 'recharts';
+import apiService from '@/utils/apiService';
+import React, { useEffect, useState } from 'react';
+import { decryptData } from '@/components/encriptdycriptdata';
 
-const data = [
-  { name: 'Available storage', value: 22 },
-  { name: 'Total used storage', value: 78 },
-];
 const COLORS = ['#BFDBFE', '#0070F3'];
 
 function CustomLabel(props: any) {
@@ -23,7 +22,7 @@ function CustomLabel(props: any) {
         dominantBaseline="central"
       >
         <tspan alignmentBaseline="middle" fontSize="36px">
-          {props.value1} GB
+          0
         </tspan>
       </text>
       <text
@@ -41,6 +40,47 @@ function CustomLabel(props: any) {
 }
 
 export default function StorageSummary({ className }: { className?: string }) {
+  const [projects, setProjects] = useState<any[]>([]);
+  const [userValue, setUserData] = useState<any>();
+  const [data, setData] = useState([
+    { name: 'Available storage', value: 22 },
+
+  ]);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (encryptedData) {
+          const data: any = decryptData(encryptedData);
+          setUserData(data);
+        }
+      } catch (error: any) {
+        console.error('Error fetching user data:', error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    if (!userValue) return;
+
+    const fetchProjectData = async () => {
+      try {
+        const response = await apiService.get(`/projects/?company_id=${userValue.user.company_id}`);
+        console.log('the project is:', response.data);
+        setProjects(response.data.data);
+        // Assuming response.data is the correct format for the chart
+        setData(response.data.data); // Update the data state here
+      } catch (error) {
+        console.error('Error fetching project data:', error);
+      }
+    };
+
+    fetchProjectData();
+  }, [userValue]);
+
   return (
     <WidgetCard
       title={'Used Storage'}
@@ -64,7 +104,7 @@ export default function StorageSummary({ className }: { className?: string }) {
                 width={30}
                 position="center"
                 content={
-                  <CustomLabel value1={data[1].value} value2={'Used of 100'} />
+                  <CustomLabel value1={data[1]?.value} value2={'Used of 100'} />
                 }
               ></Label>
               {data.map((_, index) => (
