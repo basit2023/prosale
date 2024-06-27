@@ -2,10 +2,7 @@ import withPWA from 'next-pwa';
 import './src/env.mjs';
 /** @type {import('next').NextConfig} */
 import './src/env.mjs';
-/** @type {import('next').NextConfig} */
-
 const nextConfig = {
-   
   images: {
     remotePatterns: [
       {
@@ -56,16 +53,11 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-
 };
 
 export default withPWA({
-  pwa: {
-    dest: 'public',
-    register: true,
-    skipWaiting: true,
-
-    buildExcludes: [/middleware-manifest.json$/],
-  },
-  ...nextConfig,
-});
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  buildExcludes: [/middleware-manifest.json$/],
+})(nextConfig);
