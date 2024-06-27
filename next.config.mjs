@@ -59,5 +59,6 @@ export default withPWA({
   dest: 'public',
   register: true,
   skipWaiting: true,
+  sw: 'sw.js',
   buildExcludes: [/middleware-manifest.json$/],
 })(nextConfig);
