@@ -27,18 +27,17 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // const router = useRouter();
   const session = await getServerSession(authOptions);
 
-
-
-
   return (
-    <html
-      lang="en"
-      dir="ltr"
-      suppressHydrationWarning
-    >
+    <html lang="en" dir="ltr" suppressHydrationWarning>
+      <head>
+        {/* Link to manifest.json and icons */}
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <meta name="theme-color" content="#000000" />
+      </head>
       <body
         suppressHydrationWarning
         className={cn(inter.variable, lexendDeca.variable, 'font-inter')}
