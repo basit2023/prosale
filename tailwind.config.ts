@@ -1,15 +1,16 @@
-import { Config } from 'tailwindcss';
+import type { Config } from 'tailwindcss';
 import plugin from 'tailwindcss/plugin';
 
-const config: Config = {
+export default {
   content: [
-    './src/**/*.{js,ts,jsx,tsx}', // Only include source files
-    './node_modules/rizzui/dist/**/*.{js,ts,jsx,tsx}', // Only include necessary files from rizzui
-    './public/**/*.{js,map}', // Include JavaScript and map files from public
+    './src/**/*.{js,ts,jsx,tsx}',
+    './node_modules/rizzui/dist/*.{js,ts,jsx,tsx}', // must use this line to compile and generate our RizzUI components style
+    './public/**/*.{js,map}',
   ],
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     screens: {
+     
       xs: '400px',
       sm: '640px',
       md: '768px',
@@ -17,7 +18,7 @@ const config: Config = {
       xl: '1280px',
       '2xl': '1536px',
       '3xl': '1920px',
-      '4xl': '2560px',
+      '4xl': '2560px', // only need to control product grid mode in ultra 4k device
     },
     extend: {
       colors: {
@@ -71,7 +72,7 @@ const config: Config = {
           DEFAULT: 'rgb(var(--green-default) / <alpha-value>)',
           dark: 'rgb(var(--green-dark) / <alpha-value>)',
         },
-        'custom-red': '#c54e57',
+        'custom-red': '#c54e57', // Added custom red color
       },
       animation: {
         blink: 'blink 1s infinite',
@@ -86,8 +87,9 @@ const config: Config = {
         inter: ['var(--font-inter)'],
         lexend: ['var(--font-lexend)'],
       },
+      // required these animations for the Loader component
       animation: {
-        blink: 'blink 1.4s infinite both',
+        blink: 'blink 1.4s infinite both;',
         'scale-up': 'scaleUp 500ms infinite alternate',
         'spin-slow': 'spin 4s linear infinite',
         popup: 'popup 500ms var(--popup-delay, 0ms) linear 1',
@@ -100,6 +102,11 @@ const config: Config = {
         'skeleton-dark': `linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent)`,
       },
       keyframes: {
+        blink: {
+          '0%': { opacity: '0.2' },
+          '20%': { opacity: '1' },
+          '100%': { opacity: '0.2' },
+        },
         scaleUp: {
           '0%': { transform: 'scale(0)' },
           '100%': { transform: 'scale(1)' },
@@ -110,20 +117,32 @@ const config: Config = {
           '100%': { transform: 'scale(1)' },
         },
         skeletonWave: {
-          '0%': { transform: 'translateX(-100%)' },
-          '50%': { transform: 'translateX(100%)' },
-          '100%': { transform: 'translateX(100%)' },
+          '0%': {
+            transform: 'translateX(-100%)',
+          },
+          '50%': {
+            /* +0.5s of delay between each loop */
+            transform: 'translateX(100%)',
+          },
+          '100%': {
+            transform: 'translateX(100%)',
+          },
         },
         spinnerSpin: {
-          '0%': { transform: 'rotate(0deg)' },
-          '100%': { transform: 'rotate(360deg)' },
+          '0%': {
+            transform: 'rotate(0deg)',
+          },
+          '100%': {
+            transform: 'rotate(360deg)',
+          },
         },
       },
       content: {
         underline: 'url("/public/underline.svg")',
       },
       boxShadow: {
-        profilePic: '0px 2px 4px -2px rgba(0, 0, 0, 0.10), 0px 4px 6px -1px rgba(0, 0, 0, 0.10)',
+        profilePic:
+          '0px 2px 4px -2px rgba(0, 0, 0, 0.10), 0px 4px 6px -1px rgba(0, 0, 0, 0.10)',
       },
     },
   },
@@ -131,9 +150,9 @@ const config: Config = {
     require('@tailwindcss/forms'),
     require('@tailwindcss/container-queries'),
     plugin(function ({ addVariant }) {
+      // required this to prevent any style on readOnly input elements
       addVariant('not-read-only', '&:not(:read-only)');
     }),
   ],
-};
+} satisfies Config;
 
-export default config;
