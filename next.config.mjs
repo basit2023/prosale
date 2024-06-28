@@ -50,10 +50,6 @@ const nextConfig = {
   reactStrictMode: true,
   trailingSlash: true,
   swcMinify: true,
-  purge: {
-    enabled: process.env.NODE_ENV === 'production',
-    content: ['./src/**/*.html', './src/**/*.js', './src/**/*.jsx', './src/**/*.ts', './src/**/*.tsx'],
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
