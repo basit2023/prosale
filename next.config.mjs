@@ -1,8 +1,6 @@
-
 import withPWA from 'next-pwa';
 import './src/env.mjs';
-/** @type {import('next').NextConfig} */
-import './src/env.mjs';
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -63,5 +61,6 @@ export default withPWA({
   dest: 'public',
   register: true,
   skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development',
   sw: 'sw.js',
 })(nextConfig);
