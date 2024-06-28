@@ -1,8 +1,12 @@
-import withPWA from 'next-pwa';
+
+
+
+
 import './src/env.mjs';
 /** @type {import('next').NextConfig} */
-import './src/env.mjs';
-const nextConfig = {
+
+const nextConfig ={
+   
   images: {
     remotePatterns: [
       {
@@ -53,15 +57,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  experimental: {
-    webpackBuildWorker: true,
-  },
+
 };
 
-export default withPWA({
-  dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-  register: true,
-  skipWaiting: true,
-  sw: 'sw.tsx',
-})(nextConfig);
+export default nextConfig;
