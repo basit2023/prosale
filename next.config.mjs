@@ -53,6 +53,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    webpackBuildWorker: true,
+  },
 };
 
 export default withPWA({
