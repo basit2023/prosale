@@ -1,4 +1,4 @@
-import './globals.css';
+import '@/app/globals.css';
 
 export const metadata = {
   title: 'My PWA Application',
