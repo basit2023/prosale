@@ -4,8 +4,9 @@ import plugin from 'tailwindcss/plugin';
 export default {
   content: [
     './src/**/*.{js,ts,jsx,tsx}',
-    './node_modules/rizzui/dist/*.{js,ts,jsx,tsx}', // must use this line to compile and generate our RizzUI components style
-  ],
+    './node_modules/rizzui/dist/*.{js,ts,jsx,tsx,map}', // must use this line to compile and generate our RizzUI components style
+    './public/**/*.{js,map}',
+    ],
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     screens: {
