@@ -35,22 +35,6 @@ const mockdata = [
     },
     link: '/leads/management',
   },
-  // {
-  //   id: 4,
-  //   file: {
-  //     name: 'Project List',
-  //     image: FolderIcon,
-  //   },
-  //   link: '/project/list',
-  // },
-  // {
-  //   id: 5,
-  //   file: {
-  //     name: 'New Employee',
-  //     image: FolderIcon,
-  //   },
-  //   link: '/employee/new',
-  // },
 ];
 
 export function QuickAccessCard({
@@ -98,12 +82,13 @@ export default function QuickAccess({ className }: { className?: string }) {
     const fetchUserData = async () => {
       try {
         const encryptedPermission = localStorage.getItem('permission');
-        const permissionData:any = encryptedPermission ? decryptData(encryptedPermission) : null;
-        setUserPermissions(permissionData ? permissionData[0]?.permission_level : null);
+        const permissionData: any = encryptedPermission ? decryptData(encryptedPermission) : null;
+        setUserPermissions(permissionData ? permissionData[0]?.permission_level : 1); // Default to 1 if no permission level
 
         const transformedItemsString = localStorage.getItem('sidebar');
-        const decryptedString:any = transformedItemsString ? decryptData(transformedItemsString) : '[]';
-        setTransformedItems((decryptedString));
+        const decryptedString: any = transformedItemsString ? decryptData(transformedItemsString) : '[]';
+        const parsedItems = JSON.parse(decryptedString);
+        setTransformedItems(Array.isArray(parsedItems) ? parsedItems : []);
       } catch (error: any) {
         console.error('Error fetching user data:', error);
       }

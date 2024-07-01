@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import ChangeCompany from './SelectCompany';
 import Spinner from '@/components/ui/spinner';
+import { useRouter } from 'next/navigation';
 
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ssr: false,
@@ -20,6 +21,7 @@ const SelectBox = dynamic(() => import('@/components/ui/select'), {
 });
 
 export default function Vaultinformation({ id, onCompanyIdChange }: any) {
+  const router = useRouter();
   const { data: session } = useSession();
   const { openModal, closeModal } = useModal();
   let [company_id, setCompany_id] = useState(undefined);
@@ -109,8 +111,32 @@ export default function Vaultinformation({ id, onCompanyIdChange }: any) {
         </div>
       ) : (
         <div className="content">
-          <div className="container mx-auto px-10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-2 gap-4">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Back button for mobile and small screens */}
+            <div className="block lg:hidden mb-4">
+              <button
+                onClick={() => router.back()}
+                className="text-sm font-medium text-gray-600 hover:text-gray-800 flex items-center"
+              >
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M15 19l-7-7 7-7"
+                  ></path>
+                </svg>
+                Back
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4">
               {userType >= 9 &&
                 sortedData?.map((data: any) => {
                   const meetsPermissionCondition = parseFloat(data?.permission.toString()) >= 9;
@@ -136,7 +162,7 @@ export default function Vaultinformation({ id, onCompanyIdChange }: any) {
                   );
                 })}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 pt-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-3">
               {sortedData?.map((data: any) => parseFloat(data.permission) <= 8 && (
                 <Link key={data.id} href={routes.leads.show_label(data.id)} className="col-span-1">
                   <div className="bg-white rounded border border-gray-300 w-full mb-5">
