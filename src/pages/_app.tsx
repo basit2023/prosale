@@ -2,7 +2,7 @@
 
 import Head from 'next/head';
 import { useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 function RootLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
