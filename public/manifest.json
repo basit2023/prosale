@@ -1,1 +1,32 @@
-{"theme_color":"#7415f9","background_color":"#e90c38","orientation":"any","display":"standalone","dir":"auto","lang":"en-US","name":"Prosale","short_name":"Prosale","start_url":"https://www.prosale.cloud","scope":"https://www.prosale.cloud"}
+{
+    "theme_color": "#f69435",
+    "background_color": "#35c3f6",
+    "display": "standalone",
+    "scope": "https://www.prosale.cloud",
+    "start_url": "https://www.prosale.cloud",
+    "name": "Prosale",
+    "short_name": "Prosale",
+    "description": "Prosale application",
+    "icons": [
+        {
+            "src": "/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-256x256.png",
+            "sizes": "256x256",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-384x384.png",
+            "sizes": "384x384",
+            "type": "image/png"
+        },
+        {
+            "src": "/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
