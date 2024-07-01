@@ -10,7 +10,7 @@
     "start": "next start",
     "lint": "next lint",
     "generate-icons": "node generate-icons-data.js",
-    "format": "prettier --write .",
+    "format": "prettier --write ."
   
   },
   "dependencies": {
