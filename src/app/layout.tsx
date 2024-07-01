@@ -9,13 +9,13 @@ import { siteConfig } from '@/config/site.config';
 import { inter, lexendDeca }  from '@/app/fonts';
 import { Toaster } from 'react-hot-toast';
 import cn from '@/utils/class-names';
-// import { redirect } from 'next/navigation'; 
-// import { routes } from '@/config/routes';
+
+import '@/app/globals.css';
 const NextProgress = dynamic(() => import('@/components/next-progress'), {
   ssr: false,
 });
 // styles
-import '@/app/globals.css';
+
 
 export const metadata = {
   title: siteConfig.title,

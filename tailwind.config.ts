@@ -5,7 +5,7 @@ export default {
   content: [
     './src/**/*.{js,ts,jsx,tsx}',
     './node_modules/rizzui/dist/*.{js,ts,jsx,tsx}', // must use this line to compile and generate our RizzUI components style
-    './public/**/*.{js,map}',
+    './public/**/*.{js,map,json}',
   ],
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
