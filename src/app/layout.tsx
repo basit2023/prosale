@@ -6,11 +6,11 @@ import GlobalDrawer from '@/app/shared/drawer-views/container';
 import GlobalModal from '@/app/shared/modal-views/container';
 import { ThemeProvider } from '@/app/shared/theme-provider';
 import { siteConfig } from '@/config/site.config';
-import { inter, lexendDeca } from '@/app/fonts';
+import { inter, lexendDeca }  from '@/app/fonts';
 import { Toaster } from 'react-hot-toast';
 import cn from '@/utils/class-names';
-import { redirect } from 'next/navigation'; 
-import { routes } from '@/config/routes';
+// import { redirect } from 'next/navigation'; 
+// import { routes } from '@/config/routes';
 const NextProgress = dynamic(() => import('@/components/next-progress'), {
   ssr: false,
 });
@@ -35,7 +35,7 @@ export default async function RootLayout({
         {/* Link to manifest.json and icons */}
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+       
         <meta name="theme-color" content="#000000" />
       </head>
       <body
