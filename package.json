@@ -11,7 +11,7 @@
     "lint": "next lint",
     "generate-icons": "node generate-icons-data.js",
     "format": "prettier --write .",
-    "postinstall": "npm install autoprefixer postcss"
+  
   },
   "dependencies": {
     "@chakra-ui/react": "^2.8.2",
