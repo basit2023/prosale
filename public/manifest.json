@@ -1,12 +1,12 @@
 {
-    "theme_color": "#f69435",
-    "background_color": "#35c3f6",
+    "theme_color": "#c54e57",
+    "background_color": "#c54e57",
     "display": "standalone",
     "scope": "https://www.prosale.cloud",
     "start_url": "https://www.prosale.cloud",
     "name": "Prosale",
     "short_name": "Prosale",
-    "description": "Application for prosale",
+    "description": "Prosale application",
     "icons": [
         {
             "src": "/icon-192x192.png",
