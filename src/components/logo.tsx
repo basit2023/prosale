@@ -30,7 +30,7 @@ const Logo: React.FC<LogoProps> = ({ iconOnly = false, darkMode = true, classNam
   }, [theme, darkMode, setTheme]);
 
   return (
-    <div style={{ position: 'relative', width: iconOnly ? '48px' : '155px', height: '40px' }}>
+    <div style={{ width: iconOnly ? '60px' : '155px', height: '20px' }}>
       <Image
         src={imageSrc}
         alt="Logo Image"
