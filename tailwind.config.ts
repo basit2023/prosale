@@ -74,22 +74,15 @@ export default {
         },
         'custom-red': '#c54e57', // Added custom red color
       },
-      animation: {
-        blink: 'blink 1s infinite',
-      },
-      keyframes: {
-        blink: {
-          '0%, 100%': { opacity: 0 },
-          '50%': { opacity: 1 },
-        },
-      },
+      
+      
       fontFamily: {
         inter: ['var(--font-inter)'],
         lexend: ['var(--font-lexend)'],
       },
       // required these animations for the Loader component
       animation: {
-        blink: 'blink 1.4s infinite both;',
+        blink: 'blink 1s infinite',
         'scale-up': 'scaleUp 500ms infinite alternate',
         'spin-slow': 'spin 4s linear infinite',
         popup: 'popup 500ms var(--popup-delay, 0ms) linear 1',
