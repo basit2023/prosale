@@ -6,7 +6,7 @@
     "start_url": "https://www.prosale.cloud",
     "name": "Prosale",
     "short_name": "Prosale",
-    "description": "Prosale application",
+    "description": "Application for prosale",
     "icons": [
         {
             "src": "/icon-192x192.png",
