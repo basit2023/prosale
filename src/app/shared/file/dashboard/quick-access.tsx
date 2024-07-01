@@ -60,7 +60,7 @@ export function QuickAccessCard({
 }: {
   item: any;
   className?: string;
-  userPermissions: number;
+  userPermissions: any;
 }) {
   return (
     <Link
@@ -91,15 +91,15 @@ export default function QuickAccess({ className }: { className?: string }) {
     scrollToTheLeft,
   } = useScrollableSlider();
 
-  const [userPermissions, setUserPermissions] = useState<number | null>(null);
+  const [userPermissions, setUserPermissions] = useState<number>(1);
   const [transformedItems, setTransformedItems] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const encryptedPermission = localStorage.getItem('permission');
-        const permissionData:number = encryptedPermission ? decryptData(encryptedPermission) : null;
-        setUserPermissions(permissionData ? permissionData[0].permission_level : null);
+        const permissionData:any = encryptedPermission ? decryptData(encryptedPermission) : null;
+        setUserPermissions(permissionData ? permissionData[0]?.permission_level : null);
 
         const transformedItemsString = localStorage.getItem('sidebar');
         const decryptedString:any = transformedItemsString ? decryptData(transformedItemsString) : '[]';
@@ -136,17 +136,17 @@ export default function QuickAccess({ className }: { className?: string }) {
           >
             {mockdata
               .filter((item) => {
-                const hasPermission = transformedItems.some((transformedItem: any) => {
+                const hasPermission = transformedItems?.some((transformedItem: any) => {
                   if (
-                    transformedItem.href === item.link &&
-                    (userPermissions >= transformedItem.permission_level || userPermissions >= transformedItem.permission)
+                    transformedItem?.href === item?.link &&
+                    (userPermissions >= transformedItem?.permission_level || userPermissions >= transformedItem.permission)
                   ) {
                     return true;
                   }
                   // Check dropdownItems
                   if (transformedItem.dropdownItems) {
                     return transformedItem.dropdownItems.some((dropdownItem: any) => {
-                      return dropdownItem.href === item.link && userPermissions >= dropdownItem.permission_level;
+                      return dropdownItem?.href === item?.link && userPermissions >= dropdownItem.permission_level;
                     });
                   }
                   return false;
