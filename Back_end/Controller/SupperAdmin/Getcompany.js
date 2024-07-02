@@ -48,8 +48,7 @@ const getAllCompany = async (req, res) => {
                     number: rows.length,
                     company_id: user[0].company_id
                 };
-                console.log("the data is:", userData)
-                // Send response with modified user data
+                
                 return res.status(200).json({
                     success: true,
                     message: 'User Info fetched successfully',
