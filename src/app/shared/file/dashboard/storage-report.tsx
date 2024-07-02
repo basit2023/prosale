@@ -80,7 +80,6 @@ export default function LeadReport({ className }: { className?: string }) {
         const encryptedData = localStorage.getItem('uData');
         if (encryptedData) {
           const data: any = decryptData(encryptedData);
-          console.log('the data is:', data?.user?.company_id);
           setUserData(data);
         }
       } catch (error: any) {
@@ -105,7 +104,7 @@ export default function LeadReport({ className }: { className?: string }) {
 
       try {
         const response = await apiService.get(`/projects/?company_id=${userValue.user.company_id}`);
-        console.log('the project is:', response.data);
+        
         setProjects(response.data);
       } catch (error) {
         console.error('Error fetching project data:', error);

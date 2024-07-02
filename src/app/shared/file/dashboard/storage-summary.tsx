@@ -69,7 +69,7 @@ export default function StorageSummary({ className }: { className?: string }) {
     const fetchProjectData = async () => {
       try {
         const response = await apiService.get(`/projects/?company_id=${userValue.user.company_id}`);
-        console.log('the project is:', response.data);
+        
         setProjects(response.data.data);
         // Assuming response.data is the correct format for the chart
         setData(response.data.data); // Update the data state here

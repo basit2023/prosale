@@ -147,10 +147,10 @@ const checkSupperAdmin = async (req, res) => {
     const [user] = await mysqlConnection.promise().query('SELECT u.user_type, c.company_creator FROM users u INNER JOIN companies c ON u.name = c.company_creator WHERE u.email = ?', [email]);
 
     if (!user.length) {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: 'No company registered',
-        user: null // No user or company_creator found
+        user: "not_superadmin"
       });
     } else {
       return res.status(200).json({
