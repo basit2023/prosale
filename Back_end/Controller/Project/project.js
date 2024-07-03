@@ -335,13 +335,17 @@ const GetProjects = async (req, res) => {
     try {
         const {company_id}=req.query;
         // Use a connection pool to handle connections
-        const [rows, fields] = await mysqlConnection.promise().query(`SELECT name FROM lead_projects WHERE 
-            FIND_IN_SET(company_id, ?) > 0;`, [company_id]);
+        const [rows, fields] = await mysqlConnection.promise().query(`
+            SELECT id, name 
+            FROM lead_projects 
+            WHERE FIND_IN_SET(company_id, ?) > 0 
+              AND status = "N";
+        `, [company_id]);
 
         // Respond with an array of objects containing name and sign
         const data = rows.map(row => ({
             name: row.name,
-            value: 1,
+            value: String(row.id),
         }));
 
         res.status(200).json({

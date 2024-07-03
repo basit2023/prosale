@@ -17,7 +17,7 @@ const pageHeader = {
 };
 
 export default function EnhancedTablePage() {
-  const invoiceData = useEmployeeData();
+  const invoiceData:any = useEmployeeData();
 
   
   if (invoiceData.length === 0) {

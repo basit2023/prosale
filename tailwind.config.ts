@@ -10,7 +10,6 @@ export default {
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     screens: {
-     
       xs: '400px',
       sm: '640px',
       md: '768px',

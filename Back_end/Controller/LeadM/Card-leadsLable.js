@@ -191,7 +191,7 @@ const userPermission = async (req, res) => {
       // Pass user_type as an array to replace the placeholder
       let rows;
       let rows1;
-      console.log("the company is:",company)
+      
       if(company){
         [rows]= await mysqlConnection.promise().query('SELECT count(*) as total FROM leads_main WHERE FIND_IN_SET(company_id, ?) > 0',[company]);
         [rows1] = await mysqlConnection.promise().query('SELECT COUNT(*) as T_Unassigned FROM leads_main WHERE status = \'un_assigned\' AND FIND_IN_SET(company_id, ?) > 0',[company]);
@@ -201,7 +201,7 @@ const userPermission = async (req, res) => {
          [rows1] = await mysqlConnection.promise().query('SELECT COUNT(*) as T_Unassigned FROM leads_main WHERE status = \'un_assigned\' AND FIND_IN_SET(company_id, ?) > 0',[company_id]);  
        }
       // Extract names from the result
-      console.log("the rows data is:",rows[0], rows1[0])
+
       const labelData = rows
       // Respond with office data array
       const totalUnassignedLeads = rows1[0].T_Unassigned;

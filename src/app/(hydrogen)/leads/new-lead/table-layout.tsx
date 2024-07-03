@@ -1,8 +1,7 @@
 'use client';
 
 import PageHeader, { PageHeaderTypes } from '@/app/shared/page-header';
-import ImportButton from '@/app/shared/import-button';
-
+import ImportButton from '@/app/shared/import-button-lead';
 
 type TableLayoutProps = {
   data: unknown[];

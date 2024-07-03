@@ -1,10 +1,6 @@
 "use client"
-import { Button } from '@/components/ui/button';
 import { routes } from '@/config/routes';
 import PageHeader from '@/app/shared/page-header';
-import CreateInvoice from '@/app/shared/invoice/create-invoice';
-import { PiArrowLineUpBold } from 'react-icons/pi';
-import ImportButton from '@/app/shared/import-button';
 import { InvoiceDetails, CustomerDetails } from '@/components/LeadManagement/CustomerDetails';
 import CustomerComments from '@/components/LeadManagement/comments';
 import DeliveryDetails from '@/components/LeadManagement/table2';
@@ -46,8 +42,8 @@ export default function InvoiceEditPage({ params }: any) {
         {/* <StChangeButton id={params.id}/> */}
       </PageHeader>
 
-      <div className="grid grid-cols-12 gap-2 z-[-999]">
-        <div className="col-span-12 sm:col-span-4 pt-0 mb-4">
+      <div className="grid grid-cols-12 gap-2 z-[-999] mb-4">
+        <div className="col-span-12 sm:col-span-4 pt-0 ">
           <CustomerDetails id={params.id} />
         </div>
         <div className="col-span-12 sm:col-span-8 z-[-999]">
