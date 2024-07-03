@@ -87,10 +87,11 @@ export default function CreateNewEmployee() {
       }
 
       try {
-        const response = await apiService.get(`/allresource`);
+        const response = await apiService.get(`/allresource/?company_id=${value?.user?.company_id}`);
         const userData = response.data;
         setDepartment(userData.data);
         setDesignation(userData.data1);
+        setProjects(userData.data2)
       } catch (error) {
         console.error('Error fetching Resource and inventory type data:', error);
         toast.error('Error fetching Resource and inventory type data. Please try again.');
@@ -111,14 +112,6 @@ export default function CreateNewEmployee() {
       } catch (error) {
         console.error('Error fetching team data:', error);
         toast.error('Error fetching team data. Please try again.');
-      }
-
-      try {
-        const response = await apiService.get(`/projects/?company_id=${value?.user?.company_id}`);
-        setProjects(response.data.data);
-      } catch (error) {
-        console.error('Error fetching project data:', error);
-        toast.error('Error fetching project data. Please try again.');
       }
     };
 
