@@ -38,6 +38,7 @@ export const routes = {
   leads:{
     dashboard:'/leads',
     management:'/leads/management',
+    new_lead:'/leads/new-lead',
     highly_interested:'/leads/highly_interested',
     // need_to_convince:'/leads/need_to_convince',
     team_member: (id: string) => `/leads/management/${id}`,

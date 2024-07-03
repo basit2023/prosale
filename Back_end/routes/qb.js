@@ -33,6 +33,7 @@ const { ReassinedLead } = require("../Controller/LeadM/ReassignedLead");
 const { SignUpHandler, OnBordingHandler } = require("../Controller/Signup");
 const { customMiddleware } = require("../Controller/middleware/middleware");
 const { getCounts, getTopLead } = require("../Controller/Dashboard/Dashboard");
+const { GetSourceDepInterestLeadtype, CreateNewLead } = require("../Controller/LeadM/NewLead");
 
 
 
@@ -127,6 +128,9 @@ Router.get('/api/edit-customer/:id',EditLeadCustomer)
 Router.put('/api/update-customer/:id',UpdateLeadCustomer) 
 Router.post('/api/new-lead-customer',CreateLeadCustomer)
 Router.get('/api/get-customer-by-id/:id', GetCustomerById);
+//new leads
+Router.post('/api/create-new-lead',CreateNewLead)
+
 //comments
 Router.post('/api/comments/:id', CreateComments);
 Router.get('/api/show-comments/:id', GetComments);
@@ -187,6 +191,7 @@ Router.get('/api/single-company', GetSingleCompany);
 Router.get('/api/alldesignation/', GetDessignation);
 //get all departments
 Router.get('/api/alldeprtment/', GetDepartment);
+Router.get('/api/allresource/', GetSourceDepInterestLeadtype);
 Router.get('/api/project-status/', GetStatus);
 //get all user type
 Router.get('/api/all-user-type/', GetUserType);
