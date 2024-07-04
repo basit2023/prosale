@@ -11,7 +11,7 @@ const Highly_interested = async (req, res) => {
 
         // Extract the total count from the result
         const totalUnassignedLeads = rows[0].T_Unassigned;
-
+        console.log("the total un assinged lead is:",totalUnassignedLeads)
         // Respond with the total count of unassigned leads
         res.status(200).json({
             success: true,

@@ -66,6 +66,7 @@ export default function ChangeStatus({ id }: any) {
         if (session) {
           const response = await apiService.get(`/get-highlyinterest-by-id/${id}`);
           const userData = response.data.leads;
+          console.log("Checking the status leads:", userData)
           setValue(userData);
         }
       } catch (error) {
@@ -107,7 +108,7 @@ export default function ChangeStatus({ id }: any) {
 
   return (
     <div className="flex flex-col-reverse sm:flex-row justify-end relative">
-      <Form<LabelSchemaFormTypes>
+      {value[0]?.status !== 'close' && (<Form<LabelSchemaFormTypes>
         validationSchema={LabelSchema}
         onSubmit={onSubmit}
         className="flex flex-col"
@@ -152,24 +153,28 @@ export default function ChangeStatus({ id }: any) {
                   />
                 )}
               />
-              <button
-                type="submit"
-                className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20"
-              >
-                Change Category
-              </button>
+             
+                <button
+                  type="submit"
+                  className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20"
+                >
+                  Change Category
+                </button>
+              
             </div>
           </div>
         )}
-      </Form>
+      </Form>)}
 
       <div className="flex flex-col mb-10 sm:flex-row sm:items-center">
-        <button
-          className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 mb-3 mt-0.5 sm:mb-0 sm:mr-3 sm:ml-0"
-          onClick={() => handleViewInvoice(id)}
-        >
-          Close Lead
-        </button>
+        {value[0]?.status !== 'close' && (
+          <button
+            className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 mb-3 mt-0.5 sm:mb-0 sm:mr-3 sm:ml-0"
+            onClick={() => handleViewInvoice(id)}
+          >
+            Close Lead
+          </button>
+        )}
         <button
           className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 ml-0 mt-0.5"
           onClick={handleButtonClick}

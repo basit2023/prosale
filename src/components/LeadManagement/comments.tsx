@@ -85,8 +85,8 @@ export default function CustomerComments({ onComment, id }:any) {
           <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11 mt-6">
             <Textarea
               // name="comments"
-              label="Add Comments"
-              placeholder="Add comments about leads"
+              label="Add Comment"
+              placeholder="Add comment about leads"
               {...register('comments')}
               // error={errors.comments?.message as string}
               textareaClassName="h-20"
