@@ -7,8 +7,10 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { PiCaretLeftBold, PiCaretRightBold } from 'react-icons/pi';
 import { useScrollableSlider } from '@/hooks/use-scrollable-slider';
-import { decryptData } from '@/components/encriptdycriptdata';
+import { decryptData, encryptData } from '@/components/encriptdycriptdata';
 import { useEffect, useState } from 'react';
+import apiService from '@/utils/apiService';
+import { useSession } from 'next-auth/react';
 
 const mockdata = [
   {
@@ -74,28 +76,36 @@ export default function QuickAccess({ className }: { className?: string }) {
     scrollToTheRight,
     scrollToTheLeft,
   } = useScrollableSlider();
-
+  const { data: session } = useSession();
   const [userPermissions, setUserPermissions] = useState<number>(1);
   const [transformedItems, setTransformedItems] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const encryptedPermission = localStorage.getItem('permission');
-        const permissionData: any = encryptedPermission ? decryptData(encryptedPermission) : null;
-        setUserPermissions(permissionData ? permissionData[0]?.permission_level : 1); // Default to 1 if no permission level
-
-        const transformedItemsString = localStorage.getItem('sidebar');
-        const decryptedString: any = transformedItemsString ? decryptData(transformedItemsString) : '[]';
-        const parsedItems = JSON.parse(decryptedString);
-        setTransformedItems(Array.isArray(parsedItems) ? parsedItems : []);
+        const response = await apiService.get(`/permission/${session.user.email}`);
+        const fetchedPermissionData = response.data.results;
+        const encryptedPermissionData = encryptData(fetchedPermissionData);
+        localStorage.setItem('permission', encryptedPermissionData);
+        setUserPermissions(fetchedPermissionData ? fetchedPermissionData[0]?.permission_level : 1); 
       } catch (error: any) {
         console.error('Error fetching user data:', error);
       }
     };
 
-    fetchUserData();
-  }, []);
+    const encryptedPermission = localStorage.getItem('permission');
+    if (encryptedPermission) {
+      const decryptedPermission:any = decryptData(encryptedPermission);
+      setUserPermissions(decryptedPermission[0]?.permission_level || 1);
+    } else {
+      fetchUserData();
+    }
+
+    const transformedItemsString = localStorage.getItem('sidebar');
+    const decryptedString: any = transformedItemsString ? decryptData(transformedItemsString) : '[]';
+    const parsedItems =(decryptedString);
+    setTransformedItems(Array.isArray(parsedItems) ? parsedItems : []);
+  }, [session?.user?.email]);
 
   return (
     <div className={className}>
