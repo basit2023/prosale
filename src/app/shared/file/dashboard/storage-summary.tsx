@@ -84,7 +84,7 @@ export default function StorageSummary({ className }: { className?: string }) {
   return (
     <WidgetCard
       title={'Used Storage'}
-      headerClassName="hidden"
+      // headerClassName="hidden"
       className={className}
     >
       <div className="h-[373px] w-full @sm:py-3">
