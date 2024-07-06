@@ -80,6 +80,9 @@ export default {
         inter: ['var(--font-inter)'],
         lexend: ['var(--font-lexend)'],
       },
+      spacing: {
+        '2.8': '2.8rem', // Add this custom spacing
+      },
       // required these animations for the Loader component
       animation: {
         blink: 'blink 1s infinite',

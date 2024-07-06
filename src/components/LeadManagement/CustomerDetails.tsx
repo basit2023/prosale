@@ -44,6 +44,7 @@ function WidgetCard({
 export function CustomerDetails({ id }: any) {
   const { data: session } = useSession();
   const [value, setValue] = useState<any>([]);
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,7 +65,7 @@ export function CustomerDetails({ id }: any) {
   return (
 
     <WidgetCard
-    childrenWrapperClass="py-7 @5xl:py-8 flex"
+    childrenWrapperClass="py-7 @5xl:py-8 flex  pt-[2.8rem]" 
     >
     <div className="relative aspect-square h-16 w-16 shrink-0 @5xl:h-20 @5xl:w-20">
       <Image
@@ -108,6 +109,7 @@ export function InvoiceDetails({ id }: any) {
          
 
           setValue(userData);
+          console.log("the result is:",userData)
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -124,7 +126,7 @@ export function InvoiceDetails({ id }: any) {
   const formattedDate = `${('0' + date.getDate()).slice(-2)}/${('0' + (date.getMonth() + 1)).slice(-2)}/${date.getFullYear()}`;
 
   return (
-    <div className="rounded-xl border border-gray-300 p-5 w-full bg-transparent">
+    <div className="rounded-xl border border-gray-300 p-4 w-full bg-transparent">
       <ul className="grid grid-cols-2 gap-3"> 
         <li className="flex items-center gap-3 justify-start sm:gap-2">
         <span className="font-semibold text-gray-900">Lead Id:</span>
@@ -169,6 +171,19 @@ export function InvoiceDetails({ id }: any) {
           <span className="font-semibold text-gray-900">Assigned On:</span> 
           <span className="text-base font-semibold text-gray-900 sm:text-sm">
           {value[0]?.assigned_on ? formattedDate : "N/A"}
+          </span>
+        </li>
+        <li className="flex items-center gap-3 justify-start sm:gap-3">
+          <span className="font-semibold text-gray-900">Assigned To:</span> 
+          <span className="text-base font-semibold text-gray-900 sm:text-sm">
+          {value[0]?.assigned_to ? value[0]?.assigned_to : "N/A"}
+          </span>
+        </li>
+        {/* this part is add */}
+        <li className="flex items-center gap-3 justify-start sm:gap-3">
+          <span className="font-semibold text-gray-900">Campaign Type:</span> 
+          <span className="text-base font-semibold text-gray-900 sm:text-sm">
+          {value[0]?.campaign_type ? value[0]?.campaign_type: "N/A"}
           </span>
         </li>
       </ul>

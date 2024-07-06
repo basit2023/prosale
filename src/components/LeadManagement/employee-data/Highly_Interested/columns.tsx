@@ -232,10 +232,14 @@ export const useGetColumns  = ({
         <Text className="font-medium text-gray-700 dark:text-gray-600">
           <div className="font-medium text-gray-700 dark:text-gray-600">
           {row.status === 'open' ? (
-            <span className="px-2 py-1 rounded bg-green-500 text-white">Open</span>
-          ) : (
-            <span className="px-2 py-1 rounded bg-red-500 text-white">Closed</span>
-          ) || <span className="px-2 py-1 rounded bg-yellow-500 text-white">N/A</span>}
+              <span className="px-2 py-1 rounded bg-green-500 text-white">Open</span>
+            ) : row.status === 'close' ? (
+              <span className="px-2 py-1 rounded bg-red-500 text-white">Closed</span>
+            ) : row.status === 'un_assigned' ? (
+              <span className="px-2 py-1 rounded bg-blue-500 text-white">Unassigned</span>
+            ) : (
+              <span className="px-2 py-1 rounded bg-yellow-500 text-white">N/A</span>
+            )}
         </div>
           
         </Text>
