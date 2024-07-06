@@ -206,6 +206,7 @@ const userPermission = async (req, res) => {
       // Respond with office data array
       const totalUnassignedLeads = rows1[0].T_Unassigned;
       const totalLeads = rows[0].total;
+  
       res.status(200).json({
         success: true,
         message: 'All leads fetched successfully',

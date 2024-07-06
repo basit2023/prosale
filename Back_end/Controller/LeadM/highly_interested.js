@@ -349,6 +349,8 @@ const SpecificTeamMemberLeads = async (req, res) => {
           main.view_dt,
           main.campaign_name,
           main.campaign_type,
+          main.assigned_to,
+          main.campaign_type,
           main.investment_time,
           main.investment_budget,
           main.user,
