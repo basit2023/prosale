@@ -77,7 +77,8 @@ export default function ChangeCompanyButton({ onCompanyIdChange, company }:any) 
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
+      if(company)
+      {try {
         if (session) {
 
           const response = await apiService.get(`/single-company/?id=${company}`);
@@ -90,7 +91,7 @@ export default function ChangeCompanyButton({ onCompanyIdChange, company }:any) 
         console.error('Error fetching Company Name:', error);
         toast.error(error.response.data.message)
         
-      }
+      }}
     };
 
     fetchData();
