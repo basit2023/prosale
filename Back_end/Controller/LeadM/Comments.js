@@ -242,5 +242,36 @@ const UpdateLabel = async (req, res) => {
   }
 };
 
+const SaveTime = async (req, res) => {
+  try {
+    // Extract fields from the request body
+    const { leadsId, user, phone, opentime, totaltime } = req.body;
 
-  module.exports = { CreateComments, GetComments,DeleteComments,AllLabels,SelectForBox,UpdateLabel};
+    
+
+    const sql = `
+      INSERT INTO leads_time (leadsId, user, phone, opentime, totaltime) 
+      VALUES (?, ?, ?, ?, ?)
+    `;
+
+    const values = [leadsId, user, phone, new Date(opentime), totaltime];
+
+    // Execute the query
+    const [result] = await mysqlConnection.promise().query(sql, values);
+
+    // Return success response
+    res.status(201).json({
+      success: true,
+      message: 'Time saved successfully',
+      customer_id: result.insertId,
+    });
+  } catch (error) {
+    console.error('Error saving time:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error saving time',
+      error: error.message,
+    });
+  }
+};
+  module.exports = { SaveTime, CreateComments, GetComments,DeleteComments,AllLabels,SelectForBox,UpdateLabel};

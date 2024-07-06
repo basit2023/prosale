@@ -23,7 +23,7 @@ const { UpdateVaultInfo } = require("../Controller/EditEmployInfo/VaultInfo");
 const { GetEmpStatus, UpdateStatusInfo } = require("../Controller/EditEmployInfo/Sms_LeadStatus");
 const { All_lables, userPermission, TotalLead, UnaginedLead, All_labels, All_labelsForMember } = require("../Controller/LeadM/Card-leadsLable");
 const { Highly_interested, highly_interested_table, GetLeadFromId, AllCustomers, HeaderLabel, SpecificTeamMemberLeads } = require("../Controller/LeadM/highly_interested");
-const { CreateComments, GetComments, DeleteComments, AllLabels, SelectForBox, UpdateLabel } = require("../Controller/LeadM/Comments");
+const { CreateComments, GetComments, DeleteComments, AllLabels, SelectForBox, UpdateLabel, SaveTime } = require("../Controller/LeadM/Comments");
 const { ClosedLeadController, ViewLead } = require("../Controller/LeadM/closeLeads");
 const { EditLeadCustomer, UpdateLeadCustomer, GetCountrycode, CreateLeadCustomer, GetCustomerById } = require("../Controller/LeadM/EditLeadCustomer");
 const { ZoneData, GetTeamMemeber, UpdateZoneTeam, TeamData, GetzoneMemeber, ZoneTeamData, CreateZoneTeam } = require("../Controller/Team&Zones/zones");
@@ -130,6 +130,9 @@ Router.post('/api/new-lead-customer',CreateLeadCustomer)
 Router.get('/api/get-customer-by-id/:id', GetCustomerById);
 //new leads
 Router.post('/api/create-new-lead',CreateNewLead)
+//save time for the lead
+Router.post('/api/page-time',SaveTime)
+
 
 //comments
 Router.post('/api/comments/:id', CreateComments);

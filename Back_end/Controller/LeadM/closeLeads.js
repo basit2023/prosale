@@ -77,7 +77,6 @@ const ViewLead = async (req, res) => {
     try {
         const { id } = req.params;
         let { dt, email } = req.body;
-       console.log("teh id email is:",id, email)
 
         if (!id) {
             return res.status(400).json({
