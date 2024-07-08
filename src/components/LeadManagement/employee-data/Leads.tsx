@@ -63,6 +63,7 @@ export const useEmployeeData = ({ id }: { id: string }) => {
     view_dt: user.view_dt,
     status:user.status,
     company_title:user.company_title,
+    assigned_to:user.assigned_to,
    
 
     

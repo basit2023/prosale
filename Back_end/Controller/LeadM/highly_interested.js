@@ -57,6 +57,7 @@ if(parseFloat(perm[0].permission)>=9)
         main.view_dt,
         main.user,
         main.assigned_on,
+        main.assigned_to,
         label.label AS label,
         company.title AS company_title,
         label.bg AS bg_color

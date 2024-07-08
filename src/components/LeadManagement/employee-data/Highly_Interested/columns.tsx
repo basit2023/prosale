@@ -213,6 +213,26 @@ export const useGetColumns  = ({
         </Text>
       ),
     },
+    {
+      title: (
+        <HeaderCell
+          title="Assigned To"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'assigned_to'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('assigned_to'),
+      dataIndex: 'assigned_to',
+      key: 'assigned_to',
+      width: 200,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value || 'N/A'}
+        </Text>
+      ),
+    },
     
     {
       title: (
