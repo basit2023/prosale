@@ -2,7 +2,7 @@
 
 import cn from '@/utils/class-names';
 import { Button } from '@/components/ui/button';
-import { Title, Text } from '@/components/ui/text';
+import { Text } from '@/components/ui/text';
 import { useScrollableSlider } from '@/hooks/use-scrollable-slider';
 import { PiCaretLeftBold, PiCaretRightBold } from 'react-icons/pi';
 import MetricCard from '@/components/cards/metric-card';
@@ -11,44 +11,43 @@ import TrendingUpIcon from '@/components/icons/trending-up';
 import TrendingDownIcon from '@/components/icons/trending-down';
 import { routes } from '@/config/routes';
 import { useSession } from 'next-auth/react';
-import { usePathname, useRouter } from 'next/navigation';
-import { useState,useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import apiService from '@/utils/apiService';
 import toast from 'react-hot-toast';
+
 type FileStatsType = {
   className?: string;
 };
 
-
-
 export function FileStatGrid({ className }: { className?: string }) {
   const { data: session } = useSession();
-  const [count, setCount]=useState<any>();
+  const [count, setCount] = useState<any>();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await apiService.get(`/total-items`);
-        
         const userData = response.data.data;
-        
         setCount(userData);
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Error fetching user data. Please try again.');
       }
-     
     };
 
     if (session) {
       fetchData();
     }
   }, [session]);
+
   const filesStatData = [
     {
       id: 1,
       title: 'Total Leads',
       metric: count?.Total_Leads,
-      fill: '#3872FA',
+      fill: '#32CD32',
+      slightfill:'#bef264',
       percentage: count?.LastMonthLeadsPercentage,
       increased: true,
       decreased: false,
@@ -58,7 +57,8 @@ export function FileStatGrid({ className }: { className?: string }) {
       id: 2,
       title: 'Closed Leads',
       metric: count?.Close_Leads,
-      fill: '#3872FA',
+      fill: '#FBBF24',
+      slightfill:'#fef08a',
       percentage: count?.LastMonthCloseLeadsPercentage,
       increased: false,
       decreased: true,
@@ -69,6 +69,7 @@ export function FileStatGrid({ className }: { className?: string }) {
       title: 'Total Employees',
       metric: count?.Total_Employee,
       fill: '#EE0000',
+      slightfill:'#fca5a5',
       percentage: count?.TotalNewEmployeesPercentage,
       increased: true,
       decreased: false,
@@ -79,20 +80,28 @@ export function FileStatGrid({ className }: { className?: string }) {
       title: 'Active Projects',
       metric: count?.Total_Projects,
       fill: '#3872FA',
+      slightfill:'#93c5fd',
       percentage: 54,
       increased: true,
       decreased: false,
       value: '+14.45',
     },
   ];
+
   const router = useRouter();
   if (!session) {
-    router.push(routes.signIn)
+    router.push(routes.signIn);
+    return null;
   }
-  else{
+
   return (
     <>
       {filesStatData.map((stat: any) => {
+        const actualPercentage = stat.percentage ?? 0;
+        const displayPercentage = actualPercentage > 0 ? actualPercentage : 1;
+        const progressColor = stat.fill;
+        const progressColor2=stat.slightfill;
+
         return (
           <MetricCard
             key={stat.id}
@@ -102,18 +111,18 @@ export function FileStatGrid({ className }: { className?: string }) {
             className={cn('w-full max-w-full justify-between', className)}
             chart={
               <CircleProgressBar
-                percentage={stat.percentage}
+                percentage={displayPercentage}
                 size={80}
-                stroke="#D7E3FE"
+                stroke={progressColor2}
                 strokeWidth={7}
-                progressColor={stat.fill}
+                progressColor={progressColor}
                 useParentResponsive={true}
                 label={
                   <Text
                     as="span"
                     className="font-lexend text-base font-medium text-gray-700"
                   >
-                    {stat.percentage}%
+                    {actualPercentage}%
                   </Text>
                 }
                 strokeClassName="dark:stroke-gray-300"
@@ -142,7 +151,6 @@ export function FileStatGrid({ className }: { className?: string }) {
       })}
     </>
   );
-}
 }
 
 export default function FileStats({ className }: FileStatsType) {

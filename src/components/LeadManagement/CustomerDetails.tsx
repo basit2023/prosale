@@ -81,13 +81,13 @@ export function CustomerDetails({ id }: any) {
         as="h3"
         className="mb-2.5 text-base font-semibold @7xl:text-lg"
       >
-         {value[0]?.customer_name}
+         {value[0]?.customer_name ? value[0]?.customer_name: "N/A"}
       </Title>
       <Text as="p" className="mb-2 break-all last:mb-0">
-         {value[0]?.email}
+         {value[0]?.email ? value[0]?.email : "N/A"}
       </Text>
       <Text as="p" className="mb-2 last:mb-0">
-         {value[0]?.mobile}
+         {value[0]?.mobile ? value[0]?.mobile : "N/A"}
       </Text>
     </div>
     </WidgetCard>
