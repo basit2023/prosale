@@ -158,7 +158,7 @@ export default function ChangeStatus({ id }: any) {
 
   return (
     <div className="flex flex-col-reverse sm:flex-row justify-end relative">
-      {value[0]?.status !== 'close' && (
+      {value[0]?.status === 'open' && (
         <Form<LabelSchemaFormTypes>
           validationSchema={LabelSchema}
           onSubmit={onSubmit}
@@ -218,7 +218,7 @@ export default function ChangeStatus({ id }: any) {
       )}
 
       <div className="flex flex-col mb-10 sm:flex-row sm:items-center">
-        {value[0]?.status !== 'close' && (
+        {value[0]?.status === 'open' && (
           <button
             className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 mb-3 mt-0.5 sm:mb-0 sm:mr-3 sm:ml-0"
             onClick={() => handleViewInvoice(id)}

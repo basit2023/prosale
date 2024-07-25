@@ -57,7 +57,7 @@ export default function AuthWrapperFive({
 }) {
   return (
     <>
-      <Link
+      {/* <Link
         href={'/'}
         className="sticky top-0 z-20 block w-full border-gray-300 bg-blue p-4 py-2 text-sm font-medium text-white lg:absolute lg:start-1/2 lg:-translate-x-1/2 lg:justify-start lg:bg-transparent lg:text-gray-700 xl:py-6"
       >
@@ -70,7 +70,7 @@ export default function AuthWrapperFive({
           <PiArrowLeftBold />
           <span className="ms-1 font-medium">Back to home</span>
         </div>
-      </Link>
+      </Link> */}
       <div className="flex min-h-screen flex-col items-center justify-center p-4 lg:p-5 2xl:p-10">
         <div
           className={cn(
