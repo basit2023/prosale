@@ -946,8 +946,9 @@ export default function PaymentTamplate({
                     <td className="bg-purple-100 p-3 border border-gray-300">
                       
                       <p className="text-sm text-gray-600 dark:text-gray-400 bold">
-                        ${(unitspr.monthly_Installments * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100}`}
-                      </p>
+                          {`${(unitspr.monthly_Installments * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100}` }
+                        </p>
+
                     </td>
                   )}
 
