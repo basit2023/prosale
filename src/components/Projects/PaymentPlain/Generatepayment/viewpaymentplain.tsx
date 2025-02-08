@@ -16,15 +16,18 @@ export type Invoice = {
   Image: string;
 };
 
-export const viewPaymentPlan = (id: any) => {
+export const useViewPaymentPlan = (id: any) => {
   const { data: session } = useSession();
   const [productsData, setProductsData] = useState<any[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (!id || !session?.user?.email) return; // ✅ Prevent API call if session or id is missing
+      if (!id || !session?.user?.email) return;
 
       try {
+        setLoading(true);
         const response = await apiService.get(`/payment-data/?email=${session.user.email}&&id=${id}`);
         const userData = response.data.projects || [];
 
@@ -68,14 +71,18 @@ export const viewPaymentPlan = (id: any) => {
         }));
 
         setProductsData(formattedData);
-      } catch (error) {
-        console.error('Error fetching Project information:', error);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching Project information:', err);
         toast.error('Error fetching Project information. Please try again.');
+        setError('Error fetching data');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [id, session]); // ✅ Dependencies added
+  }, [id, session]);
 
-  return productsData;
+  return { productsData, loading, error };
 };
