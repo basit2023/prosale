@@ -1,3 +1,4 @@
+
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { env } from '@/env.mjs';
@@ -15,8 +16,66 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async session({ session, token }) {
-      // console.log("Session callback - session:", session);
-      // console.log("Session callback - token:", token);
+      console.log("Session callback - session:", session);
+      console.log("Session callback - token:", token);
+      
+      // Optionally remove image if not needed
+      // delete session?.user?.image;
+  
+      return {
+        ...session,
+        user: {
+          ...session.user,
+          id: token.id, // Ensure token.id is correctly set
+        },
+      };
+    },
+  
+    async jwt({ token, user }) {
+      console.log("JWT callback - token before:", token);
+      console.log("JWT callback - user:", user);
+    
+      if (user) {
+        // If a user is signing in, add their ID to the token as a string
+        token.id = user.id.toString(); // Ensure `user.id` exists and is converted to string
+    
+        // Optionally delete unnecessary fields
+        // delete token.picture;
+      }
+    
+      return token;
+    },
+    
+  
+    async redirect({ url, baseUrl }) {
+      console.log("Redirect callback - baseUrl:", baseUrl);
+      console.log("Redirect callback - url:", url);
+  
+      try {
+        const parsedUrl = new URL(url, baseUrl);
+        console.log("Parsed URL:", parsedUrl);
+  
+        if (parsedUrl.origin === baseUrl) {
+          return url;
+        }
+        if (parsedUrl.searchParams.has('callbackUrl')) {
+          const callbackUrl = parsedUrl.searchParams.get('callbackUrl');
+          return `${baseUrl}${callbackUrl}`;
+        }
+        return baseUrl;
+      } catch (error) {
+        console.error("Error in redirect callback:", error);
+        return baseUrl;
+      }
+    },
+  },
+  
+
+   /*   
+   callbacks: {
+    async session({ session, token }) {
+      console.log("Session callback - session:", session);
+      console.log("Session callback - token:", token);
       delete session?.user?.image;
       return {
         ...session,
@@ -58,13 +117,14 @@ export const authOptions: NextAuthOptions = {
       }
     },
   },
+  */
   providers: [
     CredentialsProvider({
       id: 'credentials',
       name: 'Credentials',
       credentials: {},
       async authorize(credentials: any) {
-        // console.log("Authorize function - received credentials:", credentials);
+        console.log("Authorize function - received credentials:", credentials);
         try {
           const response = await apiService.post('/login-a', {
             body: JSON.stringify(credentials),
@@ -77,7 +137,7 @@ export const authOptions: NextAuthOptions = {
           }
 
           const user = response.data.user
-          // console.log("Authorize function - user from API response:", user);
+          console.log("Authorize function - user from API response:", user);
           // const user1 = await response.data.user;
           if (user.email === credentials.email && user.password === credentials.password) {
             // console.log("Authorize function - Authorized user:", user);
@@ -102,11 +162,6 @@ export const authOptions: NextAuthOptions = {
 
 // import type { NextAuthOptions } from 'next-auth';
 // import CredentialsProvider from 'next-auth/providers/credentials';
-
-
-
-
-
 // import GoogleProvider from 'next-auth/providers/google';
 // import { env } from '@/env.mjs';
 // import isEqual from 'lodash/isEqual';

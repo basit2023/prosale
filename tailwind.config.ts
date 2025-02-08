@@ -10,7 +10,6 @@ export default {
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {
     screens: {
-      
       xs: '400px',
       sm: '640px',
       md: '768px',
@@ -141,6 +140,20 @@ export default {
           '0px 2px 4px -2px rgba(0, 0, 0, 0.10), 0px 4px 6px -1px rgba(0, 0, 0, 0.10)',
       },
     },
+  
+      fontSize: {
+        'xsm': '0.15rem',
+        'xs': '0.75rem',   
+        'sm': '0.875rem', 
+        'base': '1rem',   
+        'lg': '1.125rem',  
+        'xl': '1.25rem',   
+        '2xl': '1.5rem',   // Double extra large text size
+        '3xl': '1.875rem', // Triple extra large text size
+        '4xl': '2.25rem',  // Quadruple extra large text size
+        '5xl': '3rem',     // Quintuple extra large text size
+      },
+   
   },
   plugins: [
     require('@tailwindcss/forms'),

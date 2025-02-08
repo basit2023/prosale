@@ -1,18 +1,15 @@
 'use client';
 
-import dynamic from 'next/dynamic';
+
 import { Button } from '@/components/ui/button';
-import { PiArrowLineDownBold } from 'react-icons/pi';
-import { useModal } from '@/app/shared/modal-views/use-modal';
+
 import cn from '@/utils/class-names';
-import Mydetails from './account-settings/Mydetails';
+
 import { routes } from '@/config/routes';
 import Link from 'next/link';
 import { PiPlusBold } from 'react-icons/pi';
 
-const FileUpload = dynamic(() => import('@/app/shared/file-upload'), {
-  ssr: false,
-});
+
 
 type ImportButtonProps = {
   title?: string;

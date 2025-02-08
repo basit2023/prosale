@@ -28,13 +28,15 @@ const { ClosedLeadController, ViewLead } = require("../Controller/LeadM/closeLea
 const { EditLeadCustomer, UpdateLeadCustomer, GetCountrycode, CreateLeadCustomer, GetCustomerById } = require("../Controller/LeadM/EditLeadCustomer");
 const { ZoneData, GetTeamMemeber, UpdateZoneTeam, TeamData, GetzoneMemeber, ZoneTeamData, CreateZoneTeam } = require("../Controller/Team&Zones/zones");
 const { Getteamates, TeamForEmployee, UpdateTeamForEmployee, AddTeamMember } = require("../Controller/Team&Zones/Team");
-const { projectData, GetStatus, CreateNewProject, GetProjectDetails, UpdateProject, GetProjects } = require("../Controller/Project/project");
+const {AllFloors, projectData, GetStatus, CreateNewProject, GetProjectDetails, UpdateProject, GetProjects, FloorsData, ManageUnits, NewFloor, UpdateProjectFloor } = require("../Controller/Project/project");
 const { ReassinedLead } = require("../Controller/LeadM/ReassignedLead");
 const { SignUpHandler, OnBordingHandler } = require("../Controller/Signup");
 const { customMiddleware } = require("../Controller/middleware/middleware");
 const { getCounts, getTopLead } = require("../Controller/Dashboard/Dashboard");
 const { GetSourceDepInterestLeadtype, CreateNewLead } = require("../Controller/LeadM/NewLead");
-
+const { NewNotification, GetNotification, updateNotificationMark, saveSubscription } = require("../Controller/Dashboard/Notification");
+const { AddNewFloor, UpdateUnits, CreateNewUnits, UnitCounts, AddDuplicateFloor, DeleteProjectFloor, UpdateAllFloorRates, Getrequiredfloor } = require("../Controller/Project/floor");
+const { createNewPaymentPlan, paymentData, GetSpecificPyammentplan, DeletePaymentplan, LinkProject, GetPaymentPlan, GetTemplates, GetTemplatesUnits, GetPaymentPlanid, UpdatePaymentPlan } = require("../Controller/Project/pamymentplain");
 
 
 
@@ -56,7 +58,11 @@ Router.get('/api/permission/:email',Userpermission)
 Router.get('/api/total-items',getCounts)
 Router.get('/api/top-leads',getTopLead)
 
-
+//all Notifications
+Router.post('/api/sendNotification',NewNotification)
+Router.post('/api/subscribe/:email',saveSubscription)
+Router.get('/api/getNotification/:email',GetNotification)
+Router.put('/api/markNotificationAsRead/:notificationId',updateNotificationMark)
 
 Router.get('/api/personalinfo/:email',getPersonalInfoHandler)
 Router.get('/api/personalinfo-by-id/:id',getPersonalInfoHandlerbyId)
@@ -152,12 +158,42 @@ Router.get('/api/teamates/:id', Getteamates);
 Router.put('/api/update-employee-team/:id', UpdateTeamForEmployee);
 Router.post('/api/add-to-new-team/:id',UpdateZoneTeam) 
 Router.post('/api/create-zone-team/',CreateZoneTeam) 
+//edit project floor
+Router.put('/api/update-project-floor', UpdateProjectFloor);
+
 //Project details 
 Router.get('/api/projects', GetProjects);
 Router.get('/api/project-data', projectData);
+Router.get('/api/floors-data', FloorsData);
+Router.get('/api/floors-units', ManageUnits);
 Router.post('/api/create-new-project', CreateNewProject);
 Router.get('/api/get-project/:id', GetProjectDetails);
 Router.put('/api/update-project/:id', UpdateProject);
+//floor data
+Router.put('/api/floor-status-update', UpdateUnits);
+Router.post('/api/floor-units', CreateNewUnits);
+//updates all units
+
+Router.put('/api/floor-rates-update', UpdateAllFloorRates);
+
+
+//Payment Plan      
+Router.post('/api/new-payment-plan', createNewPaymentPlan);
+Router.get('/api/payment-data', paymentData);
+Router.get('/api/specific-payment', GetSpecificPyammentplan);
+Router.delete('/api/delete-paymentplan/', DeletePaymentplan);
+Router.put('/api/link-project/', LinkProject);
+Router.get('/api/payment-templates', GetPaymentPlan);
+Router.get('/api/all-tamplete', GetTemplates);
+Router.get('/api/templete-units-data', GetTemplatesUnits);
+Router.get('/api/PaymentPlanid', GetPaymentPlanid);
+Router.put('/api/edit-payment-plan', UpdatePaymentPlan);
+
+
+
+
+
+
 
 //Supper admin
 Router.get('/api/supper-admin/:email',getAllCompany)
@@ -195,7 +231,14 @@ Router.get('/api/alldesignation/', GetDessignation);
 //get all departments
 Router.get('/api/alldeprtment/', GetDepartment);
 Router.get('/api/allresource/', GetSourceDepInterestLeadtype);
+Router.get('/api/units-count/', UnitCounts);
 Router.get('/api/project-status/', GetStatus);
+Router.get('/api/all-floors/', AllFloors);
+Router.post('/api/new-floor/', NewFloor);
+Router.post('/api/create-new-floor/', AddNewFloor);
+Router.post('/api/create-duplicate-floor/', AddDuplicateFloor);
+Router.delete('/api/delete-floor/', DeleteProjectFloor);
+Router.get('/api/floorName/', Getrequiredfloor);
 //get all user type
 Router.get('/api/all-user-type/', GetUserType);
 //get team for Employee 

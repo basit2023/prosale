@@ -3,7 +3,7 @@ const ReassinedLead = async (req, res) => {
     try {
       const { ids, assigned_to, view_dt, assigned_on, assigned_through } = req.body;
        
-      console.log("the ids that i'm getting at back-end is:",req.body)
+      
       if (!ids || !Array.isArray(ids) || ids.length === 0) {
         return res.status(400).json({
           success: false,
@@ -12,7 +12,7 @@ const ReassinedLead = async (req, res) => {
       }
   
       const [leads] = await mysqlConnection.promise().query("SELECT name FROM users WHERE email=?", [assigned_through]);
-      console.log("the lead that assing through is:",leads[0].name)
+      
       let sql = 'UPDATE leads_main SET ';
       const values = [];
   
