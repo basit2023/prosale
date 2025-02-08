@@ -47,7 +47,7 @@ export function FileStatGrid({ className }: { className?: string }) {
       title: 'Total Leads',
       metric: count?.Total_Leads,
       fill: '#32CD32',
-      slightfill:'#bef264',
+      slightfill:'#d9f99d',
       percentage: count?.LastMonthLeadsPercentage,
       increased: true,
       decreased: false,

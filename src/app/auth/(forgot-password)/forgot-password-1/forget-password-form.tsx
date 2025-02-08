@@ -12,6 +12,7 @@ import { routes } from '@/config/routes';
 import toast from 'react-hot-toast';
 import apiService from '@/utils/apiService';
 import { logs } from '@/app/shared/account-settings/logs';
+import Spinner from '@/components/ui/spinner';
 import crypto from 'crypto';
 import {
   resetPasswordSchema,
@@ -27,12 +28,13 @@ const initialValues = {
 export default function ForgetPasswordForm() {
   const [reset, setReset] = useState({});
   const router = useRouter();
-  
+  const [loading, setLoading] = useState(false);
 
     const onSubmit: SubmitHandler<ResetPasswordSchema> = async (data) => {
       // Extract password from data
+      setLoading(true);
       const { password,confirmPassword, ...otherData } = data;
-
+      
       // Hash the password using SHA-256
       const hashedPassword = crypto.createHash('sha256').update(password).digest('hex');
       const conformhashedPassword = crypto.createHash('sha256').update(confirmPassword).digest('hex');
@@ -43,11 +45,11 @@ export default function ForgetPasswordForm() {
         password: hashedPassword,
         confirmPassword:conformhashedPassword,
       };
-      console.log("the body after the request is:",requestData)
+
       try {
         // Send the data with the hashed password to the backend
         const result = await apiService.put(`/reset-password/`, requestData);
-        console.log("reset password---->", result.data.message);
+    
         toast.success(result.data.message);
         if(result.data.success){
           router.push(routes.signIn)
@@ -56,6 +58,8 @@ export default function ForgetPasswordForm() {
         toast.error('Error during forgetting password. Please try again.');
         console.error('Error during forget password:', error);
         
+      }finally {
+        setLoading(false);
       }
       
       // Reset the form fields
@@ -84,7 +88,7 @@ export default function ForgetPasswordForm() {
               placeholder="Enter your email"
               className="[&>label>span]:font-medium"
               color="info"
-              inputClassName="text-sm"
+              inputClassName="text-sm focus:ring-custom-red focus:border-custom-red hover:border-custom-red [&.is-focus]:border-custom-red [&.is-focus]:ring-custom-red"
               {...register('email')}
               error={errors.email?.message}
             />
@@ -94,7 +98,7 @@ export default function ForgetPasswordForm() {
               size="lg"
               className="[&>label>span]:font-medium"
               color="info"
-              inputClassName="text-sm"
+              inputClassName="text-sm focus:ring-custom-red focus:border-custom-red hover:border-custom-red [&.is-focus]:border-custom-red [&.is-focus]:ring-custom-red"
               {...register('password')}
               error={errors.password?.message}
             />
@@ -104,7 +108,7 @@ export default function ForgetPasswordForm() {
               size="lg"
               className="[&>label>span]:font-medium"
               color="info"
-              inputClassName="text-sm"
+              inputClassName="text-sm focus:ring-custom-red focus:border-custom-red hover:border-custom-red [&.is-focus]:border-custom-red [&.is-focus]:ring-custom-red"
               {...register('confirmPassword')}
               error={errors.confirmPassword?.message}
             />
@@ -113,8 +117,20 @@ export default function ForgetPasswordForm() {
               type="submit"
               size="lg"
               color="info"
+              style={{ backgroundColor: '#c54e57' }}
             >
-              Reset Password
+              
+              {loading ? (
+                // <Spinner className="ms-2 mt-0.5 h-5 w-5" />
+                <div className="flex items-center justify-center">
+                  <Spinner className="ms-2 mt-0.5 h-5 w-5" />
+                </div>
+              ) : (
+                <>
+                  <span>Reset Password</span>{' '}
+                 
+                </>
+              )}
             </Button>
           </div>
         )}

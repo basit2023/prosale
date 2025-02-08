@@ -10,7 +10,12 @@ import { decryptData } from '@/components/encriptdycriptdata';
 const COLORS = ['#BFDBFE', '#0070F3'];
 
 function CustomLabel(props: any) {
-  const { cx, cy } = props.viewBox;
+  const { cx, cy, midAngle, innerRadius, outerRadius, value } = props;
+  const RADIAN = Math.PI / 180;
+  const radius = 25 + innerRadius + (outerRadius - innerRadius);
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
   return (
     <>
       <text
@@ -22,7 +27,7 @@ function CustomLabel(props: any) {
         dominantBaseline="central"
       >
         <tspan alignmentBaseline="middle" fontSize="36px">
-          0
+          {value}
         </tspan>
       </text>
       <text
@@ -33,7 +38,7 @@ function CustomLabel(props: any) {
         textAnchor="middle"
         dominantBaseline="central"
       >
-        <tspan fontSize="14px">{props.value2}</tspan>
+        <tspan fontSize="14px">Used of 100</tspan>
       </text>
     </>
   );
@@ -44,7 +49,7 @@ export default function StorageSummary({ className }: { className?: string }) {
   const [userValue, setUserData] = useState<any>();
   const [data, setData] = useState([
     { name: 'Available storage', value: 22 },
-
+    { name: 'Used storage', value: 78 },
   ]);
 
   useEffect(() => {
@@ -69,7 +74,6 @@ export default function StorageSummary({ className }: { className?: string }) {
     const fetchProjectData = async () => {
       try {
         const response = await apiService.get(`/projects/?company_id=${userValue.user.company_id}`);
-        
         setProjects(response.data.data);
         // Assuming response.data is the correct format for the chart
         setData(response.data.data); // Update the data state here
@@ -98,15 +102,13 @@ export default function StorageSummary({ className }: { className?: string }) {
               paddingAngle={10}
               fill="#BFDBFE"
               stroke="rgba(0,0,0,0)"
-              dataKey="value"
+              dataKey={data[1]?.value}
             >
               <Label
                 width={30}
                 position="center"
-                content={
-                  <CustomLabel value1={data[1]?.value} value2={'Used of 100'} />
-                }
-              ></Label>
+                content={<CustomLabel value={data[1]?.value} />}
+              />
               {data.map((_, index) => (
                 <Cell
                   key={`cell-${index}`}

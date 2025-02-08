@@ -282,7 +282,7 @@ export const getColumns = ({
               placement="top"
               color="invert"
             >
-              <Link href={routes.employee.members(row.manager_id)}>
+              <Link href={routes.project.viewProject(row.slug)}>
                 <ActionIcon
                   tag="span"
                   size="sm"

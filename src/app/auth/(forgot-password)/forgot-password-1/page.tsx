@@ -11,7 +11,7 @@ export default function SignIn() {
           Reset your{' '}
           <span className="relative inline-block">
             password!
-            <UnderlineShape className="absolute -bottom-2 end-0 h-2.5 w-28 text-blue xl:-bottom-1.5 xl:w-36" />
+            <UnderlineShape className="absolute -bottom-2 end-0 h-2.5 w-28 text-blue xl:-bottom-1.5 xl:w-36" style={{ color: '#c54e57' }} />
           </span>
         </>
       }

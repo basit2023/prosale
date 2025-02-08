@@ -4,10 +4,10 @@ import { usePathname, redirect,useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import FileDashboard from '@/app/shared/file/dashboard';
 import Spinner from '@/components/ui/spinner';
-// import { metaObject } from '@/config/site.config';
+//  import { metaObject } from '@/config/site.config';
 
 // export const metadata = {
-//   ...metaObject(),
+//   ...metaObject(`Add new Units`),
 // };
 function FileDashboardPage() {
   const { data: session, status } = useSession();

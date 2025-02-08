@@ -10,9 +10,9 @@ import { useEffect, useState } from 'react';
 import apiService from '@/utils/apiService';
 import FormGroup from '@/app/shared/form-group';
 import toast from 'react-hot-toast';
-import { SubmitHandler, Controller, useForm } from 'react-hook-form'; // Import useForm
-import { Form } from '@/components/ui/form'; 
-import { defaultValues, footAssinedFormSchema,editTeamZoneFormTypes } from '@/utils/validators/footer-assign.schema';
+import { SubmitHandler, Controller, useForm } from 'react-hook-form';
+import { Form } from '@/components/ui/form';
+import { defaultValues, footAssinedFormSchema, editTeamZoneFormTypes } from '@/utils/validators/footer-assign.schema';
 
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ssr: false,
@@ -22,37 +22,37 @@ const SelectBox = dynamic(() => import('@/components/ui/select'), {
     </div>
   ),
 });
+
 interface SelectOption {
   label: string;
   value: string;
 }
 
-
 interface TableFooterProps {
   checkedItems: string[];
   handleDelete: (ids: string[]) => void;
-  
 }
+
 export default function TableFooter({
   checkedItems,
   handleDelete,
   children,
-  
 }: React.PropsWithChildren<TableFooterProps>) {
   const { data: session } = useSession<any>();
   const [country, setCountry] = useState<any>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (checkedItems.length === 0 || !session) {
       return; // Early return if no items are checked or session is not available
     }
-    
+
     const fetchData = async () => {
       try {
         const response = await apiService.get(`/all-members/?email=${session?.user?.email}&table=footer`);
         const userData = response.data.data;
         setCountry(userData);
-      } catch (error:any) {
+      } catch (error: any) {
         console.error('Error fetching user data:', error);
         toast.error('Error fetching user data. Please try again.');
       }
@@ -62,6 +62,7 @@ export default function TableFooter({
   }, [checkedItems, session]);
 
   const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
+    setLoading(true);
     try {
       const result = await apiService.put(`/update-assined-lead`, {
         ...data,
@@ -71,10 +72,18 @@ export default function TableFooter({
       toast.success(result.data.message);
       if (result.data.success) {
         // logs({ user: value?.user?.name, desc: 'Edit Project' });
+        const notificationResult = await apiService.post(`/sendNotification`, {
+          ...data,
+          assigned_through: session?.user?.email,
+          ids: checkedItems
+        });
+        // Handle notification result if needed
       }
-    } catch (error:any) {
+    } catch (error: any) {
       console.error('Error Re-Assigning Leads:', error);
       toast.error(error.response.data.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -98,7 +107,7 @@ export default function TableFooter({
                   control={control}
                   name="assigned_to"
                   render={({ field: { value, onChange } }) => {
-                    const selectedOption = country.find((item: { value: any; }):any => String(item.value) === value);
+                    const selectedOption = country.find((item: { value: any; }): any => String(item.value) === value);
 
                     return (
                       <div className="relative">
@@ -118,10 +127,18 @@ export default function TableFooter({
               </div>
 
               <Button
-                size="sm" className="dark:bg-gray-300 dark:text-gray-800"
+                size="sm"
+                className="dark:bg-gray-300 dark:text-gray-800 relative"
                 type="submit"
+                disabled={loading}
               >
-                Assign Them
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <Spinner className="w-4 h-4" />
+                  </div>
+                ) : (
+                  'Assign Them'
+                )}
               </Button>
             </div>
           </div>

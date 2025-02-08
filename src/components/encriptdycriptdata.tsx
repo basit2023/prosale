@@ -27,6 +27,25 @@ export function decryptData(encryptedData: any) {
 }
 
 
+export function encodeId(id: string | number): string {
+
+  const idString = String(id);
+  const encoded = Buffer.from(idString).toString('base64');
+  return encoded.replace(/=/g, ''); 
+}
+
+export function decodeId(encodedId: string): string {
+  
+  const padding = '='.repeat((4 - (encodedId.length % 4)) % 4);
+  const base64String = encodedId + padding;
+
+  
+  const decoded = Buffer.from(base64String, 'base64').toString('utf-8');
+  return decoded;
+}
+
+
+
 
 
 

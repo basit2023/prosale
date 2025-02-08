@@ -11,13 +11,13 @@
     "lint": "next lint",
     "generate-icons": "node generate-icons-data.js",
     "format": "prettier --write ."
-  
   },
   "dependencies": {
     "@chakra-ui/react": "^2.8.2",
     "@floating-ui/react": "^0.26.2",
     "@googlemaps/js-api-loader": "^1.16.2",
     "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.1.5",
     "@next/font": "^14.2.3",
     "@react-email/body": "0.0.4",
     "@react-email/button": "0.0.11",

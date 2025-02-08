@@ -53,10 +53,29 @@ export const routes = {
     
     
   },
+  plugins: {
+        AllPlugins:'/plugins'
+  },
   project: {
       projectlist: '/project/list',
       newproject:'/project/new',
       editProject: (id: string) => `/project/edit/${id}`,
+      viewProject: (slug: string) => `/project/${slug}/view`,
+      editFloor:(slug: string, id: string) => `/project/${slug}/${id}`,
+      addnewunites:(slug: string, id: string) => `/project/${slug}/addunites/${id}`,
+      floorunites:(slug: string, id: string) => `/project/${slug}/view/floor/${id}`,
+      managefloor:(slug: string, id: string) => `/project/${slug}/view/manage/${id}`,
+      addbulkunit:(slug: string, id: string) => `/project/${slug}/bulkunits/${id}`,
+      duplicatefloor:(slug: string, id: string) => `/project/${slug}/duplicatefloor/${id}`,
+      Addfloor:(slug: string) => `/project/${slug}/view/newfloor`,
+      
+
+  },
+  paymentPlans: {
+    paymentPlans:'/payment-plans',
+    addProject:'/payment-plans/add-project',
+    editpaymentplan:( id: string) => `/payment-plans/${id}/edit`,
+    generatePaymentPlan:( id: string) => `/payment-plans/${id}/paymentplan`,
   },
   searchAndFilter: {
     realEstate: '/search/real-estate',
@@ -172,5 +191,8 @@ export const routes = {
     otp5: '/auth/otp-5',
   },
   signIn: '/signin',
-  onboarding:'/onboarding'
+  onboarding:'/onboarding',
+  tamplets:{
+    detailPlained:(slug: string) => `/tamplets/detailed-planed/${slug}`,
+  }
 };
