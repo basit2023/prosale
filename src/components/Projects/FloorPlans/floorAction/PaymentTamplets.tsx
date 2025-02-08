@@ -183,7 +183,7 @@ export default function PaymentTamplate({
  return (
   
  <>
-  {slug_data.templateid==1 &&(<>
+  {slug_data?.templateid==1 &&(<>
   <h1 className="text-3xl font-bold mb-4 uppercase">{formattedTitle} - {slug_data?.floor}- Payment Plan</h1>
   {/* {department.length > 0 && (
     <div className="mb-6">
@@ -703,123 +703,110 @@ export default function PaymentTamplate({
             </tr>
           </thead>
           <tbody>
-            {processedData.length > 0 ? (
-              processedData.map((item, index) => (
-                <tr key={index} className="bg- dark:bg-gray-800">
-                  {/* Category Cell with Row Span */}
-                  {item.isFirst && (
-                    <td className="bg-blue-100 p-3 border border-gray-300 text-center" rowSpan={item.rowSpan}>
-                      {item.Category}
-                    </td>
-                  )}
+  {processedData.length > 0 ? (
+    processedData.map((item, index) => (
+      <tr key={index} className="bg-dark dark:bg-gray-800">
+        {/* Category Cell with Row Span */}
+        {item.isFirst && (
+          <td className="bg-blue-100 p-3 border border-gray-300 text-center" rowSpan={item.rowSpan}>
+            {item.Category}
+          </td>
+        )}
 
-                  {/* Unit Numbers */}
-                  <td className="bg-lime-100 p-3 border border-gray-300">{item.Unit_Grouped}</td>
+        {/* Unit Numbers */}
+        <td className="bg-lime-100 p-3 border border-gray-300">{item.Unit_Grouped}</td>
 
-                  {/* Size Sq.Ft */}
-                  <td className="bg-orange-100 p-3 border border-gray-300">{item.Size}</td>
+        {/* Size Sq.Ft */}
+        <td className="bg-orange-100 p-3 border border-gray-300">{item.Size}</td>
 
-                  {/* Booking Calculation */}
-                  {unitspr?.booking_pr && (
-                    <td className="bg-purple-100 p-3 border border-gray-300">
-                      {unitspr.booking_pr
-                        ? ((parseFloat(unitspr.booking_pr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)
-                        : 'N/A'}
-                    </td>
-                  )}
+        {/* Booking Calculation */}
+        {unitspr?.booking_pr && (
+          <td className="bg-purple-100 p-3 border border-gray-300">
+            {((parseFloat(unitspr.booking_pr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+          </td>
+        )}
 
-                  {/* Allocation Calculation */}
-                  {unitspr?.allocation_pr && (
-                    <td className="bg-fuchsia-100 p-3 border border-gray-300">
-                      {unitspr.allocation_pr
-                        ? ((parseFloat(unitspr.allocation_pr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)
-                        : 'N/A'}
-                    </td>
-                  )}
+        {/* Allocation Calculation */}
+        {unitspr?.allocation_pr && (
+          <td className="bg-fuchsia-100 p-3 border border-gray-300">
+            {((parseFloat(unitspr.allocation_pr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+          </td>
+        )}
 
-                  {/* Confirmation Calculation */}
-                  {unitspr?.confirmation_Pr && (
-                    <td className="bg-indigo-100 p-3 border border-gray-300">
-                      {unitspr.confirmation_Pr
-                        ? ((parseFloat(unitspr.confirmation_Pr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)
-                        : 'N/A'}
-                    </td>
-                  )}
+        {/* Confirmation Calculation */}
+        {unitspr?.confirmation_Pr && (
+          <td className="bg-indigo-100 p-3 border border-gray-300">
+            {((parseFloat(unitspr.confirmation_Pr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+          </td>
+        )}
 
-                  {/* Monthly Calculation */}
-                  {unitspr?.monthly_Installments && (
-                    <td className="bg-sky-100 p-3 border border-gray-300">
-                      
-                      <p className="text-sm text-gray-600 dark:text-gray-400 bold">
-                        ${(unitspr.monthly_Installments * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100}`}
-                      </p>
-                    </td>
-                  )}
+        {/* Monthly Calculation (Fixed) */}
+        {unitspr?.monthly_Installments && (
+          <td className="bg-sky-100 p-3 border border-gray-300">
+            <p className="text-sm text-gray-600 dark:text-gray-400 font-bold">
+              ${((unitspr.monthly_Installments * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+            </p>
+          </td>
+        )}
 
-                  {/* Yearly Calculation */}
-                  {unitspr?.yearly_Installments && (
-                    <td className="bg-emerald-100 p-3 border border-gray-300">
-                      
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {`${(unitspr.yearly_Installments * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100} `}
-                      </p>
-                    </td>
-                  )}
+        {/* Yearly Calculation (Fixed) */}
+        {unitspr?.yearly_Installments && (
+          <td className="bg-emerald-100 p-3 border border-gray-300">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {((unitspr.yearly_Installments * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+            </p>
+          </td>
+        )}
 
-                  {/* Half-Yearly Calculation with Dual Calculations */}
-                  {unitspr?.half_yearly_Installments && (
-                    <td className="bg-amber-100 p-3 border border-gray-300">
-                      
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {` ${(unitspr.half_yearly_Installments * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100}`}
-                      </p>
-                    </td>
-                  )}
+        {/* Half-Yearly Calculation (Fixed) */}
+        {unitspr?.half_yearly_Installments && (
+          <td className="bg-amber-100 p-3 border border-gray-300">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {((unitspr.half_yearly_Installments * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+            </p>
+          </td>
+        )}
 
-                  {/* Extra Installments Calculations */}
-                  {Array.from({ length: 5 }, (_, i) => i + 1).map((num) =>
-                    unitspr?.[`extrainstall${num}`] && unitspr?.[`extrapr${num}`] && unitspr?.[`extraname${num}`] ? (
-                      <td key={num} className="bg-red-100 p-3 border border-gray-300">
-                        
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {`${(parseFloat(unitspr[`extrainstall${num}`]) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100}`}
-                        </p>
-                      </td>
-                    ) : null
-                  )}
+        {/* Extra Installments Calculations (Fixed) */}
+        {Array.from({ length: 5 }, (_, i) => i + 1).map((num) =>
+          unitspr?.[`extrainstall${num}`] && unitspr?.[`extrapr${num}`] && unitspr?.[`extraname${num}`] ? (
+            <td key={num} className="bg-red-100 p-3 border border-gray-300">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {((parseFloat(unitspr[`extrainstall${num}`]) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+              </p>
+            </td>
+          ) : null
+        )}
 
-                  {/* Possession Calculation */}
-                  {unitspr?.possessionpr && (
-                    <td className="bg-orange-100 p-3 border border-gray-300">
-                      {unitspr.possessionpr
-                        ? ((parseFloat(unitspr.possessionpr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)
-                        : 'N/A'}
-                    </td>
-                  )}
+        {/* Possession Calculation */}
+        {unitspr?.possessionpr && (
+          <td className="bg-orange-100 p-3 border border-gray-300">
+            {((parseFloat(unitspr.possessionpr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+          </td>
+        )}
 
-                  {/* Transfer Calculation */}
-                  {unitspr?.transferpr && (
-                    <td className="bg-gray-100 p-3 border border-gray-300">
-                      {unitspr.transferpr
-                        ? ((parseFloat(unitspr.transferpr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)
-                        : 'N/A'}
-                    </td>
-                  )}
+        {/* Transfer Calculation */}
+        {unitspr?.transferpr && (
+          <td className="bg-gray-100 p-3 border border-gray-300">
+            {((parseFloat(unitspr.transferpr) * parseFloat(item.Size) * parseFloat(item.SqFtRate)) / 100).toFixed(2)}
+          </td>
+        )}
 
-                  {/* Total Amount */}
-                  <td className="bg-blue-100 p-3 border border-gray-300">
-                    {(parseFloat(item.Size) * parseFloat(item.SqFtRate)).toFixed(2)}
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="2" className="text-center p-4 border border-gray-300">
-                  Loading data...
-                </td>
-              </tr>
-            )}
-          </tbody>
+        {/* Total Amount */}
+        <td className="bg-blue-100 p-3 border border-gray-300">
+          {(parseFloat(item.Size) * parseFloat(item.SqFtRate)).toFixed(2)}
+        </td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td colSpan="2" className="text-center p-4 border border-gray-300">
+        Loading data...
+      </td>
+    </tr>
+  )}
+</tbody>
+
         </table>
       </div>
     </div>
@@ -897,7 +884,7 @@ export default function PaymentTamplate({
               )}
 
               {/* Possession and Transfer Headers */}
-              {unitspr?.poss essionpr && (
+              {unitspr?.possessionpr && (
                 <th className="p-3 border border-gray-300">
                   Possession {unitspr.possessionpr ? `${unitspr.possessionpr}%` : ''}
                 </th>
