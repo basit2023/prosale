@@ -1,7 +1,7 @@
 // page.tsx
 "use client";
 
-import { viewPaymentPlan } from '@/components/Projects/PaymentPlain/Generatepayment/viewpaymentplain';
+import { useViewPaymentPlan } from '@/components/Projects/PaymentPlain/Generatepayment/viewpaymentplain';
 import InvoiceTable from '@/components/Projects/PaymentPlain/Generatepayment/table';
 import TableLayout from './table-layout';
 import { Empty } from "rizzui";
@@ -13,7 +13,7 @@ type Props = {
 };
 
 function EnhancedTablePage({ params }: Props) {
-  const invoiceData = viewPaymentPlan(decodeId(params.id));
+  const invoiceData = useViewPaymentPlan(decodeId(params.id));
   // const formattedTitle = params.slug.replace(/_/g, ' ');
   const pageHeader = {
     title: "Payment Plan", 
