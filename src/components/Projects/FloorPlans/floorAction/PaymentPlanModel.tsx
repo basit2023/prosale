@@ -1,6 +1,5 @@
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import { decryptData } from '@/components/encriptdycriptdata';
-import React from 'react';
 import { Title } from '@/components/ui/text';
 import { ActionIcon } from '@/components/ui/action-icon';
 import { PiXBold } from 'react-icons/pi';
