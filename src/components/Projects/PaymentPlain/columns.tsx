@@ -339,24 +339,25 @@ export const useGetColumns = ({
         {/* Display buttons for each project name */}
         {value && value.length > 0 ? (
           value.map((project, index) => (
-         <Link href={routes.project.viewProject(project.replace(/ /g, "_"))}>
-            <button
-              key={index}
-              // onClick={() => routes.project.viewProject(project.replace(/ /g, "_"))}
-              className="bg-transperent text-black px-1 py-0.5 rounded hover:bg-gray-100 border text-xs uppercase"
+            <Link 
+              key={index} // ✅ Key should be here
+              href={routes.project.viewProject(project.replace(/ /g, "_"))}
             >
-              {project}
-            </button>
+              <button
+                className="bg-transparent text-black px-1 py-0.5 rounded hover:bg-gray-100 border text-xs uppercase"
+              >
+                {project}
+              </button>
             </Link>
           ))
         ) : (
           <Text className="font-medium text-gray-700 dark:text-gray-600"></Text>
         )}
-  
+    
         {/* Add the action icon with a tooltip */}
         <Tooltip
           size="sm"
-          content= {() => "Link this Project"}
+          content={() => "Link this Project"}
           placement="top"
           color="invert"
         >
@@ -373,6 +374,7 @@ export const useGetColumns = ({
         </Tooltip>
       </div>
     ),
+    
   },
   
   

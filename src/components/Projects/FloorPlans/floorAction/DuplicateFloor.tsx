@@ -326,8 +326,8 @@ export default function AddDuplicateProjectfloor({id, slug}:any) {
               <Modal isOpen={modalState} onClose={closeModal}>
               <div className="m-auto px-7 pt-6 pb-8">
                 <div className="mb-7 flex items-center justify-between">
-                  // @ts-ignore
-                  <Text as="h3">Add New Floor</Text>
+                  
+                  <Text as="strong">Add New Floor</Text>
                   
                   <ActionIcon
                     size="sm"
