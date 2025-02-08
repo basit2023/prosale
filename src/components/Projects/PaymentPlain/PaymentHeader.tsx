@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
-import { PiArrowLineDownBold } from 'react-icons/pi';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import cn from '@/utils/class-names';
 
