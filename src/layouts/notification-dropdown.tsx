@@ -158,7 +158,7 @@ export default function NotificationDropdown({ children }) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const email = session?.user?.email;
+  const email = session?.user?.email;   
 
   // Memoize the WebSocket URL to prevent unnecessary reconnections
   // const websocketUrl = useMemo(() => 'ws://localhost:4001', []);
