@@ -1,5 +1,3 @@
-// TableFooter.tsx
-
 'use client';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
@@ -41,6 +39,7 @@ export default function TableFooter({
   const { data: session } = useSession<any>();
   const [country, setCountry] = useState<any>([]);
   const [loading, setLoading] = useState(false);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
 
   useEffect(() => {
     if (checkedItems.length === 0 || !session) {
@@ -61,27 +60,66 @@ export default function TableFooter({
     fetchData(); // Call fetchData when session is available and items are checked
   }, [checkedItems, session]);
 
+  // useEffect(() => {
+  //   // Establish WebSocket connection
+  //   const ws = new WebSocket('ws://localhost:4001');
+
+  //   ws.onopen = () => {
+  //     console.log('WebSocket connection established');
+  //     setSocket(ws);
+  //   };
+
+  //   ws.onmessage = (event) => {
+  //     const response = JSON.parse(event.data);
+  //    console.log("the response from the backend at the notification is:",response)
+  //     if (response.event === 'notification_sent') {
+  //       toast.success(response.data.message);
+  //     }
+  //   };
+
+  //   ws.onerror = (error) => {
+  //     console.error('WebSocket error:', error);
+  //     toast.error('Failed to send real-time notification.');
+  //   };
+
+  //   ws.onclose = () => {
+  //     console.log('WebSocket connection closed');
+  //     setSocket(null);
+  //   };
+
+  //   return () => {
+  //     ws.close(); // Cleanup WebSocket connection on component unmount
+  //   };
+  // }, []);
+
   const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
     setLoading(true);
     try {
+      // Send the request to update the assigned lead
       const result = await apiService.put(`/update-assined-lead`, {
         ...data,
         assigned_through: session?.user?.email,
-        ids: checkedItems
+        ids: checkedItems,
       });
+
+      // Show success toast notification
       toast.success(result.data.message);
-      if (result.data.success) {
-        // logs({ user: value?.user?.name, desc: 'Edit Project' });
-        const notificationResult = await apiService.post(`/sendNotification`, {
-          ...data,
-          assigned_through: session?.user?.email,
-          ids: checkedItems
-        });
-        // Handle notification result if needed
+
+      if (result.data.success && socket) {
+        // Send a WebSocket message to notify the frontend
+        socket.send(
+          JSON.stringify({
+            event: 'lead_reassigned',
+            data: {
+              leadIds: checkedItems,
+              message: 'Lead reassigned successfully!',
+            },
+          })
+        );
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error Re-Assigning Leads:', error);
-      toast.error(error.response.data.message);
+      toast.error(error?.response?.data?.message || 'An error occurred while reassigning leads.');
     } finally {
       setLoading(false);
     }
@@ -107,14 +145,14 @@ export default function TableFooter({
                   control={control}
                   name="assigned_to"
                   render={({ field: { value, onChange } }) => {
-                    const selectedOption = country.find((item: { value: any; }): any => String(item.value) === value);
+                    const selectedOption = country.find((item: { value: any }): any => String(item.value) === value);
 
                     return (
                       <div className="relative">
                         <SelectBox
-                          value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null} 
+                          value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null}
                           placeholder="Select One"
-                          options={country.map((item: { name: any; value: any; }) => ({ label: item.name, value: String(item.value) }))}
+                          options={country.map((item: { name: any; value: any }) => ({ label: item.name, value: String(item.value) }))}
                           onChange={(selectedOption: SelectOption | null) => {
                             onChange(selectedOption ? selectedOption.value : '');
                           }}

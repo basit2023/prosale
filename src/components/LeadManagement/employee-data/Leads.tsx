@@ -50,7 +50,7 @@ export const useEmployeeData = ({ id }: { id: string }) => {
 
     fetchData();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-  }, [session]);
+  }, [id,comanpy_id]);
 
   const productsData = (value || []).map((user:any) => ({
     id:user.id,

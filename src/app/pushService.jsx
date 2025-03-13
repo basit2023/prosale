@@ -16,7 +16,7 @@ export const subscribeUser = async (email) => {
       }
 
       console.log('User is subscribed:', subscription);
-  } catch (error) {
+  } catch (error) { 
       console.error('Failed to subscribe the user:', error);
   }
 };

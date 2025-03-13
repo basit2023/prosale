@@ -12,6 +12,7 @@ import SelectBox from '@/components/ui/select';
 import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
 import { decryptData } from '@/components/encriptdycriptdata';
+import Select from 'react-select';
 import {
   editTeamZoneFormTypes,
   editTeamZoneFormSchema,
@@ -45,8 +46,10 @@ export default function AddTeamMemberModalView() {
   const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
     setLoading(true);
     try {
+      const projectIds = Array.isArray(data.project_id) ? data.project_id.join(',') : '';
       const result = await apiService.post(`/create-zone-team/?table=users_teams`, {
         ...data,
+        project_id: projectIds,
         user: userValue?.user?.name,
       });
       toast.success(result.data.message);
@@ -151,11 +154,14 @@ export function MemberForm({ register, control, errors }: MemberFormProps) {
   const [manager, setManager] = useState<any>();
   const { data: session } = useSession();
   const [value1, setValue1] = useState<any>();
+  const [project, setProject]=useState<any>()
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await apiService.get(`/all-members/?email=${session?.user?.email}`);
+        const pro = await apiService.get(`/projects`);
+        setProject(pro.data.data)
         const userData = response.data.data;
         setManager(userData);
       } catch (error) {
@@ -237,6 +243,27 @@ export function MemberForm({ register, control, errors }: MemberFormProps) {
           );
         }}
       />
+      <Controller
+                      control={control}
+                      name="project_id"
+                      render={({ field: { value, onChange } }) => {
+              
+                        const selectedOptions = project?.filter((item: any) => value?.includes(String(item.value)));
+
+                        return (
+                          <Select
+                            isMulti 
+                            value={selectedOptions ? selectedOptions.map((item: any) => ({ label: item.name, value: String(item.value) })) : []}
+                            placeholder="Select Project"
+                            options={project?.map((item: any) => ({ label: item.name, value: String(item.value) }))}
+                            onChange={(selectedOptions: any) => {
+                              onChange(selectedOptions ? selectedOptions.map((option: any) => option.value) : []);
+                            }}
+                            className="col-span-full"
+                          />
+                        );
+                      }}
+                    />
     </div>
   );
 }

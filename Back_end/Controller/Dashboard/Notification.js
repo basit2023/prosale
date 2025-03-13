@@ -52,6 +52,70 @@ const webpush = require('web-push');
 //     }
 // };
 
+
+
+const AutoNewNotification = async (req, res) => {
+  try {
+    const { ids, assigned_to, view_dt, assigned_on, assigned_through } = req.body;
+
+    // Query to get the name of the user assigned through
+    const [leads] = await mysqlConnection.promise().query("SELECT name FROM users WHERE email=?", [assigned_through]);
+    if (leads.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Assigned through user not found',
+      });
+    }
+    const assignedThroughName = leads[0].name;
+  
+    // Query to get the name of the user assigned to
+    const [ass_to] = await mysqlConnection.promise().query("SELECT name, mobile, sms FROM users WHERE id=?", [assigned_to]);
+    if (ass_to.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Assigned to user not found',
+      });
+    }
+
+    const assignedToName = ass_to[0].name;
+    const assignedToPhone = ass_to[0].mobile; // Assuming the phone number field is 'phone'
+    const sms = ass_to[0].sms;
+  
+    // Insert a new notification for each id
+    for (const id of ids) {
+      const sql = 'INSERT INTO leads_notification (leadId, assigned_to, assigned_through, user) VALUES (?, ?, ?, ?)';
+      const values = [id, assignedToName, assignedThroughName, assignedThroughName];
+      await mysqlConnection.promise().query(sql, values);
+
+      // Emit the notification to the assigned user
+      io?.to(assigned_to).emit('notification', {
+        message: `New Notification created for lead ID: ${id}`,
+      });
+    }
+
+    // Send SMS to the assigned user
+    const messageText = `You have been assigned new leads. Please check your notifications.`;
+    // const mask = 'Elaan Mrktg'; 
+    const formattedPhone = `92${assignedToPhone.slice(1)}`;
+    // await sendMessage([formattedPhone], messageText);
+    if(sms==="Y"){const response=await sendMessage([`923032144362`], messageText);
+    
+  }
+  
+    res.status(200).json({
+      success: true,
+      message: 'Notifications created successfully and message sent',
+    });
+  } catch (error) {
+    console.error('Error creating notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error in creating notification',
+      error: error.message,
+    });
+  }
+};
+
 const NewNotification = async (req, res) => {
     try {
       const { ids, assigned_to, view_dt, assigned_on, assigned_through } = req.body;
@@ -96,7 +160,7 @@ const NewNotification = async (req, res) => {
       // const mask = 'Elaan Mrktg'; 
       const formattedPhone = `92${assignedToPhone.slice(1)}`;
       // await sendMessage([formattedPhone], messageText);
-      if(sms==="Y"){const response=await sendMessage([`923032144362`], messageText);
+      if(sms==="Y"){const response=await sendMessage([`923105223105`], messageText);
       
     }
     
@@ -141,7 +205,7 @@ const GetNotification = async (req, res) => {
           resolve(results);
         });
       });
-  
+       
       // Count the notifications where notification_mark is false or 0
       const unreadCount = results.filter(notification => notification.notification_mark === 0).length;
   
@@ -163,9 +227,16 @@ const GetNotification = async (req, res) => {
 const updateNotificationMark = async (req, res) => {
     try {
         const { notificationId } = req.params;
-    
-
+        const {leadId}=req.query;
+        const currentTimestamp  = Math.floor(Date.now() / 1000);
+      
         // Update the notification_mark field to mark the notification as read
+        const [viewdate] = await mysqlConnection.promise().query(
+          "UPDATE leads_main SET view_dt = ? WHERE id = ?",
+          [currentTimestamp, leadId] // Pass the current timestamp and leadId
+      );
+
+
         const [result] = await mysqlConnection.promise().query(
             "UPDATE leads_notification SET notification_mark = ? WHERE id = ?",
             [true, notificationId]
@@ -280,6 +351,7 @@ const sendMessage = async (to, text, unicode = false) => {
         password: password
       }
     });
+    console.log("the result of the message when sent to some one:",authResponse)
 
     const sessionId = authResponse.data.match(/<data>(.*)<\/data>/)[1];
 
@@ -302,4 +374,4 @@ const sendMessage = async (to, text, unicode = false) => {
 
 
 
-module.exports = { saveSubscription, NewNotification, GetNotification,updateNotificationMark };
+module.exports = { saveSubscription, NewNotification, GetNotification,updateNotificationMark, sendMessage};

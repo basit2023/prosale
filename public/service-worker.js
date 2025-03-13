@@ -118,8 +118,6 @@
 if (!self.define) {
   let registry = {};
 
-  // Used for `eval` and `importScripts` where we can't get script URL by other means.
-  // In both cases, it's safe to use a global var because those functions are synchronous.
   let nextDefineUri;
 
   const singleRequire = (uri, parentUri) => {
@@ -150,7 +148,6 @@ if (!self.define) {
   self.define = (depsNames, factory) => {
     const uri = nextDefineUri || ("document" in self ? document.currentScript.src : "") || location.href;
     if (registry[uri]) {
-      // Module is already loading or loaded.
       return;
     }
     let exports = {};
@@ -169,7 +166,7 @@ if (!self.define) {
   };
 }
 
-define(['./workbox-9ed6b7fc'], function (workbox) { 
+define(['./workbox-9ed6b7fc'], function (workbox) {
   'use strict';
 
   importScripts();
@@ -197,38 +194,85 @@ define(['./workbox-9ed6b7fc'], function (workbox) {
     plugins: []
   }), 'GET');
 
-  // Push notification event listener
+  // ✅ Listen for 'push' events from the server
   self.addEventListener('push', event => {
-    const data = event.data.json();
+    let data = {};
+    try {
+      data = event.data.json();
+    } catch (e) {
+      console.error("Error parsing push notification data:", e);
+    }
+
     const title = data.title || 'New Notification';
     const options = {
       body: data.body || 'You have a new notification.',
       icon: data.icon || '/icons/icon-192x192.png',
       badge: data.badge || '/icons/badge-72x72.png',
-      data: data.url || '/'
+      data: { url: data.url || '/' } // Store URL for later opening
     };
+
     event.waitUntil(
       self.registration.showNotification(title, options)
     );
   });
 
-  // Notification click event listener
+  // ✅ Handle notification clicks
   self.addEventListener('notificationclick', event => {
     event.notification.close();
+
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
-        for (let i = 0; i < clientList.length; i++) {
-          let client = clientList[i];
-          if (client.url === event.notification.data && 'focus' in client) {
+        for (let client of clientList) {
+          if (client.url === event.notification.data.url && 'focus' in client) {
             return client.focus();
           }
         }
         if (clients.openWindow) {
-          return clients.openWindow(event.notification.data);
+          return clients.openWindow(event.notification.data.url);
         }
       })
     );
   });
-  
+
+  // ✅ Subscribe the user for push notifications
+  self.addEventListener('activate', async (event) => {
+    event.waitUntil(
+      self.registration.pushManager.getSubscription().then(async (subscription) => {
+        if (!subscription) {
+          console.log("🔔 No active subscription found. Subscribing now...");
+          const response = await fetch('/api/vapidPublicKey');
+          const vapidPublicKey = await response.text();
+          const convertedVapidKey = urlBase64ToUint8Array(vapidPublicKey);
+
+          return self.registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedVapidKey
+          }).then((newSubscription) => {
+            return fetch('/api/subscribe', {
+              method: 'POST',
+              body: JSON.stringify(newSubscription),
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+          });
+        }
+      }).catch(error => {
+        console.error("Failed to subscribe user:", error);
+      })
+    );
+  });
+
+  // Convert VAPID key
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding)
+        .replace(/-/g, '+')
+        .replace(/_/g, '/');
+
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+  }
 });
+
 //# sourceMappingURL=service-worker.js.map

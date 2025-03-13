@@ -14,6 +14,9 @@ import FormFooter from '@/components/form-footer';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import apiService from '@/utils/apiService';
+// import { MultiSelect } from "rizzui";
+// import { MultiSelect, Button } from "rizzui";
+import Select from 'react-select';
 import { decryptData } from '@/components/encriptdycriptdata';
 import { defaultValues, editTeamZoneFormTypes,editTeamZoneFormSchema } from '@/utils/validators/team-zones.schema';
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
@@ -41,6 +44,7 @@ export default function EditTeam({id}:any) {
   const [isLoading, setIsLoading] = useState(false); 
   const [country, setCountry] = useState<any>([]);
   const [userValue, setUserData]=useState<any>();
+  const [project, setProject]=useState<any>()
   const { back } = useRouter();
   useEffect(() => {
     const fetchUserData = async () => {
@@ -63,7 +67,8 @@ export default function EditTeam({id}:any) {
     const fetchData = async () => {
       try {
         const response = await apiService.get(`/all-members/?email=${session?.user?.email}`);
-        
+        const pro = await apiService.get(`/projects`);
+        setProject(pro.data.data)
         const userData = response.data.data;
         setCountry(userData);
       } catch (error) {
@@ -90,27 +95,31 @@ export default function EditTeam({id}:any) {
     }
   }, [session]);
 // console.log("the user data is:--->",value)
-  const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
-    setIsLoading(true);
-    try {
-       
-       const result= await apiService.put(`/zones-teams/${id}?table=users_teams`, {
-            ...data,user:userValue?.user?.name})
-        toast.success(result.data.message);
-        
-        if(result.data.success){
-          
-          logs({ user: userValue?.user?.name, desc: `Update team with id ${id}` });
-         back()
-        }
+const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
+  setIsLoading(true);
+  try {
+    // Convert project_id array to a comma-separated string
+    const projectIds = Array.isArray(data.project_id) ? data.project_id.join(',') : '';
 
-    } catch (error) {
-      console.error('Error updating Customer details:', error);
-      toast.error('Error updating Customer details. Please try again.');
-    }finally {
-      setIsLoading(false);
+    const result = await apiService.put(`/zones-teams/${id}?table=users_teams`, {
+      ...data,
+      project_id: projectIds,      
+      user: userValue?.user?.name,
+    });
+
+    toast.success(result.data.message);
+
+    if (result.data.success) {
+      logs({ user: userValue?.user?.name, desc: `Update team with id ${id}` });
+      back();
     }
-  };
+  } catch (error) {
+    console.error('Error updating Customer details:', error);
+    toast.error('Error updating Customer details. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
  
 
   
@@ -142,7 +151,8 @@ export default function EditTeam({id}:any) {
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
-              
+                //  defaultValue={`${id}`}
+                //  readOnly
                   placeholder="Enter Title"
                   {...register('title')}
                   error={errors.title?.message}
@@ -210,6 +220,32 @@ export default function EditTeam({id}:any) {
                     );
                   }}
                 />
+              </FormGroup>
+              <FormGroup
+                title="Project"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+              <Controller
+                      control={control}
+                      name="project_id"
+                      render={({ field: { value, onChange } }) => {
+              
+                        const selectedOptions = project?.filter((item: any) => value?.includes(String(item.value)));
+
+                        return (
+                          <Select
+                            isMulti 
+                            value={selectedOptions ? selectedOptions.map((item: any) => ({ label: item.name, value: String(item.value) })) : []}
+                            placeholder="Select Project"
+                            options={project?.map((item: any) => ({ label: item.name, value: String(item.value) }))}
+                            onChange={(selectedOptions: any) => {
+                              onChange(selectedOptions ? selectedOptions.map((option: any) => option.value) : []);
+                            }}
+                            className="col-span-full"
+                          />
+                        );
+                      }}
+                    />
               </FormGroup>
 
 

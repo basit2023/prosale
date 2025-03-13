@@ -461,7 +461,7 @@ const UpdateZoneTeam = async (req, res) => {
     }
 
     // Extract fields from the request body
-    const { title, zonal_manager, manager_id, zone_id, del, user, dt } = req.body;
+    const { title, zonal_manager, manager_id, zone_id, del, user, dt, project_id } = req.body;
 
     let sql = `UPDATE ${table} SET `;
     const values = [];
@@ -492,6 +492,10 @@ const UpdateZoneTeam = async (req, res) => {
       if (manager_id !== undefined && manager_id !== '') {
         sql += 'manager_id = ?, ';
         values.push(manager_id);
+      }
+      if (project_id !== undefined && project_id !== '') {
+        sql += 'project_id = ?, ';
+        values.push(project_id);
       }
       // Update the users table assigned_team field with manager_id
       await mysqlConnection.promise().query('UPDATE users SET assigned_team = "m", user_type = "manager" WHERE id = ?', [manager_id]);
@@ -550,7 +554,7 @@ const CreateZoneTeam = async (req, res) => {
     const { table } = req.query;
 
     // Extract fields from the request body
-    const { title, zonal_manager, manager_id, zone_id, del, user, dt } = req.body;
+    const { title, zonal_manager, manager_id, zone_id, del, user, dt, project_id } = req.body;
     if (!title || title.trim() === '') {
       return res.status(400).json({
         success: false,
@@ -586,6 +590,10 @@ const CreateZoneTeam = async (req, res) => {
       if (manager_id !== undefined && manager_id !== '') {
         sql += 'manager_id = ?, ';
         values.push(manager_id);
+      }
+      if (project_id !== undefined && project_id !== '') {
+        sql += 'project_id = ?, ';
+        values.push(project_id);
       }
       // Update the users table assigned_team field with manager_id
       await mysqlConnection.promise().query('UPDATE users SET assigned_team = "m" WHERE id = ?', [manager_id]);
