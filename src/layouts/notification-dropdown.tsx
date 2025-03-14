@@ -162,7 +162,7 @@ export default function NotificationDropdown({ children }) {
 
   // Memoize the WebSocket URL to prevent unnecessary reconnections
   // const websocketUrl = useMemo(() => 'ws://localhost:4001', []);
-  const websocketUrl = useMemo(() => 'wss://api.prosale.cloud:4001', []);
+  const websocketUrl = useMemo(() => 'wss://api.prosale.cloud', []);
 
   // Memoize the onMessage handler to prevent unnecessary re-renders
   const handleWebSocketMessage = useCallback((message) => {
