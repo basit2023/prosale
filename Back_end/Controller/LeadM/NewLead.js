@@ -1,9 +1,21 @@
 const mysqlConnection = require('../../utils/database');
-const WebSocket = require('ws');
+// const WebSocket = require('ws');
 const { io } = require('../../server');
 
 // Create a single WebSocket server instance
-const wss = new WebSocket.Server({ port: 4001 });
+// const wss = new WebSocket.Server({ port: 4001 });
+
+
+const fs = require('fs');
+const https = require('https');
+const WebSocket = require('ws');
+
+const server = https.createServer({
+    cert: fs.readFileSync('/etc/letsencrypt/live/api.prosale.cloud/fullchain.pem'),
+    key: fs.readFileSync('/etc/letsencrypt/live/api.prosale.cloud/privkey.pem')
+});
+
+const wss = new WebSocket.Server({ server });
 
 const GetSourceDepInterestLeadtype = async (req, res) => {
     try {
