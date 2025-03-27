@@ -3,7 +3,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { env } from '@/env.mjs';
 import { pagesOptions } from './pages-options';
 import apiService from '@/utils/apiService';
-import { cookies, headers } from 'next/headers';
+
 
 export const authOptions: NextAuthOptions = {
   pages: {
@@ -82,14 +82,7 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials: any) {
       
         try {
-          // Await cookies and headers if needed
-          const cookieStore = cookies();
-          const headersList = headers();
-
-          // Example: Access a specific cookie or header
-          const sessionCookie = cookieStore.get('session');
-          const userAgent = headersList.get('user-agent');
-
+         
           const response = await apiService.post('/login-a', {
             body: JSON.stringify(credentials),
             headers: { 'Content-Type': 'application/json' },
