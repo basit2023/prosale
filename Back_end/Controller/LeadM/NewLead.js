@@ -1,21 +1,21 @@
 const mysqlConnection = require('../../utils/database');
-// const WebSocket = require('ws');
+const WebSocket = require('ws');
 const { io } = require('../../server');
 
 // Create a single WebSocket server instance
-// const wss = new WebSocket.Server({ port: 4001 });
+const wss = new WebSocket.Server({ port: 4001 });
 
 
-const fs = require('fs');
-const https = require('https');
-const WebSocket = require('ws');
+// const fs = require('fs');
+// const https = require('https');
+// const WebSocket = require('ws');
 
-const server = https.createServer({
-    cert: fs.readFileSync('/etc/letsencrypt/live/api.prosale.cloud/fullchain.pem'),
-    key: fs.readFileSync('/etc/letsencrypt/live/api.prosale.cloud/privkey.pem')
-});
+// const server = https.createServer({
+//     cert: fs.readFileSync('/etc/letsencrypt/live/api.prosale.cloud/fullchain.pem'),
+//     key: fs.readFileSync('/etc/letsencrypt/live/api.prosale.cloud/privkey.pem')
+// });
 
-const wss = new WebSocket.Server({ server });
+// const wss = new WebSocket.Server({ server });
 
 const GetSourceDepInterestLeadtype = async (req, res) => {
     try {
@@ -333,7 +333,37 @@ const AutoUpdateNotification = async (assigned_to, leadId, user) => {
         throw error;
     }
 };
+
+
+// facebook leads
+
+const facebookLeads = async (req, res) => {
+    try {
+      
+        const leadData = req.body;
+        console.log('Received lead from the facebook leads:', leadData);
+    
+        // Save the lead to your database or process it further
+        // Example: saveLeadToDatabase(leadData);
+    
+        // Send a response to Zapier
+        res.status(200).json({ success: true, message: 'Lead received' });
+    
+    
+    } catch (error) {
+        console.error('Error creating lead:', error);
+        res.status(500).json({ success: false, message: 'Error in creating lead', error: error.message });
+    }
+};
+
+
+
+
+
+
+
 module.exports = { GetSourceDepInterestLeadtype, CreateNewLead, ReassignedLead, notifyUser };
+// module.exports = { GetSourceDepInterestLeadtype, CreateNewLead, ReassignedLead, notifyUser, facebookLeads };
 
 
 

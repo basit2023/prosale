@@ -1,5 +1,5 @@
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import toast from 'react-hot-toast';
 import apiService from '@/utils/apiService';
 
@@ -20,10 +20,8 @@ export type Invoice = {
 export const useEmployeeData = () => {
   const { data: session } = useSession();
   const [value, setValue] = useState<any>([]);
-  const [value1, setValue1] = useState<any>([]);
 
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       if (session) {
         const response = await apiService.get(`/employees/?email=${session?.user?.email}`);
@@ -34,28 +32,31 @@ export const useEmployeeData = () => {
       console.error('Error fetching employee data:', error);
       toast.error(error.response.data.message);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     fetchData();
-  }, [session,value1]);
+  }, [fetchData]);
 
-  const productsData = (value || []).map((user: any) => ({
-    id: user.id,
-    name: user.name,
-    first_name: user.first_name,
-    last_name: user.last_name,
-    email: user.email,
-    mobile: user.mobile,
-    cnic: user.cnic,
-    designation: user.designation,
-    department: user.department,
-    sms: user.sms,
-    status: user.status,
-    del: user.del,
-    office: user.office,
-    company_title: user.company_title,
-  }));
+  const productsData = useMemo(() => {
+    return (value || []).map((user: any) => ({
+      id: user.id,
+      name: user.name,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      email: user.email,
+      mobile: user.mobile,
+      cnic: user.cnic,
+      designation: user.designation,
+      department: user.department,
+      sms: user.sms,
+      status: user.status,
+      del: user.del,
+      office: user.office,
+      company_title: user.company_title,
+    }));
+  }, [value]);
+
   return productsData;
 };
 

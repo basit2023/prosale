@@ -27,31 +27,31 @@ export default function TableLayout({
   const { openModal } = useModal();
   const { data: session } = useSession<any>();
   const [userValue, setUserValue] = useState<any>();
-  useEffect(() => {
-    const fetchData = async () => {
+  // useEffect(() => {
+  //   const fetchData = async () => {
       
-      try {
-        const response = await apiService.get(`/all-permission/${session?.user?.email}`);
-        const userData = response?.data?.permission[0];
+  //     try {
+  //       const response = await apiService.get(`/all-permission/${session?.user?.email}`);
+  //       const userData = response?.data?.permission[0];
     
-        setUserValue(userData);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
+  //       setUserValue(userData);
+  //     } catch (error) {
+  //       console.error('Error fetching user data:', error);
         
-      }
+  //     }
     
      
-    };
+  //   };
 
-    if (session) {
-      fetchData();
-    }
-  }, [session]);
+  //   if (session) {
+  //     fetchData();
+  //   }
+  // }, [session]);
   return (
     <>
       <PageHeader {...props}>
         <div className="mt-4 flex items-center gap-3 @lg:mt-0">
-        {userValue && userValue.Create_permission >= 9 && (
+        {session?.user?.Create_permission >= 9 && (
          <div className="col-span-2 flex justify-end gap-4">
           <Button
             type="button"

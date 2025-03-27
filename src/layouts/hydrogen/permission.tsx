@@ -1,8 +1,9 @@
 import apiService from '@/utils/apiService';
 import axios from 'axios';
 import { AES, enc } from 'crypto-js';
-
+import { useSession  } from 'next-auth/react';
 export const fetchUserPermissions = async () => {
+  
   try {
     // Retrieve encrypted user data from localStorage
     const encryptedData = localStorage.getItem('userData');

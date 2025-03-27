@@ -33,7 +33,8 @@
     "**/*.tsx",
     "**/*.cjs",
     "**/*.mjs",
+    "**/middleware.ts",
     ".next/types/**/*.ts"
-  ],
+, "src/app/pushService.jsx"  ],
   "exclude": ["node_modules"]
 }

@@ -2,7 +2,7 @@
 const mysqlConnection = require('../../utils/database');
 
 const ZoneData = async (req, res) => {
-  try {
+  try {           
     const { email } = req.params;
     const { id, table, managerType } = req.query;
 

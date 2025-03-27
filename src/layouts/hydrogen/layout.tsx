@@ -3,7 +3,7 @@ import Sidebar from '@/layouts/hydrogen/sidebar';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import { Toaster } from 'react-hot-toast';
-import 'react-toastify/dist/ReactToastify.css';
+
 export default function HydrogenLayout({
   children,
 }: {
@@ -19,7 +19,7 @@ export default function HydrogenLayout({
           {children}
           <ToastContainer />
           <Toaster />
-          <Toaster />
+          
         </div>
       </div>
     </main>

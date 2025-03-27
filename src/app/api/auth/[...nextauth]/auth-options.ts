@@ -1,9 +1,9 @@
-
 import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import { env } from '@/env.mjs';
 import { pagesOptions } from './pages-options';
 import apiService from '@/utils/apiService';
+import { cookies, headers } from 'next/headers';
 
 export const authOptions: NextAuthOptions = {
   pages: {
@@ -16,45 +16,50 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async session({ session, token }) {
-      console.log("Session callback - session:", session);
-      console.log("Session callback - token:", token);
-      
-      // Optionally remove image if not needed
-      // delete session?.user?.image;
-  
       return {
         ...session,
         user: {
           ...session.user,
-          id: token.id, // Ensure token.id is correctly set
+          id: token.id,
+          email: token.email,
+          name: token.name,
+          user_type: token.user_type,
+          company_id: token.company_id,
+          // Add permission fields
+          permission: token.permission,
+          Create_permission: token.Create_permission,
+          Edit_permission: token.Edit_permission,
+          View_permission: token.View_permission,
         },
       };
     },
-  
+
     async jwt({ token, user }) {
-      console.log("JWT callback - token before:", token);
-      console.log("JWT callback - user:", user);
-    
+
+
       if (user) {
-        // If a user is signing in, add their ID to the token as a string
-        token.id = user.id.toString(); // Ensure `user.id` exists and is converted to string
-    
-        // Optionally delete unnecessary fields
-        // delete token.picture;
+        // Add all required fields to the token
+        token.id = user.id.toString();
+        token.email = user.email;
+        token.name = user.name;
+        token.user_type = user.user_type;
+        token.company_id = user.company_id;
+        token.permission = parseInt(user.permission || '0', 10);
+        token.Create_permission = parseInt(user.Create_permission || '0', 10);
+        token.Edit_permission = parseInt(user.Edit_permission || '0', 10);
+        token.View_permission = parseInt(user.View_permission || '0', 10);
       }
-    
+
       return token;
     },
-    
-  
+
     async redirect({ url, baseUrl }) {
-      console.log("Redirect callback - baseUrl:", baseUrl);
-      console.log("Redirect callback - url:", url);
   
+
       try {
         const parsedUrl = new URL(url, baseUrl);
-        console.log("Parsed URL:", parsedUrl);
-  
+
+
         if (parsedUrl.origin === baseUrl) {
           return url;
         }
@@ -64,71 +69,30 @@ export const authOptions: NextAuthOptions = {
         }
         return baseUrl;
       } catch (error) {
-        console.error("Error in redirect callback:", error);
+        console.error('Error in redirect callback:', error);
         return baseUrl;
       }
     },
   },
-  
-
-   /*   
-   callbacks: {
-    async session({ session, token }) {
-      console.log("Session callback - session:", session);
-      console.log("Session callback - token:", token);
-      delete session?.user?.image;
-      return {
-        ...session,
-        user: {
-          ...session?.user,
-          id: token.id as string,
-        },
-      };
-    },
-    async jwt({ token, user }) {
-    
-      // console.log("JWT callback - token before:", token);
-      // console.log("JWT callback - user:", user);
-      if (user) {
-        delete token.picture;
-         token.id = token.sub //user.id;
-      }
-      
-      return token;
-    },
-    async redirect({ url, baseUrl }) {
-      // console.log("Redirect callback - baseUrl:", baseUrl);
-      // console.log("Redirect callback - url:", url);
-
-      try {
-        const parsedUrl = new URL(url, baseUrl);
-        console.log("Parsed URL:", parsedUrl);
-        if (parsedUrl.origin === baseUrl) {
-          return url;
-        }
-        if (parsedUrl.searchParams.has('callbackUrl')) {
-          const callbackUrl = parsedUrl.searchParams.get('callbackUrl');
-          return `${baseUrl}${callbackUrl}`;
-        }
-        return baseUrl;
-      } catch (error) {
-        console.error("Error in redirect callback:", error);
-        return baseUrl;
-      }
-    },
-  },
-  */
   providers: [
     CredentialsProvider({
       id: 'credentials',
       name: 'Credentials',
       credentials: {},
       async authorize(credentials: any) {
-        console.log("Authorize function - received credentials:", credentials);
+      
         try {
+          // Await cookies and headers if needed
+          const cookieStore = cookies();
+          const headersList = headers();
+
+          // Example: Access a specific cookie or header
+          const sessionCookie = cookieStore.get('session');
+          const userAgent = headersList.get('user-agent');
+
           const response = await apiService.post('/login-a', {
             body: JSON.stringify(credentials),
-            headers: { "Content-Type": "application/json" },
+            headers: { 'Content-Type': 'application/json' },
           });
 
           if (response.status !== 200) {
@@ -136,14 +100,26 @@ export const authOptions: NextAuthOptions = {
             throw new Error(`Error fetching user: ${response.status} ${response.statusText}`);
           }
 
-          const user = response.data.user
-          console.log("Authorize function - user from API response:", user);
-          // const user1 = await response.data.user;
+          const user = response.data.user;
+          console.log('Authorize function - user from API response:', user);
+
           if (user.email === credentials.email && user.password === credentials.password) {
-            // console.log("Authorize function - Authorized user:", user);
-            return user;
+            // Return the user object with all required fields
+
+            
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.name,
+              user_type: user.user_type,
+              company_id: user.company_id,
+              permission: parseInt(user.permission || '0', 10),
+              Create_permission:parseInt(user.Create_permission || '0', 10),
+              Edit_permission:parseInt(user.Edit_permission || '0', 10) ,
+              View_permission:parseInt(user.View_permission || '0', 10)
+            };
           } else {
-            console.log("Authorize function - Authentication failed. Returning null.");
+            console.log('Authorize function - Authentication failed. Returning null.');
             return null;
           }
         } catch (error: any) {
@@ -154,6 +130,161 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 };
+
+// import type { NextAuthOptions } from 'next-auth';
+// import CredentialsProvider from 'next-auth/providers/credentials';
+// import { env } from '@/env.mjs';
+// import { pagesOptions } from './pages-options';
+// import apiService from '@/utils/apiService';
+
+// export const authOptions: NextAuthOptions = {
+//   pages: {
+//     ...pagesOptions,
+//   },
+//   secret: env.NEXTAUTH_SECRET,
+//   session: {
+//     strategy: 'jwt',
+//     maxAge: 1 * 24 * 60 * 60, // 1 day
+//   },
+//   callbacks: {
+//     async session({ session, token,user  }) {
+//       console.log("Session callback - session:", session);
+//       console.log("Session callback - token:", user);
+      
+//       // Optionally remove image if not needed
+//       // delete session?.user?.image;
+  
+//       return {
+//         ...session,
+//         user: {
+//           ...session.user,
+//           id: token.id, // Ensure token.id is correctly set
+//         },
+//       };
+//     },
+  
+//     async jwt({ token, user }) {
+//       console.log("the token at the jwt is:",user)
+    
+//       if (user) {
+//         // If a user is signing in, add their ID to the token as a string
+//         token.id = user.id.toString(); // Ensure `user.id` exists and is converted to string
+    
+//         // Optionally delete unnecessary fields
+//         // delete token.picture;
+//       }
+    
+//       return token;
+//     },
+    
+  
+//     async redirect({ url, baseUrl }) {
+//       console.log("Redirect callback - baseUrl:", baseUrl);
+//       console.log("Redirect callback - url:", url);
+  
+//       try {
+//         const parsedUrl = new URL(url, baseUrl);
+//         console.log("Parsed URL:", parsedUrl);
+  
+//         if (parsedUrl.origin === baseUrl) {
+//           return url;
+//         }
+//         if (parsedUrl.searchParams.has('callbackUrl')) {
+//           const callbackUrl = parsedUrl.searchParams.get('callbackUrl');
+//           return `${baseUrl}${callbackUrl}`;
+//         }
+//         return baseUrl;
+//       } catch (error) {
+//         console.error("Error in redirect callback:", error);
+//         return baseUrl;
+//       }
+//     },
+//   },
+  
+
+//    /*   
+//    callbacks: {
+//     async session({ session, token }) {
+//       console.log("Session callback - session:", session);
+//       console.log("Session callback - token:", token);
+//       delete session?.user?.image;
+//       return {
+//         ...session,
+//         user: {
+//           ...session?.user,
+//           id: token.id as string,
+//         },
+//       };
+//     },
+//     async jwt({ token, user }) {
+    
+//       // console.log("JWT callback - token before:", token);
+//       // console.log("JWT callback - user:", user);
+//       if (user) {
+//         delete token.picture;
+//          token.id = token.sub //user.id;
+//       }
+      
+//       return token;
+//     },
+//     async redirect({ url, baseUrl }) {
+//       // console.log("Redirect callback - baseUrl:", baseUrl);
+//       // console.log("Redirect callback - url:", url);
+
+//       try {
+//         const parsedUrl = new URL(url, baseUrl);
+//         console.log("Parsed URL:", parsedUrl);
+//         if (parsedUrl.origin === baseUrl) {
+//           return url;
+//         }
+//         if (parsedUrl.searchParams.has('callbackUrl')) {
+//           const callbackUrl = parsedUrl.searchParams.get('callbackUrl');
+//           return `${baseUrl}${callbackUrl}`;
+//         }
+//         return baseUrl;
+//       } catch (error) {
+//         console.error("Error in redirect callback:", error);
+//         return baseUrl;
+//       }
+//     },
+//   },
+//   */
+//   providers: [
+//     CredentialsProvider({
+//       id: 'credentials',
+//       name: 'Credentials',
+//       credentials: {},
+//       async authorize(credentials: any) {
+//         console.log("Authorize function - received credentials:", credentials);
+//         try {
+//           const response = await apiService.post('/login-a', {
+//             body: JSON.stringify(credentials),
+//             headers: { "Content-Type": "application/json" },
+//           });
+
+//           if (response.status !== 200) {
+//             console.error(`Error fetching user: ${response.status} ${response.statusText}`);
+//             throw new Error(`Error fetching user: ${response.status} ${response.statusText}`);
+//           }
+
+//           const user = response.data.user
+//           console.log("Authorize function - user from API response:", user);
+//           // const user1 = await response.data.user;
+//           if (user.email === credentials.email && user.password === credentials.password) {
+//             // console.log("Authorize function - Authorized user:", user);
+//             return user;
+//           } else {
+//             console.log("Authorize function - Authentication failed. Returning null.");
+//             return null;
+//           }
+//         } catch (error: any) {
+//           console.error('Error during authorization:', error.message);
+//           return null;
+//         }
+//       },
+//     }),
+//   ],
+// };
 
 
 

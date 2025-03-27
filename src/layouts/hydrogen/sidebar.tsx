@@ -28,12 +28,12 @@ export default function Sidebar({ className }: { className?: string }) {
   const encryptedSuperAdmin = localStorage.getItem('superadmin');
   const userData = encryptedSuperAdmin ? decryptData(encryptedSuperAdmin) : null;
 
-  const encryptedPermission = localStorage.getItem('permission');
+  // const encryptedPermission = localStorage.getItem('permission');
   
-  const permissionData = encryptedPermission ? decryptData(encryptedPermission) : null;
+  // const permissionData = encryptedPermission ? decryptData(encryptedPermission) : null;
   
   const [supper, setSupper] = useState<any>(userData);
-  const [perm_d, setPerm_d] = useState<any>(permissionData);
+  const [perm_d, setPerm_d] = useState<any>(session?.user?.permission);
 
   useEffect(() => {
     if (session) {
@@ -55,29 +55,29 @@ export default function Sidebar({ className }: { className?: string }) {
       };
       fetchData();
     }
-  }, [session]);
+  }, []);
 
-  useEffect(() => {
-    if (session) {
-      const fetchPermissionData = async () => {
-        try {
-          if (!permissionData) {
-            const response = await apiService.get(`/permission/${session.user.email}`);
-            const fetchedPermissionData = response.data.results;
-            const encryptedPermissionData = encryptData(fetchedPermissionData);
-            localStorage.setItem('permission', encryptedPermissionData);
-            setPerm_d(fetchedPermissionData);
-          } else {
-            setPerm_d(permissionData);
-          }
-        } catch (error) {
-          console.error('Error fetching permission data:', error);
-        }
-        setIsLoading(false);
-      };
-      fetchPermissionData();
-    }
-  }, [session]);
+  // useEffect(() => {
+  //   if (session) {
+  //     const fetchPermissionData = async () => {
+  //       try {
+  //         if (!permissionData) {
+  //           const response = await apiService.get(`/permission/${session.user.email}`);
+  //           const fetchedPermissionData = response.data.results;
+  //           const encryptedPermissionData = encryptData(fetchedPermissionData);
+  //           localStorage.setItem('permission', encryptedPermissionData);
+  //           setPerm_d(fetchedPermissionData);
+  //         } else {
+  //           setPerm_d(permissionData);
+  //         }
+  //       } catch (error) {
+  //         console.error('Error fetching permission data:', error);
+  //       }
+  //       setIsLoading(false);
+  //     };
+  //     fetchPermissionData();
+  //   }
+  // }, []);
 
   useEffect(() => {
     if (!session) {
@@ -90,9 +90,9 @@ export default function Sidebar({ className }: { className?: string }) {
   useEffect(() => {
     const fetchDataAndLog = async () => {
       try {
-        if (perm_d?.length > 0) {
+        
           const items = await getMenuItems();
-          const userPermissions = perm_d[0].permission_level;
+          const userPermissions = perm_d;
           const transformedItems = items.reduce((acc: any, item: any) => {
             if (item.dropdownItems) {
               const allowedDropdownItems = item.dropdownItems.filter((dropdownItem: any) => dropdownItem.permission_level <= userPermissions);
@@ -112,7 +112,7 @@ export default function Sidebar({ className }: { className?: string }) {
           localStorage.setItem('sidebar',encryptData(transformedItems));
           
           setTransformedItems(transformedItems);
-        }
+        
       } catch (error) {
         console.error('Error fetching menu items:', error);
       }

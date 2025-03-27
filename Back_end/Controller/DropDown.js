@@ -1,6 +1,7 @@
 const mysqlConnection = require('../utils/database');
 
 const DropDown = async (req, res) => {
+
   try {
     const { parent_id } = req.params; // Extract parent_id from the query parameters
     if (!parent_id) {

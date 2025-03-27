@@ -58,8 +58,10 @@ export const useGetColumns  = ({
   //     customSize: '420px',
   //   });
   // };
+  // console.log('the data in the columns is:',data)
   const columns = [
-    ...(parseFloat(data[0].permission) >= 9
+    ...((session?.user?.permission) >= 4
+    // ...(parseFloat(data[0].permission) >= 4
     ? [
         {
           title: (

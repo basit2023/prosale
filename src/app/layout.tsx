@@ -56,8 +56,6 @@
 //   );
 // }
 
-
-
 import dynamic from 'next/dynamic';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth-options';
@@ -66,15 +64,13 @@ import GlobalDrawer from '@/app/shared/drawer-views/container';
 import GlobalModal from '@/app/shared/modal-views/container';
 import { ThemeProvider } from '@/app/shared/theme-provider';
 import { siteConfig } from '@/config/site.config';
-import { inter, lexendDeca }  from '@/app/fonts';
+import { inter, lexendDeca } from '@/app/fonts';
 import { Toaster } from 'react-hot-toast';
 import cn from '@/utils/class-names';
 import ServiceWorkerManager from '@/components/ServiceWorkerManager';
 
 import '@/app/globals.css';
-const NextProgress = dynamic(() => import('@/components/next-progress'), {
-  ssr: false,
-});
+import NextProgress from '@/components/next-progress';
 
 export const metadata = {
   title: siteConfig.title,
@@ -86,7 +82,16 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
+  // Fetch the session asynchronously
+  let session;
+  try {
+    session = await getServerSession(authOptions);
+  } catch (error) {
+    console.error('Failed to fetch session:', error);
+    // Optionally, render a fallback UI or redirect
+  }
+
+
 
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
@@ -99,13 +104,19 @@ export default async function RootLayout({
         suppressHydrationWarning
         className={cn(inter.variable, lexendDeca.variable, 'font-inter')}
       >
+        {/* Wrap the entire application with the AuthProvider */}
         <AuthProvider session={session}>
           <ThemeProvider>
+            {/* Progress bar for route transitions */}
             <NextProgress />
+            {/* Main content */}
             {children}
+            {/* Toast notifications */}
             <Toaster />
+            {/* Global drawer and modal components */}
             <GlobalDrawer />
             <GlobalModal />
+            {/* Service worker manager for PWA */}
             <ServiceWorkerManager />
           </ThemeProvider>
         </AuthProvider>

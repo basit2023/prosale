@@ -77,35 +77,35 @@ export default function QuickAccess({ className }: { className?: string }) {
     scrollToTheLeft,
   } = useScrollableSlider();
   const { data: session } = useSession();
-  const [userPermissions, setUserPermissions] = useState<number>(1);
+  const [userPermissions, setUserPermissions] = useState<number>(session?.user?.permission);
   const [transformedItems, setTransformedItems] = useState<any[]>([]);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const response = await apiService.get(`/permission/${session.user.email}`);
-        const fetchedPermissionData = response.data.results;
-        const encryptedPermissionData = encryptData(fetchedPermissionData);
-        localStorage.setItem('permission', encryptedPermissionData);
-        setUserPermissions(fetchedPermissionData ? fetchedPermissionData[0]?.permission_level : 1); 
-      } catch (error: any) {
-        console.error('Error fetching user data:', error);
-      }
-    };
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     try {
+  //       const response = await apiService.get(`/permission/${session.user.email}`);
+  //       const fetchedPermissionData = response.data.results;
+  //       const encryptedPermissionData = encryptData(fetchedPermissionData);
+  //       localStorage.setItem('permission', encryptedPermissionData);
+  //       setUserPermissions(fetchedPermissionData ? fetchedPermissionData[0]?.permission_level : 1); 
+  //     } catch (error: any) {
+  //       console.error('Error fetching user data:', error);
+  //     }
+  //   };
 
-    const encryptedPermission = localStorage.getItem('permission');
-    if (encryptedPermission) {
-      const decryptedPermission:any = decryptData(encryptedPermission);
-      setUserPermissions(decryptedPermission[0]?.permission_level || 1);
-    } else {
-      fetchUserData();
-    }
+  //   const encryptedPermission = localStorage.getItem('permission');
+  //   if (encryptedPermission) {
+  //     const decryptedPermission:any = decryptData(encryptedPermission);
+  //     setUserPermissions(decryptedPermission[0]?.permission_level || 1);
+  //   } else {
+  //     fetchUserData();
+  //   }
 
-    const transformedItemsString = localStorage.getItem('sidebar');
-    const decryptedString: any = transformedItemsString ? decryptData(transformedItemsString) : '[]';
-    const parsedItems =(decryptedString);
-    setTransformedItems(Array.isArray(parsedItems) ? parsedItems : []);
-  }, [session?.user?.email]);
+  //   const transformedItemsString = localStorage.getItem('sidebar');
+  //   const decryptedString: any = transformedItemsString ? decryptData(transformedItemsString) : '[]';
+  //   const parsedItems =(decryptedString);
+  //   setTransformedItems(Array.isArray(parsedItems) ? parsedItems : []);
+  // }, [session?.user?.email]);
 
   return (
     <div className={className}>

@@ -86,7 +86,12 @@ function DropdownMenu() {
             // Save the current URL to localStorage
             const currentUrl = window.location.href;
             localStorage.setItem('lastVisited', currentUrl);
-
+            localStorage.removeItem('company_id')
+            localStorage.removeItem('permission')
+            localStorage.removeItem('sidebar')
+            localStorage.removeItem('superadmin')
+            localStorage.removeItem('uData')
+            localStorage.removeItem('userData')
             signOut(
               {
               callbackUrl: routes.signIn, // Ensure the user is redirected to the sign-in page after sign-out

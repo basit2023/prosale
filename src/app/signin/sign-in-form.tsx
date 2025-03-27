@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn,useSession  } from 'next-auth/react';
 import { SubmitHandler } from 'react-hook-form';
 import { PiArrowRightBold } from 'react-icons/pi';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -18,7 +18,7 @@ import apiService from '@/utils/apiService';
 import { useRouter } from 'next/navigation';
 import { setCookie } from 'nookies';
 import { Text } from '@/components/ui/text';
-import { useSession } from 'next-auth/react';
+
 import Spinner from '@/components/ui/spinner'; 
 import { handleRememberMe } from './authUtils';
 
@@ -68,6 +68,7 @@ export default function SignInForm() {
         }
 
         const encryptedData = AES.encrypt(JSON.stringify(result), 'encryptionSecret').toString();
+      
         localStorage.setItem('userData', encryptedData);
 
         const signInResponse = await signIn('credentials', {

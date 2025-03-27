@@ -2,6 +2,7 @@ const { z } = require('zod');
 const crypto = require('crypto');
 const mysqlConnection = require('../utils/database');
 const fs = require('fs');
+const { permission } = require('process');
 
 
 // const loginHandler = async (req, res) => {
@@ -175,20 +176,18 @@ const checkSupperAdmin = async (req, res) => {
 
 const loginHandlerA = async (req, res) => {
   try {
-    const parsedBody = JSON.parse(req.body.body);
-    const { email, password } = parsedBody; // Extract email and password from the request body
-
+    const parsedBody = JSON.parse(req.body.body); // Why parse body.body? Should be req.body directly
+    const { email, password } = parsedBody;
 
     if (!email || !password) {
-      
       return res.status(400).json({
         success: false,
         message: 'Invalid email or password',
       });
     }
-   
+
     const [user] = await mysqlConnection.promise().query('SELECT * FROM users WHERE email = ?', [email]);
-  
+   const inputToCheck= password
     if (!user.length) {
       return res.status(404).json({
         success: false,
@@ -196,38 +195,41 @@ const loginHandlerA = async (req, res) => {
       });
     }
 
-    const storedPassword = user[0].password;
-    const inputToCheck = password;
-
-    // Hash the input using SHA-2 (in this case, SHA-256)
-    const hashedInput = crypto.createHash('sha256').update(inputToCheck).digest('hex');
-
-    if (hashedInput == storedPassword) {
-      // Data to be stored in the JSON file
-      const data = {
-        email: user[0].email,
-        user_type: user[0].user_type,
-        user_id: user[0].id,
-      };
-
-      
-     
-      res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        user: {
-          email: user[0].email,
-          password: inputToCheck,
-          id:user[0].id,
-          name: `${user[0].first_name} ${user[0].last_name}`,
-        },
-      });
-    } else {
-      res.status(401).json({
+    // Security issue: You're using SHA-256 for password hashing (not secure for passwords)
+    const hashedInput = crypto.createHash('sha256').update(password).digest('hex');
+    
+    if (hashedInput !== user[0].password) { // Use !== for strict comparison
+      return res.status(401).json({
         success: false,
         message: 'Incorrect password',
       });
     }
+
+    // Typo in View_permissio (missing 'n')
+    const [perm] = await mysqlConnection.promise().query(`
+      SELECT ut.permission_level AS permission, ut.Create_permission, ut.Edit_permission, ut.View_permission
+      FROM users_types ut 
+      INNER JOIN users u ON u.user_type = ut.type WHERE u.id=?`, [user[0].id]); // Fixed id reference
+
+    const responseData = {
+      success: true,
+      message: 'Login successful',
+      user: {
+        email: user[0].email,
+        id: user[0].id,
+        password: inputToCheck,
+        name: `${user[0].first_name} ${user[0].last_name}`,
+        user_type: user[0].user_type,
+        company_id: user[0].company_id,
+        permission: perm[0]?.permission || 0, // Safe access with fallback
+        Create_permission: perm[0]?.Create_permission || 0,
+        Edit_permission: perm[0]?.Edit_permission || 0,
+        View_permission: perm[0]?.View_permission || 0 // Fixed typo
+      }
+    };
+
+    res.status(200).json(responseData);
+
   } catch (error) {
     console.error('Error during login:', error);
     res.status(500).json({

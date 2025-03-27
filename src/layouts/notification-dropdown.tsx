@@ -162,11 +162,17 @@ export default function NotificationDropdown({ children }) {
 
   // Memoize the WebSocket URL to prevent unnecessary reconnections
   // const websocketUrl = useMemo(() => 'ws://localhost:4001', []);
-  const websocketUrl = useMemo(() => 'wss://api.prosale.cloud', []);
+  // const websocketUrl = useMemo(() => 'wss://api.prosale.cloud', []);
+  const websocketUrl = useMemo(() => {
+    return window.location.protocol === 'https:' 
+        ? 'wss://api.prodeed.cloud:4001' 
+        : 'ws://localhost:4001';
+}, []);
+
 
   // Memoize the onMessage handler to prevent unnecessary re-renders
   const handleWebSocketMessage = useCallback((message) => {
-    console.log("The message from the backend is:", message);
+    // console.log("The message from the backend is:", message);
   
     if (!session?.user?.id) return; // Ensure user is logged in
   

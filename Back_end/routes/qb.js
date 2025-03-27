@@ -34,6 +34,7 @@ const { SignUpHandler, OnBordingHandler } = require("../Controller/Signup");
 const { customMiddleware } = require("../Controller/middleware/middleware");
 const { getCounts, getTopLead } = require("../Controller/Dashboard/Dashboard");
 const { GetSourceDepInterestLeadtype, CreateNewLead } = require("../Controller/LeadM/NewLead");
+// const { GetSourceDepInterestLeadtype, CreateNewLead, facebookLeads } = require("../Controller/LeadM/NewLead");
 const { NewNotification, GetNotification, updateNotificationMark, saveSubscription } = require("../Controller/Dashboard/Notification");
 const { AddNewFloor, UpdateUnits, CreateNewUnits, UnitCounts, AddDuplicateFloor, DeleteProjectFloor, UpdateAllFloorRates, Getrequiredfloor } = require("../Controller/Project/floor");
 const { createNewPaymentPlan, paymentData, GetSpecificPyammentplan, DeletePaymentplan, LinkProject, GetPaymentPlan, GetTemplates, GetTemplatesUnits, GetPaymentPlanid, UpdatePaymentPlan } = require("../Controller/Project/pamymentplain");
@@ -243,6 +244,10 @@ Router.get('/api/floorName/', Getrequiredfloor);
 Router.get('/api/all-user-type/', GetUserType);
 //get team for Employee 
 Router.get('/api/emp-team/', TeamForEmployee);
+// Router.post('/fbleads/', facebookLeads);
+
+
+
 
 
 

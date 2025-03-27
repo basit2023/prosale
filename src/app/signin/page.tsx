@@ -4,7 +4,7 @@ import Image from 'next/image';
 import UnderlineShape from '@/components/shape/underline';
 import { metaObject } from '@/config/site.config';
 // import SigninImage from '@public/logo/Sales-01.png';
-import RouteProtect from '@/RouteProtect';
+
 import { base64ImageData } from './imagedata';
 export const metadata = {
   ...metaObject('Sign In'),

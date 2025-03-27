@@ -211,6 +211,7 @@ const SpecificTeamMemberLeads = async (req, res) => {
     const field = req.query.field;
     let user;
     [user]= await  mysqlConnection.promise().query(`Select name,company_id from users where id=?`,[id1])
+   
     
     let leads;
     [leads] = await mysqlConnection.promise().query(`
@@ -314,6 +315,9 @@ const SpecificTeamMemberLeads = async (req, res) => {
         message: 'No leads found',
       });
     }
+
+
+    
 
     // Respond with all leads information
     res.status(200).json({
