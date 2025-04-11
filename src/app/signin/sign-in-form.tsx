@@ -16,11 +16,11 @@ import { AES } from 'crypto-js';
 import toast from 'react-hot-toast';
 import apiService from '@/utils/apiService';
 import { useRouter } from 'next/navigation';
-import { setCookie } from 'nookies';
+// import { setCookie } from 'nookies';
 import { Text } from '@/components/ui/text';
 
 import Spinner from '@/components/ui/spinner'; 
-import { handleRememberMe } from './authUtils';
+// import { handleRememberMe } from './authUtils';
 
 const initialValues: LoginSchema = {
   email: 'admin@admin.com',
@@ -59,11 +59,11 @@ export default function SignInForm() {
         // handleRememberMe(rememberMeValue, session);
         if (rememberMeValue) {
           // Set cookie for 30 days
-          setCookie(null, 'rememberMe', 'true', { maxAge: 1 * 24 * 60 * 60, path: '/' });
+          // setCookie(null, 'rememberMe', 'true', { maxAge: 1 * 24 * 60 * 60, path: '/' });
           // session?.maxAge = 30 * 24 * 60 * 60; // 30 days
         } else {
           // Set cookie to expire on tab close
-          setCookie(null, 'rememberMe', 'false', { maxAge: -1, path: '/' });
+          // setCookie(null, 'rememberMe', 'false', { maxAge: -1, path: '/' });
           // session?.maxAge = undefined; // Session will expire on tab close
         }
 

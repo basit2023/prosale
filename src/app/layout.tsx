@@ -56,7 +56,11 @@
 //   );
 // }
 
-import dynamic from 'next/dynamic';
+
+
+export const dynamic = 'force-dynamic';
+
+// import dynamic from 'next/dynamic';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/app/api/auth/[...nextauth]/auth-options';
 import AuthProvider from '@/app/api/auth/[...nextauth]/auth-provider';
