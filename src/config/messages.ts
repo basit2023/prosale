@@ -76,5 +76,8 @@ export const messages = {
   emailSentSuccessfully: 'Your email has been sent successfully.',
   image:"Error while uploading image",
   department:"Error in department section",
-  mobileNumber:"Mobile Number required",
+  mobileNumber:"Mobile Number is required",
+  name:"User Name is required",
+  first_name:"First Name is required",
+  field:"This filed is required",
 };

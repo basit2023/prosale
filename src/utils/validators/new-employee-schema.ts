@@ -7,8 +7,8 @@ import {
 // form zod validation schema
 
 export const NewEmployeeInfoFormSchema = z.object({
-  name: z.string().optional(),
-  first_name: z.string().optional(),
+  name: z.string().min(1, { message: messages.name }),
+  first_name: z.string().min(1, { message: messages.first_name }),
   last_name: z.string().optional(),
   password: z
     .string()
@@ -23,8 +23,8 @@ export const NewEmployeeInfoFormSchema = z.object({
   user_type: z.string().optional(),
   image: z.string().optional(),
   gender: z.string().optional(),
-  mobile: z.string().optional(),
-  isp: z.string().optional(),
+  mobile: z.string().min(1, { message: messages.mobileNumber }),
+  isp: z.string().min(1, { message: messages.field }),
   cnic: z.string().optional(),
   designation: z.string().optional(),
   department: z.string().optional(),

@@ -16,7 +16,6 @@ import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
 import { useEffect, useState } from 'react';
 import apiService from '@/utils/apiService';
-import ProfileSettingsView from './../account-settings/personal-info';
 import { Password } from '@/components/ui/password';                                            
 import { NewEmployeeInfoFormSchema,NewEmployeeInfoFormTypes,defaultValues } from '@/utils/validators/new-employee-schema';
 import AvatarUpload from '@/components/ui/file-upload/avatar-upload';
@@ -205,7 +204,8 @@ const imageBuffer = base64Image ? `data:image/jpeg;base64,${base64Image}` : null
                 // defaultValue={value?.user?.name}
                   placeholder="example123"
                   {...register('name')}
-                  error={errors.cnic?.message}
+                  required
+                  error={errors?.name?.message}
                   className="flex-grow"
                 />
               </FormGroup>
@@ -260,7 +260,7 @@ const imageBuffer = base64Image ? `data:image/jpeg;base64,${base64Image}` : null
                   type="email"
                   prefix={<PiEnvelopeSimple className="w-5" />}
                   {...register('email')}
-                 
+                  required
                   placeholder="example@gmail.com"  
                   error={errors?.email?.message}
                   className="flex-grow"
@@ -302,6 +302,7 @@ const imageBuffer = base64Image ? `data:image/jpeg;base64,${base64Image}` : null
                   {...register('mobile')}
                   error={errors.mobile?.message}
                   className="flex-grow"
+                  type='number'
                 />
                 <Controller
                   control={control}
@@ -311,6 +312,7 @@ const imageBuffer = base64Image ? `data:image/jpeg;base64,${base64Image}` : null
                       // value={value?.user?.isp}
                       // defaultValue={`${value?.user?.isp}`}
                       placeholder="SIM Provider"//{sim1 ? sim1 : "SIM Provider"}
+                      defaultValue="jazz"
                       options={sim}
                       onChange={onChange}
                       value={value}
@@ -388,7 +390,7 @@ const imageBuffer = base64Image ? `data:image/jpeg;base64,${base64Image}` : null
                   render={({ field: { value, onChange } }) => (
                     <SelectBox
                     // defaultValue={value?.user?.gender}
-                      placeholder= "Manager Sales" //{gender1? gender1: "Select Gender"}
+                      placeholder= "Select Designation" //{gender1? gender1: "Select Gender"}
                       options={designation}
                       onChange={onChange}
                       value={value}
@@ -412,7 +414,7 @@ const imageBuffer = base64Image ? `data:image/jpeg;base64,${base64Image}` : null
                   render={({ field: { value, onChange } }) => (
                     <SelectBox
                     // defaultValue={value?.user?.gender}
-                      placeholder= "Sales" //{gender1? gender1: "Select Gender"}
+                    placeholder= "Select Department"//{gender1? gender1: "Select Gender"}
                       options={department}
                       onChange={onChange}
                       value={value}
