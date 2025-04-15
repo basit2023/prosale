@@ -1,7 +1,5 @@
-// PersonalInfoView.js
-
 'use client';
-import { logs,logsCreate } from '../account-settings/logs';
+import { logs } from '../account-settings/logs';
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
@@ -12,13 +10,13 @@ import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import apiService from '@/utils/apiService';
 import { decryptData } from '@/components/encriptdycriptdata';
-import { Password } from '@/components/ui/password';                                            
-// import { NewEmployeeInfoFormSchema,NewEmployeeInfoFormTypes,defaultValues } from '@/utils/validators/new-employee-schema';
-import { VaultInfoFormSchema,VaultInfoFormTypes,defaultValues } from '@/utils/validators/vault-info-shema';
-import crypto from 'crypto';;
+import { Password } from '@/components/ui/password';
+import { VaultInfoFormSchema, VaultInfoFormTypes, defaultValues } from '@/utils/validators/vault-info-shema';
+import crypto from 'crypto';
+
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ssr: false,
   loading: () => (
@@ -32,100 +30,107 @@ interface VaultInformationProps {
   id: string;
 }
 
-// interface UserType {
-//   name: string;
-//   value: string;
-// }
-
-export default function Vaultinformation({id}:VaultInformationProps) {
+export default function Vaultinformation({ id }: VaultInformationProps) {
   const { data: session } = useSession();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); 
-  const [userType, setUserType] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [userTypes, setUserTypes] = useState<any[]>([]);
+  const [userData, setUserData] = useState<any>(null);
+  const [initialData, setInitialData] = useState<any>(null);
 
-  const [value, setUserData]=useState<any>();
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        } 
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-    };
-
-    fetchUserData();
+  // Memoize the decrypted user data to avoid unnecessary decryption
+  const decryptedUserData = useMemo(() => {
+    try {
+      const encryptedData = localStorage.getItem('uData');
+      return encryptedData ? decryptData(encryptedData) : null;
+    } catch (error) {
+      console.error('Error decrypting user data:', error);
+      return null;
+    }
   }, [session]);
 
-
+  // Fetch initial user data and user types in parallel
   useEffect(() => {
+    if (!session) return;
+
     const fetchData = async () => {
       try {
-        const response = await apiService.get(`/all-user-type`);
-        
-        const userData = response.data;
-        setUserType(userData.data);
+        const [userResponse, typesResponse] = await Promise.all([
+          apiService.get(`/emp-personalinfo/${id}`),
+          apiService.get('/all-user-type')
+        ]);
+
+        setUserData(userResponse.data);
+        setInitialData(userResponse.data);
+        setUserTypes(typesResponse.data.data);
       } catch (error) {
-        console.error('Error fetching degignation data:', error);
-        toast.error('Error fetching designation data. Please try again.');
+        console.error('Error fetching data:', error);
+        toast.error('Error fetching data. Please try again.');
       }
     };
 
-    if (session) {
-      fetchData();
-    }
-  }, [session]);
-// console.log("the user data is:--->",value)
-  const onSubmit: SubmitHandler<VaultInfoFormTypes> = async (data) => {
-    
-    setIsLoading(true); 
-    const {password}=data
-    const currentP= crypto.createHash('sha256').update(password).digest('hex');
-    data.password=currentP;
- 
-    try {
-      // Get the base64 image data from local storage
-     
-    const result= await apiService.put(`/update_employee-vault-info/${id}`, {
-                                    ...data,
-                                     // Add the avatar property to the data object
-                                    })
-        toast.success(result.data.message);
+    fetchData();
+  }, [session, id]);
 
-        
-        if(result.data.success){
-          // < ProfileSettingsView />
-          logs({ user: value?.user?.name, desc: 'New User' });
-          // setIsEditing(true)
-        }
+  // Set decrypted user data once on component mount
+  useEffect(() => {
+    if (decryptedUserData) {
+      setUserData(prev => ({ ...prev, user: decryptedUserData.user }));
     }
-        
-       catch (error) {
+  }, [decryptedUserData]);
+
+  const onSubmit: SubmitHandler<VaultInfoFormTypes> = async (data) => {
+    // Check if data has actually changed
+    const hasChanged = JSON.stringify(data) !== JSON.stringify(initialData);
+    if (!hasChanged) {
+      toast('No changes detected', { icon: 'ℹ️' });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      const { password } = data;
+      const currentP = crypto.createHash('sha256').update(password).digest('hex');
+      data.password = currentP;
+
+      const result = await apiService.put(`/update_employee-vault-info/${id}`, data);
+      
+      if (result.data.success) {
+        toast.success(result.data.message);
+        setInitialData(data); // Update initial data after successful submission
+        logs({ user: decryptedUserData?.user?.name, desc: 'Updated User Vault Info' });
+      }
+    } catch (error) {
       console.error('Error updating profile:', error);
       toast.error('Error updating profile. Please try again.');
-    }
-    finally {
+    } finally {
       setIsLoading(false);
     }
   };
 
-  
-  
- return (
+  return (
     <Form<VaultInfoFormTypes>
       validationSchema={VaultInfoFormSchema}
       onSubmit={onSubmit}
       className="@container"
       useFormProps={{
         mode: 'onChange',
-        defaultValues,
+        defaultValues: {
+          ...defaultValues,
+          name: userData?.user?.name || '',
+          user_type: userData?.user?.user_type || ''
+        },
       }}
     >
-      {({ register, control, setValue, getValues, formState: { errors } }:any) => {
+      {({ register, control, setValue, formState: { errors } }) => {
+        // Set default values when userData is available
+        useEffect(() => {
+          if (userData?.user) {
+            setValue('name', userData.user.name);
+            setValue('user_type', userData.user.user_type);
+          }
+        }, [userData, setValue]);
+
         return (
           <>
             <FormGroup
@@ -135,28 +140,23 @@ export default function Vaultinformation({id}:VaultInformationProps) {
             />
 
             <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
-              
-            <FormGroup
+              <FormGroup
                 title="User Name"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
-                defaultValue={value?.user?.name}
                   placeholder="example123"
                   {...register('name')}
-                  // error={errors.cnic?.message}
                   className="flex-grow"
                 />
               </FormGroup>
-              
-             
+
               <FormGroup
                 title="Password"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Password
-                  // label="Password"
-                  placeholder="Enter your password"
+                  placeholder="******"
                   size="lg"
                   className="hover:border-black focus:border-black focus:ring-black"
                   color="info"
@@ -173,27 +173,29 @@ export default function Vaultinformation({id}:VaultInformationProps) {
                 <Controller
                   control={control}
                   name="user_type"
-                  render={({ field: { value, onChange } }:any) => (
+                  render={({ field: { value, onChange } }) => (
                     <SelectBox
-                    defaultValue={value?.user?.gender}
-                      placeholder="admin"//{gender1? gender1: "Select Gender"}
-                      options={userType}
+                      placeholder={userData?.user?.user_type || "Select User Type"}
+                      options={userTypes}
                       onChange={onChange}
                       value={value}
                       className="col-span-full"
-                      getOptionValue={(option:any) => option.value}
-                      displayValue={(selected:any) =>
-                        userType?.find((r:any) => r.value === selected)?.name ?? ''
+                      getOptionValue={(option) => option.value}
+                      displayValue={(selected) =>
+                        userTypes?.find((r) => r.value === selected)?.name || ''
                       }
-                      error={errors?.userType?.message as string}
+                      error={errors?.user_type?.message}
                     />
                   )}
                 />
               </FormGroup>
-              
-             
             </div>
-            <FormFooter altBtnText="Cancel" submitBtnText="Update Vault Info" isLoading={isLoading}/>
+            
+            <FormFooter 
+              altBtnText="Cancel" 
+              submitBtnText="Update Vault Info" 
+              isLoading={isLoading}
+            />
           </>
         );
       }}

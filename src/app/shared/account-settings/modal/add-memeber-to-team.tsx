@@ -200,7 +200,7 @@ export function MemberForm({ register, control, errors }: any) {
               value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null}
               label="Select Member"
               labelClassName="text-sm font-medium text-gray-900"
-              placeholder="Select Zone Manager"
+              placeholder="Select Member"
               options={manager?.map((item: any) => ({ label: item.name, value: String(item.value) }))}
               onChange={(selectedOption: SelectOption | null) => {
                 onChange(selectedOption ? selectedOption.value : '');

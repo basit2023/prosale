@@ -419,7 +419,7 @@ const ReassinedLead = async (req, res) => {
 
         const [leads] = await mysqlConnection.promise().query("SELECT name, assigned_team FROM users WHERE email=?", [assigned_through]);
         const [asigned] = await mysqlConnection.promise().query("SELECT name FROM users WHERE id=?", [assigned_to]);
-        console.log("the user name is:", asigned);
+        console.log("the user name is:", asigned); 
 
         let sql = 'UPDATE leads_main SET ';
         const values = [];

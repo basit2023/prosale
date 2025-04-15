@@ -8,7 +8,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import { countries, roles, timezones,sim } from '@/data/forms/my-details';
 import { useSession } from 'next-auth/react';
 import { SubmitHandler, Controller } from 'react-hook-form';
-import { PiClock, PiEnvelopeSimple } from 'react-icons/pi';
+// import { PiClock, PiEnvelopeSimple } from 'react-icons/pi';
 import { Form } from '@/components/ui/form';
 import { Text } from '@/components/ui/text';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,7 @@ export default function Mydetails() {
   // const [userValue, setUserValue] = useState<any>();
   const [isEditing, setIsEditing] = useState(false);
   const [startDate, setStartDate] = useState<Date>(new Date());
-  const [userValue, setUserData]=useState<any>();
+  const [userValue, setUserData]=useState<any>(session);
  
   useEffect(() => {
     const fetchData = async () => {
@@ -52,22 +52,22 @@ export default function Mydetails() {
     }
   }, [session]);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        } 
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-    };
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     try {
+  //       const encryptedData = localStorage.getItem('uData');
+  //       if (encryptedData) {
+  //         const data = decryptData(encryptedData);
+  //         setUserData(data);
+  //       } 
+  //     } catch (error) {
+  //       console.error('Error fetching user data:', error);
+  //       toast.error('Error fetching user data. Please try again.');
+  //     }
+  //   };
 
-    fetchUserData();
-  }, [session]);
+  //   fetchUserData();
+  // }, [session]);
   
 
 const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
@@ -84,7 +84,7 @@ const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
           toast.success(result.data.message);
           
           if (result.data.success) {
-            logs({ user: userValue?.user?.name, desc: 'Personale details' });
+            logs({ user: userValue?.user?.username, desc: 'Personale details' });
             setIsEditing(true);
           }
     } else {
@@ -92,13 +92,13 @@ const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
             ...data,
             dob: formattedDate, 
             user_id: userValue?.user?.id,
-            user: userValue?.user?.name,
+            user: userValue?.user?.username,
           });
 
           toast.success(result.data.message);
           
           if (result.data.success) {
-            logsCreate({ user: userValue?.user?.name, desc: 'Personale details' });
+            logsCreate({ user: userValue?.user?.username, desc: 'Personale details' });
             setIsEditing(true);
           }
         }

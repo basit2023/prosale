@@ -40,6 +40,7 @@ const EmpgetPersonalInfo = async (req, res) => {
         isp: user[0].isp,
         gender: user[0].gender,
         department: user[0].department,
+        user_type: user[0].user_type,
         
         // Add other fields as needed
       },

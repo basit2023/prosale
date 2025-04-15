@@ -219,6 +219,7 @@ const loginHandlerA = async (req, res) => {
         id: user[0].id,
         password: inputToCheck,
         name: `${user[0].first_name} ${user[0].last_name}`,
+        username: user[0].name,
         user_type: user[0].user_type,
         company_id: user[0].company_id,
         permission: perm[0]?.permission || 0, // Safe access with fallback

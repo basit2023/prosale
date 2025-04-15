@@ -21,11 +21,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // read route params
   const id = params.id;
 
-  return metaObject(`Edit Team ${id}`);
+  return metaObject(`Edit zone ${id}`);
 }
 
 const pageHeader = {
-  title: 'Edit team',
+  title: 'Edit Zone',
   breadcrumb: [
     
    
@@ -33,7 +33,7 @@ const pageHeader = {
 };
 
 export default function InvoiceEditPage({ params }: any) {
-  console.log('Invoice Edit Page ID', params.id);
+  // console.log('Invoice Edit Page ID', params.id);
   return (
     <>
       <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>

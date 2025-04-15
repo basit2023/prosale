@@ -26,8 +26,8 @@ const { Highly_interested, highly_interested_table, GetLeadFromId, AllCustomers,
 const { CreateComments, GetComments, DeleteComments, AllLabels, SelectForBox, UpdateLabel, SaveTime } = require("../Controller/LeadM/Comments");
 const { ClosedLeadController, ViewLead } = require("../Controller/LeadM/closeLeads");
 const { EditLeadCustomer, UpdateLeadCustomer, GetCountrycode, CreateLeadCustomer, GetCustomerById } = require("../Controller/LeadM/EditLeadCustomer");
-const { ZoneData, GetTeamMemeber, UpdateZoneTeam, TeamData, GetzoneMemeber, ZoneTeamData, CreateZoneTeam } = require("../Controller/Team&Zones/zones");
-const { Getteamates, TeamForEmployee, UpdateTeamForEmployee, AddTeamMember } = require("../Controller/Team&Zones/Team");
+const { ZoneData, GetTeamMemeber, UpdateZoneTeam, TeamData, GetzoneMemeber, ZoneTeamData, CreateZoneTeam, GetSpecificZone } = require("../Controller/Team&Zones/zones");
+const { Getteamates, TeamForEmployee, UpdateTeamForEmployee, AddTeamMember, GetSpecificteam } = require("../Controller/Team&Zones/Team");
 const {AllFloors, projectData, GetStatus, CreateNewProject, GetProjectDetails, UpdateProject, GetProjects, FloorsData, ManageUnits, NewFloor, UpdateProjectFloor } = require("../Controller/Project/project");
 const { ReassinedLead } = require("../Controller/LeadM/ReassignedLead");
 const { SignUpHandler, OnBordingHandler } = require("../Controller/Signup");
@@ -152,6 +152,8 @@ Router.put('/api/lead-open/:id',ViewLead)
  
 //Team And Zones
 Router.get('/api/zones/:email', ZoneData);
+Router.get('/api/specific-zoon', GetSpecificZone);
+Router.get('/api/specific-team', GetSpecificteam);
 Router.get('/api/teams/:email', TeamData);
 Router.get('/api/zone-team/:id', ZoneTeamData);
 Router.put('/api/zones-teams/:id',UpdateZoneTeam) 

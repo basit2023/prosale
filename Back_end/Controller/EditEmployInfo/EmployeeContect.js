@@ -186,7 +186,7 @@ const CreateEmpJobInfo = async (req, res) => {
     const insertQuery = `
   INSERT INTO users_contracts (user_id, contract_type, contract_duration, 
     probation_status, probation_duration, allocated_leaves, doj, dir, offer_letter, dt, del, user)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 `;
 
 const insertParams = [user_id, contract_type, contract_duration, 

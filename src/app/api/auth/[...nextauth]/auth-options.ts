@@ -25,6 +25,7 @@ export const authOptions: NextAuthOptions = {
           name: token.name,
           user_type: token.user_type,
           company_id: token.company_id,
+          username: token.username,
           // Add permission fields
           permission: token.permission,
           Create_permission: token.Create_permission,
@@ -42,6 +43,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id.toString();
         token.email = user.email;
         token.name = user.name;
+        token.username = user.username;
         token.user_type = user.user_type;
         token.company_id = user.company_id;
         token.permission = parseInt(user.permission || '0', 10);
@@ -103,6 +105,7 @@ export const authOptions: NextAuthOptions = {
             return {
               id: user.id,
               email: user.email,
+              username: user.username,
               name: user.name,
               user_type: user.user_type,
               company_id: user.company_id,

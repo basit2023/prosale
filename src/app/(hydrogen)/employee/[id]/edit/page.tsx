@@ -1,6 +1,7 @@
 import PageHeader from '@/app/shared/page-header';
 import { metaObject } from '@/config/site.config';
 import { Metadata } from 'next';
+import { routes } from '@/config/routes';
 import PersonalInfoView from '@/app/shared/EmployeeDetails/personalDetail';
 import EmployeeDetails from '@/app/shared/EmployeeDetails/EmployeeDetails';
 import EmployeeJobInfo from '@/app/shared/EmployeeDetails/EmployeeJobinfo';
@@ -37,7 +38,7 @@ const pageHeader = {
   breadcrumb: [
     
     {
-      href: '#',
+      href: routes.employee.employeelist,
       name: 'Empoyee',
     },
     {

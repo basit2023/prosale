@@ -27,6 +27,7 @@ export const useZoneData = () => {
         const response = await apiService.get(
           `/zones/${session?.user?.email}/?id=zonal_manager&&table=users_zones&&managerType=zonal`
         );
+        console.log("the zoonal manage data is:",response)
         const userData = response.data.leads;
         setValue(userData);
       }

@@ -33,7 +33,7 @@ const pageHeader = {
 };
 
 export default function InvoiceEditPage({ params }: any) {
-  console.log('Invoice Edit Page ID', params.id);
+
   return (
     <>
       <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>

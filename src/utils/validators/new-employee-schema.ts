@@ -61,7 +61,7 @@ export const defaultValues = {
   dt:formattedDateTime,
   sms:"Y",
   del:"N",
-  lead_status:"N",
+  lead_status:"Y",
   company_id: undefined,
   // portfolios: undefined,
 };

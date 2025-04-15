@@ -37,24 +37,54 @@ export default function EditZone({id}:any) {
   const { data: session } = useSession();
   const [value, setValue1] = useState<any>();
   const [country, setCountry] = useState<any>([]);
+  const [zone, setZone] = useState<any>([]);
   const { back } = useRouter();
-  const [userValue, setUserData]=useState<any>();
+  const [userValue, setUserData]=useState<any>(session);
   const [isLoading, setIsLoading] = useState(false); 
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     try {
+  //       const encryptedData = localStorage.getItem('uData');
+  //       if (encryptedData) {
+  //         const data = decryptData(encryptedData);
+  //         setUserData(data);
+  //       } 
+  //     } catch (error) {
+  //       console.error('Error fetching user data:', error);
+  //       toast.error('Error fetching user data. Please try again.');
+  //     }
+  //   };
+
+  //   fetchUserData();
+  // }, [session]);
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        } 
+        const response = await apiService.get(`/specific-zoon/?id=${id}`);
+        
+        const userData = response.data.data;
+        setZone(userData);
       } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
+        console.error('Error zoone  manager data:', error);
+        toast.error('Error fetching zone manager data. Please try again.');
       }
+      
+    //   try {
+    //     const response = await apiService.get(`/edit-customer/${id}`);
+        
+    //     const userData = response.data;
+    //     //all-contrycode
+    //     setValue1(userData);
+    //   } catch (error) {
+    //     console.error('Error fetching user data:', error);
+    //     toast.error('Error fetching user data. Please try again.');
+    //   }
+     
     };
 
-    fetchUserData();
+    if (session) {
+      fetchData();
+    }
   }, [session]);
   useEffect(() => {
     const fetchData = async () => {
@@ -91,13 +121,13 @@ export default function EditZone({id}:any) {
     try {
        
        const result= await apiService.put(`/zones-teams/${id}/?table=users_zones`, {
-            ...data,user:userValue?.user?.name})
+            ...data,user:userValue?.user?.username})
          
         toast.success(result.data.message);
         
         if(result.data.success){
           
-          logs({ user: userValue?.user?.name, desc: `Update Customer with id ${id}` });
+          logs({ user: userValue?.user?.username, desc: `Update Customer with id ${id}` });
           back()
         }
 
@@ -140,7 +170,8 @@ export default function EditZone({id}:any) {
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
-              
+                  defaultValue={zone?.title}
+                
                   placeholder="Enter Title"
                   {...register('title')}
                   // error={errors.title?.message}
@@ -164,7 +195,7 @@ export default function EditZone({id}:any) {
                       <SelectBox
                         // Ensure the value is an object with `label` and `value`, or `null` if not found
                         value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null} 
-                        placeholder="Select Manager"
+                        placeholder={`${zone.full_name}` || "Select Manager"}
                         // Map your country list to options for the SelectBox
                         options={country.map((item:any) => ({ label: item.name, value: String(item.value) }))}
                         // Update the form value on change

@@ -59,7 +59,7 @@ export const useGetColumns = ({
             </Text>
             <div>
               <span>
-                Status: <div style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: row.del === 'Y' ? 'red' : (row.status === 'Y' ? 'green' : 'red'), marginRight: '5px' }}></div>
+                Lead: <div style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: row.del === 'Y' ? 'red' : (row.status === 'Y' ? 'green' : 'red'), marginRight: '5px' }}></div>
               </span>
               <span>
                 SMS: <div style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', background: row.del === 'Y' ? 'red' : (row.sms === 'Y' ? 'green' : 'red') }}></div>

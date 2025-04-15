@@ -41,23 +41,23 @@ export default function EmployeeJobInfo({ id }:any) {
   const [dropDownOffice, setDropDownOffice] = useState<any>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false); 
-  const [value, setUserData]=useState<any>();
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        } 
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-    };
+  const [value, setUserData]=useState<any>(session);
+  // useEffect(() => {
+  //   const fetchUserData = async () => {
+  //     try {
+  //       const encryptedData = localStorage.getItem('uData');
+  //       if (encryptedData) {
+  //         const data = decryptData(encryptedData);
+  //         setUserData(data);
+  //       } 
+  //     } catch (error) {
+  //       console.error('Error fetching user data:', error);
+  //       toast.error('Error fetching user data. Please try again.');
+  //     }
+  //   };
 
-    fetchUserData();
-  }, [session]);
+  //   fetchUserData();
+  // }, [session]);
   useEffect(() => {
     const fetchData = async () => {
      
@@ -114,7 +114,7 @@ if (hasHeadOffice && hasCorporateOffice) {
 // console.log("The result is:", result);
 
 
-    let data1={...data,user: value.user.name,offices:result}
+    let data1={...data,user: value.user.username,offices:result}
     
 
     try {

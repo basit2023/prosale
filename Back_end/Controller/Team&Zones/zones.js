@@ -48,14 +48,14 @@ const ZoneData = async (req, res) => {
           COUNT(ut.zone_id) AS Zone_Teams
       FROM 
           ${table} uz
-      INNER JOIN
+      LEFT JOIN
           users_teams ut ON uz.id = ut.zone_id
       INNER JOIN 
           users u ON uz.${id} = u.id
       INNER JOIN
           companies AS company ON FIND_IN_SET(company.id, u.company_id) > 0
       WHERE 
-          FIND_IN_SET(u.company_id, ?) > 0
+          FIND_IN_SET(u.company_id, ?) > 0 AND uz.del="N"
       GROUP BY
           uz.id;
       `,[company_id]);
@@ -71,14 +71,14 @@ const ZoneData = async (req, res) => {
 
         FROM 
           users_zones uz
-        INNER JOIN
+        LEFT JOIN
           users_teams ut ON uz.id = ut.zone_id
         INNER JOIN 
           users u ON uz.zonal_manager = u.id 
         INNER JOIN
           companies AS company ON FIND_IN_SET(company.id, u.company_id) > 0
         WHERE 
-          FIND_IN_SET(u.company_id, ?) > 0 AND uz.zonal_manager = ?
+          FIND_IN_SET(u.company_id, ?) > 0 AND uz.zonal_manager = ? AND uz.del="N"
         GROUP BY
           uz.id;
       `, [ company_id, user_id]);
@@ -249,12 +249,27 @@ const TeamData = async (req, res) => {
 //get the one zone all teams
 const ZoneTeamData = async (req, res) => {
   try {
-    const { table, managerType,email } = req.query;
-    const {id}=req.params;
-    const [userRows] = await mysqlConnection.promise().query('SELECT user_type, name,company_id FROM users WHERE email = ?', [email]);
-    const {company_id}=userRows[0]
-    console.log("the company id is:",userRows[0])
-    console.log("the company id is:",company_id)
+    const { table, managerType, email } = req.query;
+    const { id } = req.params;
+    
+    console.log("the id from the front end is:", id);
+
+    // Get user information
+    const [userRows] = await mysqlConnection.promise().query(
+      'SELECT user_type, name, company_id FROM users WHERE email = ?', 
+      [email]
+    );
+    
+    if (!userRows.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    const { company_id } = userRows[0];
+
+    // Get all manager IDs for the zone
     const [userTeams] = await mysqlConnection.promise().query(`
       SELECT DISTINCT manager_id AS id2
       FROM users_teams
@@ -265,16 +280,23 @@ const ZoneTeamData = async (req, res) => {
       return res.status(200).json({
         success: true,
         message: 'No Team Assigned',
+        leads: []
       });
     }
-    const {id2} = userTeams[0]//.map(team => team.id2);
-    
+
+    // Extract all manager IDs
+    const managerIds = userTeams.map(team => team.id2);
+    console.log("the manager IDs are:", managerIds);
+
     let dynamicField = '';
     if (managerType === 'zonal') {
       dynamicField = 'uz.zonal_manager AS zonal_manager';
     } else if (managerType === 'manager') {
       dynamicField = 'uz.manager_id AS manager_id';
     }
+
+    // Create a string of comma-separated manager IDs for the IN clause
+    const managerIdsString = managerIds.join(',');
 
     let leads;
     [leads] = await mysqlConnection.promise().query(`
@@ -288,42 +310,45 @@ const ZoneTeamData = async (req, res) => {
       FROM 
         ${table} uz
       JOIN 
-        users u ON uz.manager_id=u.id
+        users u ON uz.manager_id = u.id
       JOIN 
         users_zones tz ON uz.zone_id = tz.id
       INNER JOIN
         companies AS company ON FIND_IN_SET(company.id, u.company_id) > 0
       WHERE
-        FIND_IN_SET(u.company_id, ?) > 0 AND FIND_IN_SET(uz.manager_id, ?) > 0;
-    `, [company_id, id2]);
+        FIND_IN_SET(u.company_id, ?) > 0 
+        AND uz.manager_id IN (${managerIdsString});
+    `, [company_id]);
 
- // ${id2.map(id => `uz.${id} = u.id`).join(' OR ')}
+    console.log("the manager data is:", leads);
+
     if (!leads.length) {
       return res.status(200).json({
         success: true,
         message: 'No zones found',
+        leads: []
       });
     }
 
     // Get total team members count for each lead
-    const leadsWithTotalMembers = await Promise.all(leads.map(async (lead) => {
-      const managerId = lead.manager_id;
-      const [totalTeamMembers] = await mysqlConnection.promise().query(`
-        SELECT 
-          COUNT(*) AS total_team_members
-        FROM 
-          users u 
-        INNER JOIN 
-          users_teams ut ON u.assigned_team = ut.id
-        WHERE 
-          FIND_IN_SET(u.company_id, ?) > 0 AND FIND_IN_SET(ut.manager_id, ?) > 0;
-      `, [company_id, managerId]);
+    const leadsWithTotalMembers = await Promise.all(
+      leads.map(async (lead) => {
+        const managerId = lead.manager_id;
+        const [totalTeamMembers] = await mysqlConnection.promise().query(`
+          SELECT COUNT(*) AS total_team_members
+          FROM users u 
+          INNER JOIN users_teams ut ON u.assigned_team = ut.id
+          WHERE 
+            FIND_IN_SET(u.company_id, ?) > 0 
+            AND ut.manager_id = ?;
+        `, [company_id, managerId]);
 
-      return {
-        ...lead,
-        total_members: totalTeamMembers[0].total_team_members,
-      };
-    }));
+        return {
+          ...lead,
+          total_members: totalTeamMembers[0]?.total_team_members || 0,
+        };
+      })
+    );
 
     // Respond with all leads information
     res.status(200).json({
@@ -340,7 +365,55 @@ const ZoneTeamData = async (req, res) => {
     });
   }
 };
+//get soecific zoone
 
+const GetSpecificZone = async (req, res) => {
+  try {
+    const { id } = req.query;
+    // console.log("the id of the specifc zonn is:",id)
+    
+    // Validate the ID parameter
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid zone ID provided',
+      });
+    }
+
+    // Use parameterized query to prevent SQL injection
+    const [rows] = await mysqlConnection.promise().query(`
+      SELECT 
+        uz.id,
+        uz.title, 
+        CONCAT(u.first_name, ' ', u.last_name) AS full_name
+      FROM users_zones uz
+      JOIN users u ON uz.zonal_manager = u.id 
+      WHERE uz.id = ?
+    `, [id]);
+
+    // Check if data was found
+    if (!rows || rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Zone not found',
+      });
+    }
+
+    // Return the first row (since we're querying by ID there should be only one)
+    res.status(200).json({
+      success: true,
+      message: 'Data fetched successfully', 
+      data: rows[0],    // Changed from fields to rows[0] since fields contains metadata
+    });
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error in fetching data',
+      error: error.message,
+    });
+  }
+};
 
   const GetzoneMemeber = async (req, res) => {
     try {
@@ -380,7 +453,7 @@ const ZoneTeamData = async (req, res) => {
         if(table=='footer'){
          [rows, fields] = await mysqlConnection.promise().query(`SELECT id, CONCAT_WS(' ', TRIM(first_name), TRIM(last_name)) AS full_name 
           FROM users 
-          WHERE FIND_IN_SET(company_id, ?) > 0`,[user[0].company_id]);
+          WHERE del="N" AND lead_status="Y" AND FIND_IN_SET(company_id, ?) > 0`,[user[0].company_id]);
         }else{
          [rows, fields] = await mysqlConnection.promise().query(`SELECT id, CONCAT_WS(' ', TRIM(first_name), TRIM(last_name)) AS full_name 
            FROM users 
@@ -651,5 +724,5 @@ const CreateZoneTeam = async (req, res) => {
 
 
 
-  module.exports = {ZoneTeamData,GetzoneMemeber,ZoneData,TeamData, GetTeamMemeber,getSpecificteamZone,UpdateZoneTeam,CreateZoneTeam };
+  module.exports = {ZoneTeamData,GetzoneMemeber,ZoneData,TeamData, GetTeamMemeber,getSpecificteamZone,UpdateZoneTeam,CreateZoneTeam, GetSpecificZone };
   

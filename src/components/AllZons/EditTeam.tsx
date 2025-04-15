@@ -45,6 +45,7 @@ export default function EditTeam({id}:any) {
   const [country, setCountry] = useState<any>([]);
   const [userValue, setUserData]=useState<any>();
   const [project, setProject]=useState<any>()
+  const [teams, setTeam]=useState<any>()
   const { back } = useRouter();
   useEffect(() => {
     const fetchUserData = async () => {
@@ -65,6 +66,17 @@ export default function EditTeam({id}:any) {
 
   useEffect(() => {
     const fetchData = async () => {
+
+
+      try {
+        const response = await apiService.get(`/specific-team/?id=${id}`);
+        console.log("the user response is:",response)
+        const userData = response.data.data;
+        setTeam(userData);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast.error('Error fetching user data. Please try again.');
+      }
       try {
         const response = await apiService.get(`/all-members/?email=${session?.user?.email}`);
         const pro = await apiService.get(`/projects`);
@@ -153,7 +165,8 @@ const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
                 <Input
                 //  defaultValue={`${id}`}
                 //  readOnly
-                  placeholder="Enter Title"
+                  placeholder={`${teams?.title}` || "Enter Title"}
+                  defaultValue={teams?.title}
                   {...register('title')}
                   error={errors.title?.message}
                   className="col-span-full"
@@ -175,8 +188,8 @@ const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
                       <SelectBox
                        
                         value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null} 
-                        placeholder="Select Manager"
-                   
+                        placeholder={`${teams?.manager_name}` || "Select Manager"}
+                      defaultValue={teams?.manager_name}
                         options={country.map((item:any) => ({ label: item.name, value: String(item.value) }))}
                         // Update the form value on change
                         onChange={(selectedOption: SelectOption | null) => {
@@ -206,7 +219,8 @@ const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
                       <SelectBox
                        
                         value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null} 
-                        placeholder="Select Zone"
+                        placeholder={`${teams?.zone_title}` || "Select Zone"}
+                        defaultValue={teams?.zone_title}
                    
                         options={value1?.map((item:any) => ({ label: item.name, value: String(item.value) }))}
                         // Update the form value on change
@@ -222,31 +236,42 @@ const onSubmit: SubmitHandler<editTeamZoneFormTypes> = async (data) => {
                 />
               </FormGroup>
               <FormGroup
-                title="Project"
-                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-              >
-              <Controller
-                      control={control}
-                      name="project_id"
-                      render={({ field: { value, onChange } }) => {
-              
-                        const selectedOptions = project?.filter((item: any) => value?.includes(String(item.value)));
+  title="Project"
+  className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+>
+  <Controller
+    control={control}
+    name="project_id"
+    render={({ field: { value, onChange } }) => {
+      // Convert the projects array from API to the format expected by Select
+      const defaultOptions = teams?.projects?.map((project: any) => ({
+        label: project.name,
+        value: String(project.id)
+      })) || [];
 
-                        return (
-                          <Select
-                            isMulti 
-                            value={selectedOptions ? selectedOptions.map((item: any) => ({ label: item.name, value: String(item.value) })) : []}
-                            placeholder="Select Project"
-                            options={project?.map((item: any) => ({ label: item.name, value: String(item.value) }))}
-                            onChange={(selectedOptions: any) => {
-                              onChange(selectedOptions ? selectedOptions.map((option: any) => option.value) : []);
-                            }}
-                            className="col-span-full"
-                          />
-                        );
-                      }}
-                    />
-              </FormGroup>
+      // If there's no value from form control, use the default projects from teams
+      const selectedValue = value 
+        ? project?.filter((item: any) => value?.includes(String(item.value)))
+        : defaultOptions;
+
+      return (
+        <Select
+          isMulti
+          value={selectedValue}
+          placeholder={teams?.projects?.map(p => p.name).join(', ') || "Select Project"}
+          options={project?.map((item: any) => ({
+            label: item.name,
+            value: String(item.value)
+          }))}
+          onChange={(selectedOptions: any) => {
+            onChange(selectedOptions ? selectedOptions.map((option: any) => option.value) : []);
+          }}
+          className="col-span-full"
+        />
+      );
+    }}
+  />
+</FormGroup>
 
 
 

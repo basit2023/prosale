@@ -54,6 +54,7 @@ export default function Vaultinformation({ id }: DeletePopoverProps) {
       try {
         const response = await apiService.get(`/employee-status-info/${id}`);
         const userData = response.data;
+        console.log("he value for the user is:",userData)
         setValue1(userData);
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -139,7 +140,8 @@ export default function Vaultinformation({ id }: DeletePopoverProps) {
                       name="sms"
                       render={({ field: { value, onChange } }) => (
                         <SelectBox
-                          placeholder="Enabled"
+                        placeholder="Change Status"
+
                           options={status}
                           onChange={onChange}
                           value={value}
@@ -164,7 +166,7 @@ export default function Vaultinformation({ id }: DeletePopoverProps) {
                       name="lead_status"
                       render={({ field: { value, onChange } }) => (
                         <SelectBox
-                          placeholder="Enabled"
+                        placeholder="Change Status"
                           options={status}
                           onChange={onChange}
                           value={value}

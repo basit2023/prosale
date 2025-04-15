@@ -324,8 +324,78 @@ const AddTeamMember = async (req, res) => {
 };
 
 
+const GetSpecificteam = async (req, res) => {
+  try {
+    const { id } = req.query;
+    
+    // Validate the ID parameter
+    if (!id || isNaN(Number(id))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid team ID provided',
+      });
+    }
+
+    // First, get the team details, manager info, and zone info
+    const [teamRows] = await mysqlConnection.promise().query(`
+      SELECT 
+        ut.title AS team_title,
+        uz.title AS zone_title,
+        CONCAT(u.first_name, ' ', u.last_name) AS manager_name,
+        ut.project_id
+      FROM users_teams ut
+      JOIN users u ON ut.manager_id = u.id
+      JOIN users_zones uz ON ut.zone_id = uz.id
+      WHERE ut.id = ? AND ut.del = "N"
+    `, [id]);
+
+    // Check if team was found
+    if (!teamRows || teamRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Team not found',
+      });
+    }
+
+    const teamData = teamRows[0];
+    
+    // If there are projects, get their names
+    let projects = [];
+    if (teamData.project_id) {
+      // Use FIND_IN_SET for comma-separated values
+      const [projectRows] = await mysqlConnection.promise().query(`
+        SELECT id, name 
+        FROM lead_projects
+        WHERE FIND_IN_SET(id, ?) AND del = "N"
+      `, [teamData.project_id]);
+      
+      projects = projectRows;
+    }
+
+    // Prepare the response data
+    const responseData = {
+      title: teamData.team_title,
+      zone_title: teamData.zone_title,  // Added zone title to response
+      manager_name: teamData.manager_name,
+      projects: projects
+    };
+
+    // Return the data
+    res.status(200).json({
+      success: true,
+      message: 'Data fetched successfully', 
+      data: responseData,    
+    });
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error in fetching data',
+      error: error.message,
+    });
+  }
+};
 
 
-
-  module.exports = { Getteamates, TeamForEmployee,UpdateTeamForEmployee,AddTeamMember };
+  module.exports = { Getteamates, TeamForEmployee,UpdateTeamForEmployee,AddTeamMember,GetSpecificteam };
   
