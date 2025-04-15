@@ -124,12 +124,12 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
     >
       {({ register, control, setValue, formState: { errors } }) => {
         // Set default values when userData is available
-        useEffect(() => {
-          if (userData?.user) {
-            setValue('name', userData.user.name);
-            setValue('user_type', userData.user.user_type);
-          }
-        }, [userData, setValue]);
+        // useEffect(() => {
+        //   if (userData?.user) {
+        //     setValue('name', userData.user.name);
+        //     setValue('user_type', userData.user.user_type);
+        //   }
+        // }, [userData, setValue]);
 
         return (
           <>
@@ -145,7 +145,8 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
-                  placeholder="example123"
+                defaultValue={userData.user.name}
+                  placeholder={`${userData.user.name}` || "example123"}
                   {...register('name')}
                   className="flex-grow"
                 />
