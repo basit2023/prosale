@@ -150,12 +150,14 @@ const CreateNewLead = async (req, res) => {
         }
 
         const [existingCustomerRows] = await mysqlConnection.promise().query(
-            'SELECT id FROM leads_customers WHERE mobile = ? AND FIND_IN_SET(company_id, ?) > 0',
-            [mobile, company_id]
+            'SELECT id FROM leads_customers WHERE mobile = ?',
+            [mobile]
         );
 
         let customerId = existingCustomerRows.length > 0 ? existingCustomerRows[0].id : null;
-
+        if (customerId) {
+            return res.status(400).json({ success: false, message: 'Lead already exist!' });
+        }
         if (!customerId) {
             const [insertCustomerResult] = await mysqlConnection.promise().query(
                 'INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type) VALUES (?, ?, ?, ?, ?, ?)',

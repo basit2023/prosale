@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import apiService from '@/utils/apiService';
 import { NewLeadInfoFormSchema, NewLeadInfoFormTypes, defaultValues } from '@/utils/validators/new-lead-schema';
 import { decryptData } from '@/components/encriptdycriptdata';
@@ -46,92 +46,57 @@ export default function CreateNewEmployee() {
   const [company, setCompany] = useState<any>();
   const [projects, setProjects] = useState<any[]>([]);
 
-
-  const {
-    register,
-    control,
-    reset,
-    formState: { errors },
-    handleSubmit,
-  } = useForm<NewLeadInfoFormTypes>({
+  // Memoize session data to prevent unnecessary re-renders
+  const memoizedSession = useMemo(() => session, [session]);
+  
+  // Memoize form methods
+  const formMethods = useForm<NewLeadInfoFormTypes>({
     mode: 'onChange',
     defaultValues,
   });
 
+  const { register, control, reset, formState: { errors }, handleSubmit } = formMethods;
+
+  // Memoize type options to prevent recreation on every render
+  const typeOptions = useMemo(() => [
+    { name: "Local", value: "Local" }, 
+    { name: "OverSeas", value: "International" }
+  ], []);
+
+  // Fetch all data in a single optimized function
+  const fetchData = useCallback(async () => {
+    try {
+      const [resourceResponse, userTypeResponse, teamResponse] = await Promise.all([
+        apiService.get(`/allresource/?company_id=${memoizedSession?.user?.company_id}`),
+        apiService.get(`/all-user-type`),
+        apiService.get('/emp-team')
+      ]);
+
+      setDepartment(resourceResponse.data.data);
+      setDesignation(resourceResponse.data.data1);
+      setProjects(resourceResponse.data.data2);
+      setUserType(userTypeResponse.data.data);
+      setTeam(teamResponse.data.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Error fetching data. Please try again.');
+    }
+  }, [memoizedSession?.user?.company_id]);
+
   useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-    };
-
-    fetchUserData();
-  }, [session]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await apiService.get(`/supper-admin/${session?.user?.email}`);
-        const userData = response.data;
-        setCompany(userData);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-
-      try {
-        const response = await apiService.get(`/allresource/?company_id=${value?.user?.company_id}`);
-        const userData = response.data;
-        setDepartment(userData.data);
-        setDesignation(userData.data1);
-        setProjects(userData.data2)
-      } catch (error) {
-        console.error('Error fetching Resource and inventory type data:', error);
-        toast.error('Error fetching Resource and inventory type data. Please try again.');
-      }
-
-      try {
-        const response = await apiService.get(`/all-user-type`);
-        const userData = response.data;
-        setUserType(userData.data);
-      } catch (error) {
-        console.error('Error fetching designation data:', error);
-        toast.error('Error fetching designation data. Please try again.');
-      }
-
-      try {
-        const result = await apiService.get('/emp-team');
-        setTeam(result.data.data);
-      } catch (error) {
-        console.error('Error fetching team data:', error);
-        toast.error('Error fetching team data. Please try again.');
-      }
-    };
-
-    if (session) {
+    if (memoizedSession) {
       fetchData();
     }
-  }, [session]);
+  }, [memoizedSession, fetchData]);
 
-  const type = [{ name: "Local", value: "Local" }, { name: "OverSeas", value: "International" }];
-
-  const onSubmit: SubmitHandler<NewLeadInfoFormTypes> = async (data, event) => {
-
+  // Memoize the onSubmit handler to prevent recreation
+  const onSubmit: SubmitHandler<NewLeadInfoFormTypes> = useCallback(async (data, event) => {
     setIsLoading(true);
 
     try {
-      if (company?.user_data?.number <= 1) {
-        data.company_id = company?.user_data?.company_id;
-        data.user = value?.user?.name;
-      }
-
+      data.company_id = memoizedSession?.user?.company_id;
+      data.user = memoizedSession?.user?.username;
+      console.log("the data before submission:",data)
       const result = await apiService.post(`/create-new-lead`, {
         ...data,
       });
@@ -139,19 +104,19 @@ export default function CreateNewEmployee() {
       toast.success(result.data.message);
 
       if (result.data.success) {
-        logsCreate({ user: value?.user?.name, desc: 'New User' });
-
+        logsCreate({ user: value?.user?.name, desc: 'New Lead' });
         event?.target?.reset();
-        reset(); // Reset the form fields
-        push(routes.leads.management)
+        reset();
+        push(routes.leads.management);
       }
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      toast.error(error.response.data.message);
+      toast.error(error.response?.data?.message || 'An error occurred');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [memoizedSession, push, reset, value?.user?.name]);
+
   return (
     <Form<NewLeadInfoFormTypes>
       validationSchema={NewLeadInfoFormSchema}
@@ -230,13 +195,13 @@ export default function CreateNewEmployee() {
                 render={({ field: { value, onChange } }) => (
                   <SelectBox
                     placeholder="Lead Type"
-                    options={type}
+                    options={typeOptions}
                     onChange={onChange}
                     value={value}
                     className="col-span-full"
                     getOptionValue={(option) => option.value}
                     displayValue={(selected) =>
-                      type?.find((r:any) => r.value === selected)?.name ?? ''
+                      typeOptions.find((r: any) => r.value === selected)?.name ?? ''
                     }
                     error={errors?.type?.message as string}
                   />
@@ -260,7 +225,7 @@ export default function CreateNewEmployee() {
                     className="col-span-full"
                     getOptionValue={(option) => option.value}
                     displayValue={(selected) =>
-                      department?.find((r:any) => r.value === selected)?.name ?? ''
+                      department?.find((r: any) => r.value === selected)?.name ?? ''
                     }
                     error={errors?.source?.message as string}
                   />
@@ -284,7 +249,7 @@ export default function CreateNewEmployee() {
                     className="col-span-full"
                     getOptionValue={(option) => option.value}
                     displayValue={(selected) =>
-                      designation?.find((r:any) => r.value === selected)?.name ?? ''
+                      designation?.find((r: any) => r.value === selected)?.name ?? ''
                     }
                     error={errors?.interested_in?.message as string}
                   />
@@ -308,44 +273,20 @@ export default function CreateNewEmployee() {
                     className="col-span-full"
                     getOptionValue={(option) => option.value}
                     displayValue={(selected) =>
-                      projects?.find((r:any) => r.value === selected)?.name ?? ''
+                      projects?.find((r: any) => r.value === selected)?.name ?? ''
                     }
                     error={errors?.interested_in?.message as string}
                   />
                 )}
               />
             </FormGroup>
-
-            {company?.user_data?.number > 1 && (
-              <FormGroup
-                title="Assign Company"
-                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-              >
-                <Controller
-                  control={control}
-                  name="company_id"
-                  render={({ field: { value, onChange } }) => {
-                    const selectedOption = company?.company_data?.find((item:any) => String(item.value) === value);
-
-                    return (
-                      <SelectBox
-                        value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null}
-                        placeholder="Select Company"
-                        options={company?.company_data?.map((item:any) => ({ label: item.name, value: String(item.value) }))}
-                        onChange={(selectedOption: SelectOption | null) => {
-                          onChange(selectedOption ? selectedOption.value : '');
-                        }}
-                        className="col-span-full"
-                        error={errors?.company_id?.message}
-                      />
-                    );
-                  }}
-                />
-              </FormGroup>
-            )}
-
           </div>
-          <FormFooter altBtnText="Cancel" submitBtnText="Save" altBtnOnClick={() => back()} isLoading={isLoading}/>
+          <FormFooter 
+            altBtnText="Cancel" 
+            submitBtnText="Save" 
+            altBtnOnClick={() => back()} 
+            isLoading={isLoading}
+          />
         </>
       )}
     </Form>

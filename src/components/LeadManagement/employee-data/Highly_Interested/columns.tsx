@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect , useMemo} from 'react';
 import Link from 'next/link';
 import { type Invoice } from '@/data/invoice-data';
 import { routes } from '@/config/routes';
@@ -9,6 +9,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { HeaderCell } from '@/components/ui/table';
 import { ActionIcon } from '@/components/ui/action-icon';
 import EyeIcon from '@/components/icons/eye';
+
 // import VaultInformationModalView from '@/app/shared/VaultInformationModalView';
 // import { useModal } from '@/app/shared/modal-views/use-modal';
 import apiService from '@/utils/apiService';
@@ -35,6 +36,7 @@ export const useGetColumns  = ({
 }: Columns) => {
   // const { openModal } = useModal();
   const { data: session } = useSession();
+  const memoizedSession = useMemo(() => session, [session]);
  const handleClick= async (id: string) =>{
       try {
         const getCurrentTimestamp = () => Math.floor(new Date().getTime() / 1000).toString();
@@ -42,7 +44,7 @@ export const useGetColumns  = ({
 
         const result = await apiService.put(`/lead-open/${id}` ,{
           dt:getCurrentTimestamp(),
-          email:session?.user?.email
+          email:memoizedSession?.user?.email
         });
       
     } catch (error) {
@@ -60,7 +62,7 @@ export const useGetColumns  = ({
   // };
   // console.log('the data in the columns is:',data)
   const columns = [
-    ...((session?.user?.permission) >= 4
+    ...((memoizedSession?.user?.permission) >= 4
     // ...(parseFloat(data[0].permission) >= 4
     ? [
         {
@@ -178,16 +180,16 @@ export const useGetColumns  = ({
     {
       title: (
         <HeaderCell
-          title="Company"
+          title="Assigned On"
           sortable
           ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'company_title'
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'last_updated'
           }
         />
       ),
-      onHeaderCell: () => onHeaderCellClick('company_title'),
-      dataIndex: 'company_title',
-      key: 'company_title',
+      onHeaderCell: () => onHeaderCellClick('last_updated'),
+      dataIndex: 'last_updated',
+      key: 'last_updated',
       width: 200,
       render: (value: string | undefined) => (
         <Text className="font-medium text-gray-700 dark:text-gray-600">

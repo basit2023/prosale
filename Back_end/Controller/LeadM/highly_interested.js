@@ -60,7 +60,8 @@ if(parseFloat(perm[0].permission)>=9)
         main.assigned_to,
         label.label AS label,
         company.title AS company_title,
-        label.bg AS bg_color
+        label.bg AS bg_color,
+        main.last_updated
       FROM
         leads_main AS main
       INNER JOIN
@@ -75,6 +76,7 @@ if(parseFloat(perm[0].permission)>=9)
         inventory_type AS interested_in ON main.interested_in = interested_in.id
       WHERE
         main.${field} = ? AND FIND_IN_SET(main.company_id, ?) > 0
+      ORDER BY main.last_updated DESC
     `, [id,company_id]);
 
      if (id==12 && field==="leads_label"){
@@ -90,9 +92,11 @@ if(parseFloat(perm[0].permission)>=9)
         main.view_dt,
         main.user,
         main.assigned_on,
+        main.assigned_to,
         label.label AS label,
         company.title AS company_title,
-        label.bg AS bg_color
+        label.bg AS bg_color,
+        main.last_updated
       FROM
         leads_main AS main
       INNER JOIN
@@ -106,7 +110,8 @@ if(parseFloat(perm[0].permission)>=9)
       INNER JOIN
         inventory_type AS interested_in ON main.interested_in = interested_in.id
       WHERE
-        main.status = \'un_assigned\' AND FIND_IN_SET(main.company_id, ?) > 0 ;
+        main.status = \'un_assigned\' AND FIND_IN_SET(main.company_id, ?) > 0
+      ORDER BY main.last_updated DESC
     `,[company_id]);
      }
      if (id==11 && field==="leads_label"){
@@ -122,9 +127,11 @@ if(parseFloat(perm[0].permission)>=9)
         main.view_dt,
         main.user,
         main.assigned_on,
+        main.assigned_to,
         label.label AS label,
         company.title AS company_title,
-        label.bg AS bg_color
+        label.bg AS bg_color,
+        main.last_updated
       FROM
         leads_main AS main
       INNER JOIN
@@ -137,7 +144,8 @@ if(parseFloat(perm[0].permission)>=9)
         companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
       INNER JOIN
         inventory_type AS interested_in ON main.interested_in = interested_in.id
-      WHERE FIND_IN_SET(main.company_id, ?) > 0;
+      WHERE FIND_IN_SET(main.company_id, ?) > 0
+      ORDER BY main.last_updated DESC
       `,[company_id]
     );
      }
@@ -154,10 +162,12 @@ if(parseFloat(perm[0].permission)>=9)
         main.status,
         main.view_dt,
         main.assigned_on,
+        main.assigned_to,
         main.user,
         label.label AS label,
         company.title AS company_title,
-        label.bg AS bg_color
+        label.bg AS bg_color,
+        main.last_updated
       FROM
         leads_main AS main
       INNER JOIN
@@ -171,8 +181,8 @@ if(parseFloat(perm[0].permission)>=9)
       INNER JOIN
         companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
       WHERE
-      main.assigned_to = ? AND main.${field} = ? AND FIND_IN_SET(main.company_id, ?) > 0;
-      
+      main.assigned_to = ? AND main.${field} = ? AND FIND_IN_SET(main.company_id, ?) > 0
+      ORDER BY main.last_updated DESC
     `, [perm[0].name,id,company_id]);
     }
 
@@ -203,7 +213,6 @@ if(parseFloat(perm[0].permission)>=9)
     });
   }
 };
-
 
 const SpecificTeamMemberLeads = async (req, res) => {
   try {

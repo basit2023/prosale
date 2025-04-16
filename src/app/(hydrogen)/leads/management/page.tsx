@@ -12,7 +12,7 @@ import React, { useState } from 'react';
 // };
 
 const pageHeader = {
-  title: 'All',
+  title: 'Elaan Marketing',
   breadcrumb: [
     
     // {
@@ -26,17 +26,14 @@ const pageHeader = {
 };
 
 export default function NewEmployeePage() {
-  const [companyId, setCompanyId] = useState(undefined);
-  if(companyId){
-    pageHeader.title=companyId;
-  }
+  
   return (
     <>
         <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
           <ImportButton title={'Import File'} />
-          <ChangeCompanyButton onCompanyIdChange={setCompanyId} company={companyId}/>
+          {/* <ChangeCompanyButton onCompanyIdChange={setCompanyId} company={companyId}/> */}
         </PageHeader>
-        <Vaultinformation id={companyId} onCompanyIdChange={setCompanyId} style={{ zIndex: -40 }}/>
+        <Vaultinformation />
       </>
     );
 }
