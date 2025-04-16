@@ -117,7 +117,7 @@ const memoizedSession=useMemo(()=>session,[session])
         mode: 'onChange',
         defaultValues: {
           ...defaultValues,
-          name: memoizedSession?.user?.usename || '',
+          name: memoizedSession?.user?.username || '',
           user_type: memoizedSession?.user?.user_type || ''
         },
       }}
@@ -145,8 +145,8 @@ const memoizedSession=useMemo(()=>session,[session])
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
-                defaultValue={memoizedSession?.user?.usename}
-                  placeholder={`${memoizedSession?.user?.usename}` || "example123"}
+                defaultValue={memoizedSession?.user?.username}
+                  placeholder={`${memoizedSession?.user?.username}` || "example123"}
                   {...register('name')}
                   className="flex-grow"
                 />
