@@ -36,7 +36,7 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
   const [userTypes, setUserTypes] = useState<any[]>([]);
   const [userData, setUserData] = useState<any>(null);
   const [initialData, setInitialData] = useState<any>(null);
-
+const memoizedSession=useMemo(()=>session,[session])
   // Memoize the decrypted user data to avoid unnecessary decryption
   const decryptedUserData = useMemo(() => {
     try {
@@ -98,7 +98,7 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
       if (result.data.success) {
         toast.success(result.data.message);
         setInitialData(data); // Update initial data after successful submission
-        logs({ user: decryptedUserData?.user?.name, desc: 'Updated User Vault Info' });
+        logs({ user: memoizedSession?.user?.username, desc: 'Updated User Vault Info' });
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -117,8 +117,8 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
         mode: 'onChange',
         defaultValues: {
           ...defaultValues,
-          name: userData?.user?.name || '',
-          user_type: userData?.user?.user_type || ''
+          name: memoizedSession?.user?.usename || '',
+          user_type: memoizedSession?.user?.user_type || ''
         },
       }}
     >
@@ -145,8 +145,8 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
-                defaultValue={userData.user.name}
-                  placeholder={`${userData.user.name}` || "example123"}
+                defaultValue={memoizedSession?.user?.usename}
+                  placeholder={`${memoizedSession?.user?.usename}` || "example123"}
                   {...register('name')}
                   className="flex-grow"
                 />
@@ -176,7 +176,7 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
                   name="user_type"
                   render={({ field: { value, onChange } }) => (
                     <SelectBox
-                      placeholder={userData?.user?.user_type || "Select User Type"}
+                      placeholder={memoizedSession?.user?.user_type || "Select User Type"}
                       options={userTypes}
                       onChange={onChange}
                       value={value}
