@@ -51,7 +51,7 @@ const useWebSocket = (url, onMessage) => {
 async function fetchNotifications(email) {
   try {
     const response = await apiService.get(`/getNotification/${email}`);
-
+   console.log("the notification is:",response)
     const data = await response?.data?.results;
     if (response) {
       return data;
