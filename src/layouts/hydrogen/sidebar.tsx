@@ -1,7 +1,7 @@
 'use client';
 import logoImg from '@public/logo/prosale-favicon.png';
 import Link from 'next/link';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Title } from '@/components/ui/text';
 import { Collapse } from '@/components/ui/collapse';
@@ -31,16 +31,16 @@ export default function Sidebar({ className }: { className?: string }) {
   // const encryptedPermission = localStorage.getItem('permission');
   
   // const permissionData = encryptedPermission ? decryptData(encryptedPermission) : null;
-  
+  const memoizedSession=useMemo(()=>session,[session])
   const [supper, setSupper] = useState<any>(userData);
-  const [perm_d, setPerm_d] = useState<any>(session?.user?.permission);
+  const [perm_d, setPerm_d] = useState<any>(memoizedSession?.user?.permission);
 
   useEffect(() => {
-    if (session) {
+    if (memoizedSession) {
       const fetchData = async () => {
         try {
           if (!userData) {
-            const response = await apiService.get(`/supperadmin/${session.user.email}`);
+            const response = await apiService.get(`/supperadmin/${memoizedSession?.user.email}`);
             const fetchedUserData = response.data;
             const encryptedUserData = encryptData(fetchedUserData);
             localStorage.setItem('superadmin', encryptedUserData);
@@ -79,13 +79,13 @@ export default function Sidebar({ className }: { className?: string }) {
   //   }
   // }, []);
 
-  useEffect(() => {
-    if (!session) {
-      router.push(routes.signIn);
-    } else if (supper?.user?.user_type === 'super_admin' && supper?.user?.company_creator === null) {
-      router.push(routes.auth.onboarding);
-    }
-  }, [session, supper, router]);
+  // useEffect(() => {
+  //   if (!session) {
+  //     router.push(routes.signIn);
+  //   } else if (supper?.user?.user_type === 'super_admin' && supper?.user?.company_creator === null) {
+  //     router.push(routes.auth.onboarding);
+  //   }
+  // }, [session, supper, router]);
 
   useEffect(() => {
     const fetchDataAndLog = async () => {
@@ -93,8 +93,7 @@ export default function Sidebar({ className }: { className?: string }) {
         
           const items = await getMenuItems();
           const userPermissions = perm_d;
-          console.log("the user permissio is:",userPermissions)
-          console.log("the permission of the drop down is:",items)
+          
           const transformedItems = items.reduce((acc: any, item: any) => {
             if (item.dropdownItems) {
               const allowedDropdownItems = item.dropdownItems.filter((dropdownItem: any) => dropdownItem.permission_level <= userPermissions);
