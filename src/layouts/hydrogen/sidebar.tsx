@@ -93,6 +93,8 @@ export default function Sidebar({ className }: { className?: string }) {
         
           const items = await getMenuItems();
           const userPermissions = perm_d;
+          console.log("the user permissio is:",userPermissions)
+          console.log("the permission of the drop down is:",items)
           const transformedItems = items.reduce((acc: any, item: any) => {
             if (item.dropdownItems) {
               const allowedDropdownItems = item.dropdownItems.filter((dropdownItem: any) => dropdownItem.permission_level <= userPermissions);

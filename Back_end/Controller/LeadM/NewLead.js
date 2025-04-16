@@ -58,7 +58,7 @@ const ReassignedLead = async (leadId, project, user) => {
         const { team_id, manager_id } = teamRows[0];
 
         const [teamMembers] = await mysqlConnection.promise().query(
-            'SELECT id, name FROM users WHERE assigned_team = ?',
+            'SELECT id, name FROM users WHERE del="N" AND lead_status="Y" AND assigned_team = ?',
             [team_id]
         );
 
