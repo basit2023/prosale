@@ -21,6 +21,9 @@ dayjs.extend(relativeTime);
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
+// Set the default timezone (adjust to your server's timezone)
+dayjs.tz.setDefault('Asia/Karachi'); // Change this to your server's timezone
+
 // WebSocket Hook
 const useWebSocket = (url, onMessage) => {
   const [ws, setWs] = useState(null);
@@ -47,10 +50,6 @@ const useWebSocket = (url, onMessage) => {
       setWs(null);
     };
 
-    websocket.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
     return () => {
       websocket.close();
     };
@@ -66,13 +65,31 @@ async function fetchNotifications(email) {
     const data = response?.data?.results || [];
     return data.map(notification => ({
       ...notification,
-      // Ensure created_at is properly formatted
-      created_at: notification.created_at || new Date().toISOString()
+      // Parse the timestamp to ensure it's in correct format
+      created_at: parseTimestamp(notification.created_at)
     }));
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return [];
   }
+}
+
+// Helper function to parse and normalize timestamps
+function parseTimestamp(timestamp) {
+  if (!timestamp) return new Date().toISOString();
+  
+  // If timestamp is already in ISO format, return as-is
+  if (typeof timestamp === 'string' && timestamp.includes('T')) {
+    return timestamp;
+  }
+  
+  // If it's a MySQL datetime string, convert to ISO format
+  if (typeof timestamp === 'string' && timestamp.includes(' ')) {
+    return dayjs.tz(timestamp, 'Asia/Karachi').toISOString(); // Use your server timezone
+  }
+  
+  // Fallback to current time
+  return new Date().toISOString();
 }
 
 async function markAsRead(notification) {
@@ -112,36 +129,43 @@ function NotificationsList({ notifications, setIsOpen, setNotifications }) {
       </div>
       <SimpleBar className="max-h-[420px]">
         <div className="grid cursor-pointer grid-cols-1 gap-1 ps-4">
-          {notifications?.map((item) => (
-            <Link 
-              key={item.id} 
-              href={routes.leads.edit(item.leadId)} 
-              onClick={() => handleNotificationClick(item)}
-            >
-              <div className="group grid grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-md px-2 py-2 pe-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-50">
-                <div className="flex h-9 w-9 items-center justify-center rounded bg-gray-100/70 p-1 dark:bg-gray-50/50 [&>svg]:h-auto [&>svg]:w-5">
-                  {item.icon}
-                </div>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
-                  <div className="w-full">
-                    <Title as="h6" className="mb-0.5 w-11/12 truncate text-sm font-semibold">
-                      Lead assigned on {dayjs(item.created_at).format('dddd, MMMM D, YYYY')}
-                    </Title>
-                    <span className="ms-auto whitespace-nowrap pe-8 text-xs text-gray-500">
-                      {dayjs(item.created_at).fromNow(true)}
-                    </span>
+          {notifications?.map((item) => {
+            // Parse the timestamp with timezone awareness
+            const createdAt = dayjs(item.created_at);
+            const formattedDate = createdAt.format('dddd, MMMM D, YYYY');
+            const timeAgo = createdAt.fromNow(true);
+            
+            return (
+              <Link 
+                key={item.id} 
+                href={routes.leads.edit(item.leadId)} 
+                onClick={() => handleNotificationClick(item)}
+              >
+                <div className="group grid grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-md px-2 py-2 pe-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-50">
+                  <div className="flex h-9 w-9 items-center justify-center rounded bg-gray-100/70 p-1 dark:bg-gray-50/50 [&>svg]:h-auto [&>svg]:w-5">
+                    {item.icon}
                   </div>
-                  <div className="ms-auto flex-shrink-0">
-                    {item.notification_mark === 0 ? (
-                      <Badge renderAsDot size="lg" color="primary" className="scale-90" />
-                    ) : (
-                      <PiCheck className="h-auto w-[9px]" />
-                    )}
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
+                    <div className="w-full">
+                      <Title as="h6" className="mb-0.5 w-11/12 truncate text-sm font-semibold">
+                        Lead assigned on {formattedDate}
+                      </Title>
+                      <span className="ms-auto whitespace-nowrap pe-8 text-xs text-gray-500">
+                        {timeAgo}
+                      </span>
+                    </div>
+                    <div className="ms-auto flex-shrink-0">
+                      {item.notification_mark === 0 ? (
+                        <Badge renderAsDot size="lg" color="primary" className="scale-90" />
+                      ) : (
+                        <PiCheck className="h-auto w-[9px]" />
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </SimpleBar>
       <Link
@@ -186,7 +210,7 @@ export default function NotificationDropdown({ children }) {
           id: Date.now(),
           leadId,
           message: data.message,
-          created_at: created_at || new Date().toISOString(), // Use backend timestamp
+          created_at: parseTimestamp(created_at), // Use parsed timestamp
           notification_mark: 0,
           userId: messageUserId,
         };
@@ -255,7 +279,6 @@ export default function NotificationDropdown({ children }) {
     </Popover>
   );
 }
- 
  // send the leads but also send notification to all users
 
 // 'use client';
