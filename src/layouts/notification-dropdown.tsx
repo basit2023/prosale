@@ -192,7 +192,7 @@ export default function NotificationDropdown({ children }) {
   // WebSocket URL configuration
   const websocketUrl = useMemo(() => {
     return window.location.protocol === 'https:' 
-      ? 'wss://api.prodeed.cloud:4001' 
+      ? 'wss://api.prodeed.cloud' 
       : 'ws://localhost:4001';
   }, []);
 
@@ -279,6 +279,14 @@ export default function NotificationDropdown({ children }) {
     </Popover>
   );
 }
+
+
+
+
+
+
+
+
  // send the leads but also send notification to all users
 
 // 'use client';
