@@ -3,6 +3,8 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { Popover } from '@/components/ui/popover';
 import { Title } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +16,10 @@ import Link from 'next/link';
 import { useMedia } from '@/hooks/use-media';
 import { routes } from '@/config/routes';
 
+// Extend dayjs with required plugins
 dayjs.extend(relativeTime);
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 // WebSocket Hook
 const useWebSocket = (url, onMessage) => {
@@ -29,8 +34,12 @@ const useWebSocket = (url, onMessage) => {
     };
 
     websocket.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      onMessage(message);
+      try {
+        const message = JSON.parse(event.data);
+        onMessage(message);
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
+      }
     };
 
     websocket.onclose = () => {
@@ -38,11 +47,14 @@ const useWebSocket = (url, onMessage) => {
       setWs(null);
     };
 
-    // Cleanup function to close WebSocket on unmount
+    websocket.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
     return () => {
       websocket.close();
     };
-  }, [url, onMessage]); // Reconnect only if URL or onMessage changes
+  }, [url, onMessage]);
 
   return ws;
 };
@@ -51,24 +63,23 @@ const useWebSocket = (url, onMessage) => {
 async function fetchNotifications(email) {
   try {
     const response = await apiService.get(`/getNotification/${email}`);
-   console.log("the notification is:",response)
-    const data = await response?.data?.results;
-    if (response) {
-      return data;
-    } else {
-      console.error(response.message);
-      return [];
-    }
+    const data = response?.data?.results || [];
+    return data.map(notification => ({
+      ...notification,
+      // Ensure created_at is properly formatted
+      created_at: notification.created_at || new Date().toISOString()
+    }));
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return [];
   }
 }
 
-async function markAsRead(notificationId) {
+async function markAsRead(notification) {
   try {
-    const response = await apiService.put(`/markNotificationAsRead/${notificationId.id}?leadId=${notificationId.leadId}`);
-    // console.log("Marked as read:", response);
+    const response = await apiService.put(
+      `/markNotificationAsRead/${notification.id}?leadId=${notification.leadId}`
+    );
     return response?.data?.success;
   } catch (error) {
     console.error('Error marking notification as read:', error);
@@ -76,19 +87,16 @@ async function markAsRead(notificationId) {
   }
 }
 
-function NotificationsList({
-  notifications,
-  setIsOpen,
-  setNotifications,
-}) {
+function NotificationsList({ notifications, setIsOpen, setNotifications }) {
   const handleNotificationClick = async (notification) => {
-    console.log("the notification is:", notification)
     if (notification.notification_mark === 0) {
       const success = await markAsRead(notification);
       if (success) {
-        setNotifications((prevNotifications) =>
-          prevNotifications.map((item) =>
-            item.id === notification.id ? { ...item, notification_mark: 1 } : item
+        setNotifications(prev =>
+          prev.map(item =>
+            item.id === notification.id 
+              ? { ...item, notification_mark: 1 } 
+              : item
           )
         );
       }
@@ -105,17 +113,18 @@ function NotificationsList({
       <SimpleBar className="max-h-[420px]">
         <div className="grid cursor-pointer grid-cols-1 gap-1 ps-4">
           {notifications?.map((item) => (
-            <Link key={item.id} href={routes.leads.edit(item.leadId)} onClick={() => handleNotificationClick(item)}>
+            <Link 
+              key={item.id} 
+              href={routes.leads.edit(item.leadId)} 
+              onClick={() => handleNotificationClick(item)}
+            >
               <div className="group grid grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-md px-2 py-2 pe-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-50">
                 <div className="flex h-9 w-9 items-center justify-center rounded bg-gray-100/70 p-1 dark:bg-gray-50/50 [&>svg]:h-auto [&>svg]:w-5">
                   {item.icon}
                 </div>
                 <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
                   <div className="w-full">
-                    <Title
-                      as="h6"
-                      className="mb-0.5 w-11/12 truncate text-sm font-semibold"
-                    >
+                    <Title as="h6" className="mb-0.5 w-11/12 truncate text-sm font-semibold">
                       Lead assigned on {dayjs(item.created_at).format('dddd, MMMM D, YYYY')}
                     </Title>
                     <span className="ms-auto whitespace-nowrap pe-8 text-xs text-gray-500">
@@ -124,12 +133,7 @@ function NotificationsList({
                   </div>
                   <div className="ms-auto flex-shrink-0">
                     {item.notification_mark === 0 ? (
-                      <Badge
-                        renderAsDot
-                        size="lg"
-                        color="primary"
-                        className="scale-90"
-                      />
+                      <Badge renderAsDot size="lg" color="primary" className="scale-90" />
                     ) : (
                       <PiCheck className="h-auto w-[9px]" />
                     )}
@@ -151,105 +155,98 @@ function NotificationsList({
   );
 }
 
-
 export default function NotificationDropdown({ children }) {
   const { data: session } = useSession();
   const isMobile = useMedia('(max-width: 480px)', false);
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const email = session?.user?.email;   
+  
+  const email = session?.user?.email;
+  const userId = session?.user?.id;
 
-  // Memoize the WebSocket URL to prevent unnecessary reconnections
-  // const websocketUrl = useMemo(() => 'ws://localhost:4001', []);
-  // const websocketUrl = useMemo(() => 'wss://api.prosale.cloud', []);
+  // WebSocket URL configuration
   const websocketUrl = useMemo(() => {
     return window.location.protocol === 'https:' 
-        ? 'wss://api.prodeed.cloud:4001' 
-        : 'ws://localhost:4001';
-}, []);
+      ? 'wss://api.prodeed.cloud:4001' 
+      : 'ws://localhost:4001';
+  }, []);
 
-
-  // Memoize the onMessage handler to prevent unnecessary re-renders
+  // WebSocket message handler
   const handleWebSocketMessage = useCallback((message) => {
-    // console.log("The message from the backend is:", message);
-  
-    if (!session?.user?.id) return; // Ensure user is logged in
-  
-    const loggedInUserId = session.user.id; // Get the logged-in user's ID from session
-  
-    const { userId } = message.data; // Extract userId from message
-  
-    // Only process notifications meant for the logged-in user
-    if (parseInt(userId) === parseInt(loggedInUserId)) {
-      console.log(`is the user id and the loggedInUserId same-> ${userId}=${loggedInUserId}`)
-      console.log("Ignoring notification for other users. lead send to you",userId);
-      
-      // return;
-   
-  
-    if (message.event === 'lead_assigned') {
-      const newNotification = {
-        id: Date.now(),
-        leadId: message.data.leadId,
-        message: message.data.message,
-        created_at: new Date().toISOString(),
-        notification_mark: 0,
-        userId: userId, // Store userId in notification
-      };
-  
-      setNotifications((prevNotifications) => {
-        const updatedNotifications = [newNotification, ...prevNotifications];
-        setUnreadCount(updatedNotifications.filter(n => n.notification_mark === 0).length);
-        return updatedNotifications;
-      });
-    } 
-    else if (message.event === 'lead_reassigned') {
-      setNotifications((prevNotifications) => {
-        const updatedNotifications = prevNotifications.filter(n => n.leadId !== message.data.leadId);
-        setUnreadCount(updatedNotifications.filter(n => n.notification_mark === 0).length);
-        return updatedNotifications;
-      });
-    }
-  }
-  }, [session]);
-  
+    if (!userId) return;
 
-  // WebSocket Connection
+    const { event, data } = message;
+    const { userId: messageUserId, leadId, created_at } = data || {};
+
+    // Only process notifications for the current user
+    if (parseInt(messageUserId) === parseInt(userId)) {
+      if (event === 'lead_assigned') {
+        const newNotification = {
+          id: Date.now(),
+          leadId,
+          message: data.message,
+          created_at: created_at || new Date().toISOString(), // Use backend timestamp
+          notification_mark: 0,
+          userId: messageUserId,
+        };
+
+        setNotifications(prev => {
+          const updated = [newNotification, ...prev];
+          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
+          return updated;
+        });
+      } 
+      else if (event === 'lead_reassigned') {
+        setNotifications(prev => {
+          const updated = prev.filter(n => n.leadId !== leadId);
+          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
+          return updated;
+        });
+      }
+    }
+  }, [userId]);
+
+  // WebSocket connection
   const ws = useWebSocket(websocketUrl, handleWebSocketMessage);
 
-  // Fetch Notifications on Component Mount
-  useEffect(() => {
-    if (email) {
-      fetchNotifications(email).then((data) => {
-        // Sort notifications from latest to oldest
-        const sortedNotifications = data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        setNotifications(sortedNotifications);
-        const unread = sortedNotifications.filter(notification => notification.notification_mark === 0).length;
-        setUnreadCount(unread);
-      });
+  // Initial fetch and refresh when dropdown opens
+  const fetchAndSetNotifications = useCallback(async () => {
+    if (!email) return;
+    
+    try {
+      const data = await fetchNotifications(email);
+      const sorted = data.sort((a, b) => 
+        new Date(b.created_at) - new Date(a.created_at)
+      );
+      setNotifications(sorted);
+      setUnreadCount(sorted.filter(n => n.notification_mark === 0).length);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
     }
   }, [email]);
 
-  // Fetch Notifications When Dropdown is Opened
   useEffect(() => {
-    if (isOpen && email) {
-      fetchNotifications(email).then((data) => {
-        // Sort notifications from latest to oldest
-        const sortedNotifications = data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        setNotifications(sortedNotifications);
-        const unread = sortedNotifications.filter(notification => notification.notification_mark === 0).length;
-        setUnreadCount(unread);
-      });
-    }
-  }, [isOpen, email]);
+    fetchAndSetNotifications();
+  }, [fetchAndSetNotifications]);
 
+  useEffect(() => {
+    if (isOpen) {
+      fetchAndSetNotifications();
+    }
+  }, [isOpen, fetchAndSetNotifications]);
 
   return (
     <Popover
       isOpen={isOpen}
       setIsOpen={setIsOpen}
-      content={() => <NotificationsList notifications={notifications} setIsOpen={setIsOpen} setNotifications={setNotifications} />}
+      content={() => (
+        <NotificationsList 
+          notifications={notifications} 
+          setIsOpen={setIsOpen} 
+          setNotifications={setNotifications} 
+        />
+      )}
       shadow="sm"
       placement={isMobile ? 'bottom' : 'bottom-end'}
       className="z-50 px-0 pb-4 pe-6 pt-5 dark:bg-gray-100 [&>svg]:hidden [&>svg]:dark:fill-gray-100 sm:[&>svg]:inline-flex"
@@ -258,7 +255,6 @@ export default function NotificationDropdown({ children }) {
     </Popover>
   );
 }
- 
  
  // send the leads but also send notification to all users
 

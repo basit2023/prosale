@@ -133,10 +133,16 @@ const ReassignedLead = async (leadId, project, user) => {
 };
 
 
-const notifyUser = (userId, message, leadId) => {
+const notifyUser = async (userId, message, leadId) => {
+    const [leadDetails] = await mysqlConnection.promise().query(
+        'SELECT last_updated FROM leads_main WHERE id = ?',
+        [leadId]
+    );
+
+    const lastUpdated = leadDetails[0]?.last_updated || new Date().toISOString();
     wss.clients.forEach(client => {
         if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ event: message ? 'lead_assigned' : 'lead_reassigned', data: { userId, message, leadId } }));
+            client.send(JSON.stringify({ event: message ? 'lead_assigned' : 'lead_reassigned', data: { userId, message, leadId, created_at: lastUpdated } }));
         }
     });
 };
@@ -259,7 +265,11 @@ const AutoNewNotification = async (assigned_to, leadId, user) => {
     console.log("the new notification site:", assigned_to, leadId, user);
     try {
         const assignedThroughName = user;
-
+        const [leadDetails] = await mysqlConnection.promise().query(
+            'SELECT last_updated FROM leads_main WHERE id = ?',
+            [leadId]
+        );
+        const lastUpdated = leadDetails[0]?.last_updated || new Date();
         // Query to get the name of the user assigned to
         const [ass_to] = await mysqlConnection.promise().query("SELECT mobile, sms FROM users WHERE name=?", [assigned_to]);
         if (ass_to.length === 0) {
@@ -278,6 +288,7 @@ const AutoNewNotification = async (assigned_to, leadId, user) => {
         // Emit the notification to the assigned user
         io?.to(assigned_to).emit('notification', {
             message: `New Notification created for lead ID: ${leadId}`,
+            created_at: lastUpdated,
         });
 
         // Send SMS to the assigned user
