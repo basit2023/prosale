@@ -1,39 +1,28 @@
 'use client';
-import AnalyticsDashboard from '@/app/shared/analytics-dashboard';
-// import { metaObject } from '@/config/site.config';
-import CreateNewEmployee from '@/app/shared/AddnewEmployee/AddNewEmployee';
+import React, { useMemo } from 'react';
+import { useSession } from 'next-auth/react';
 import PageHeader from '@/app/shared/page-header-leads';
 import Vaultinformation from '@/components/LeadManagement/LeadManagCard';
-import ChangeCompanyButton from '@/components/LeadManagement/Change-button';
 import ImportButton from '@/app/shared/import-button-lead';
-import React, { useState } from 'react';
-// export const metadata = {
-//   ...metaObject('Lead Management'),
-// };
 
 const pageHeader = {
   title: 'Elaan Marketing',
-  breadcrumb: [
-    
-    // {
-      
-    //   name: 'Empoyee',
-    // },
-    // {
-    //   name: 'Add',
-    // },
-  ],
+  breadcrumb: [],
 };
 
 export default function NewEmployeePage() {
+  const { data: session } = useSession();
+  const memoizedsession = useMemo(() => session, [session]);
   
+
   return (
     <>
-        <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
+      <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
+        {memoizedsession?.user?.permission > 8 && (
           <ImportButton title={'Import File'} />
-          {/* <ChangeCompanyButton onCompanyIdChange={setCompanyId} company={companyId}/> */}
-        </PageHeader>
-        <Vaultinformation />
-      </>
-    );
+        )}
+      </PageHeader>
+      <Vaultinformation />
+    </>
+  );
 }

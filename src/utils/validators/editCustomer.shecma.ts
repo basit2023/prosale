@@ -15,6 +15,7 @@ export const customerInfoFormSchema = z.object({
   country: z.string().optional(),
   dt: z.string().optional(),
   company_id:z.string().optional(),
+  user:z.string().optional(),
   
 });
 
@@ -31,5 +32,6 @@ export const defaultValues = {
   type: undefined,
   country: undefined,
   company_id:undefined,
+  user:undefined,
   dt: getCurrentTimestamp(),
 };

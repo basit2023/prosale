@@ -142,7 +142,7 @@ const EditLeadCustomer = async (req, res) => {
   const CreateLeadCustomer = async (req, res) => {
     try {
       // Extract fields from the request body
-      const { full_name, mobile, whatsapp, email, job_title, city, country, dt, company_id } = req.body;
+      const { full_name, mobile, whatsapp, email, job_title, city, country, dt, company_id, user } = req.body;
       const type = country === "92" ? "local" : "international";
   
       // Check if required fields are provided
@@ -167,8 +167,8 @@ const EditLeadCustomer = async (req, res) => {
       }
   
       const sql = `
-        INSERT INTO leads_customers (full_name, mobile, whatsapp, email, job_title, city, type, country, dt, company_id) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+        INSERT INTO leads_customers (full_name, mobile, whatsapp, email, job_title, city, type, country, dt, company_id, user) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
         ON DUPLICATE KEY UPDATE 
           company_id = CASE 
             WHEN company_id IS NULL THEN VALUES(company_id)
@@ -176,7 +176,7 @@ const EditLeadCustomer = async (req, res) => {
           END
       `;
   
-      const values = [full_name, mobile, whatsapp, email, job_title, city, type, country, dt, company_id];
+      const values = [full_name, mobile, whatsapp, email, job_title, city, type, country, dt, company_id, user];
   
       // Execute the query
       const [result] = await mysqlConnection.promise().query(sql, values);

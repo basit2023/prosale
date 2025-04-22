@@ -77,7 +77,7 @@ const ZoneData = async (req, res) => {
         INNER JOIN
           users manager ON ut.manager_id = manager.id
         WHERE 
-        FIND_IN_SET(ut.manager_id , ?) > 0 AND FIND_IN_SET(u.company_id, ?) > 0`, [id, company_id]
+        FIND_IN_SET(ut.manager_id , ?) > 0 AND u.del="N"`, [id]
       );
   
       if (!team.length) {

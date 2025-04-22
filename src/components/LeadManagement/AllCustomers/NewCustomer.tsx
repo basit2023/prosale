@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import apiService from '@/utils/apiService';
 import { useRouter } from 'next/navigation';
 import { routes } from '@/config/routes';
@@ -42,6 +42,7 @@ export default function NewLeadCustomer() {
   const [company, setCompany] = useState<any>();
   const [userValue, setUserData]=useState<any>();
   const [isLoading, setIsLoading] = useState(false); 
+  const memoizedSession=useMemo(()=>session,[session])
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -57,7 +58,7 @@ export default function NewLeadCustomer() {
     };
 
     fetchUserData();
-  }, [session]);
+  }, [memoizedSession]);
 
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function NewLeadCustomer() {
         toast.error('Error fetching user data. Please try again.');
       }
       try {
-        const response = await apiService.get(`/supper-admin/${session?.user?.email}`);
+        const response = await apiService.get(`/supper-admin/${memoizedSession?.user?.email}`);
         const userData = response.data;
         setCompany(userData);
       } catch (error) {
@@ -86,13 +87,14 @@ export default function NewLeadCustomer() {
     if (session) {
       fetchData();
     }
-  }, [session]);
+  }, [memoizedSession]);
 // console.log("the user data is:--->",value)
   const onSubmit: SubmitHandler<customerInfoFormTypes> = async (data) => {
     setIsLoading(true); 
     try {
       if(company?.user_data?.number<=1){
         data.company_id=company?.user_data?.company_id;
+        data.user=memoizedSession?.user?.username
      }
        const result= await apiService.post(`/new-lead-customer`, {
             ...data})
@@ -101,7 +103,7 @@ export default function NewLeadCustomer() {
         
         if(result.data.success){
           
-          logsCreate({ user: userValue?.user?.name, desc: `Create New Customer` });
+          logsCreate({ user: memoizedSession?.user?.username, desc: `Create New Customer` });
           // router.push(routes.leads.customers)
           back()
         }
@@ -231,7 +233,7 @@ export default function NewLeadCustomer() {
                
               </FormGroup>
 
-              {company?.user_data?.number>1 && <FormGroup
+              {/* {company?.user_data?.number>1 && <FormGroup
                 title="Assign Company"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
@@ -259,7 +261,7 @@ export default function NewLeadCustomer() {
                     );
                   }}
                 />
-              </FormGroup>}
+              </FormGroup>} */}
              
             </div>
             <FormFooter altBtnText="Cancel" altBtnOnClick={() => back()} submitBtnText="Add New Customer" isLoading={isLoading}/>

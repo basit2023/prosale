@@ -32,7 +32,7 @@ export default function ManagerInfo({ id }: any) {
       }
     } catch (error: any) {
       console.error('Error fetching team member:', error);
-      toast.error(error.response?.data?.message || 'Error fetching team member');
+      // toast.error(error.response?.data?.message || 'Error fetching team member');
     }
   }, [id, sessionEmail]);
 

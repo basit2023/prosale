@@ -44,6 +44,95 @@ const GetSourceDepInterestLeadtype = async (req, res) => {
     }
 };
 
+//ok part
+
+// const ReassignedLead = async (leadId, project, user) => {
+//     try {
+//         const [teamRows] = await mysqlConnection.promise().query(
+//             'SELECT id AS team_id, manager_id FROM users_teams WHERE FIND_IN_SET(?, project_id) > 0',
+//             [project]
+//         );
+
+//         if (teamRows.length === 0) {
+//             throw new Error('No team found for the project');
+//         }
+
+//         const { team_id, manager_id } = teamRows[0];
+
+//         const [teamMembers] = await mysqlConnection.promise().query(
+//             'SELECT id, name FROM users WHERE del="N" AND lead_status="Y" AND assigned_team = ?',
+//             [team_id]
+//         );
+
+//         let assignedUsers = [...teamMembers];
+//         let index = 0;
+
+//          // Check if the lead has been assigned before
+       
+
+//         const assignLead = async () => {
+//             const [existingNotification] = await mysqlConnection.promise().query(
+//                 'SELECT * FROM leads_notification WHERE leadId = ?',
+//                 [leadId]
+//             );
+//             if (index < assignedUsers.length) {
+//                 const nextAssignee = assignedUsers[index];
+//                 index++;
+
+//                 await mysqlConnection.promise().query(
+//                     'UPDATE leads_main SET assigned_to = ?, assigned_on = NOW(), status = "open", leads_label = IF(leads_label = 12, 7, leads_label) WHERE id = ?',
+//                     [nextAssignee.name, leadId]
+//                 );
+
+//                 console.log(`Lead ${leadId} assigned to ${nextAssignee.name}`);
+//                 if (existingNotification.length === 0) {
+//                     // If no notification exists, create a new one
+//                     // AutoNewNotification(nextAssignee.name, leadId, user)
+//                     await AutoNewNotification(nextAssignee.name, leadId, user);
+//                 } else {
+//                     // If notification exists, update it
+//                     // await AutoUpdateNotification(nextAssignee.name, leadId, user);
+//                     await AutoUpdateNotification(nextAssignee.name, leadId, user);
+//                 }
+//                 notifyUser(nextAssignee.id, `Lead assigned to ${nextAssignee.name}`,leadId);
+                
+
+//                 setTimeout(async () => {
+//                     const [leadDetails] = await mysqlConnection.promise().query(
+//                         'SELECT view_dt FROM leads_main WHERE id = ?',
+//                         [leadId]
+//                     );
+
+//                     if (leadDetails.length > 0 && leadDetails[0].view_dt === "new_lead") {
+//                         console.log(`Lead ${leadId} not viewed by ${nextAssignee.name}. Reassigning...`);
+//                         notifyUser(nextAssignee.id, null,leadId);
+//                         assignLead();
+//                     }
+//                 }, 2 * 60 * 1000);
+//             } else {
+//                 // Assign back to manager if no one views it
+//                 const [manager] = await mysqlConnection.promise().query(
+//                     'SELECT id, name FROM users WHERE id = ?',
+//                     [manager_id]
+//                 );
+//                 if (manager.length > 0) {
+//                     await mysqlConnection.promise().query(
+//                         'UPDATE leads_main SET assigned_to = ?, assigned_on = NOW() WHERE id = ?',
+//                         [manager[0].name, leadId]
+//                     );
+//                     console.log(`Lead ${leadId} reassigned to Manager ${manager[0].name}`);
+//                     notifyUser(manager[0].id, `Lead reassigned to ${manager[0].name}`,leadId);
+//                 } else {
+//                     console.log('No manager found for reassignment');
+//                 }
+//             }
+//         };
+
+//         assignLead();
+//     } catch (error) {
+//         console.error('Error in ReassignedLead:', error);
+//     }
+// };
 const ReassignedLead = async (leadId, project, user) => {
     try {
         const [teamRows] = await mysqlConnection.promise().query(
@@ -65,14 +154,12 @@ const ReassignedLead = async (leadId, project, user) => {
         let assignedUsers = [...teamMembers];
         let index = 0;
 
-         // Check if the lead has been assigned before
-       
-
         const assignLead = async () => {
             const [existingNotification] = await mysqlConnection.promise().query(
                 'SELECT * FROM leads_notification WHERE leadId = ?',
                 [leadId]
             );
+            
             if (index < assignedUsers.length) {
                 const nextAssignee = assignedUsers[index];
                 index++;
@@ -83,17 +170,17 @@ const ReassignedLead = async (leadId, project, user) => {
                 );
 
                 console.log(`Lead ${leadId} assigned to ${nextAssignee.name}`);
+                
+                // Always check for existing notification and call appropriate function
                 if (existingNotification.length === 0) {
-                    // If no notification exists, create a new one
-                    // AutoNewNotification(nextAssignee.name, leadId, user)
+                    console.log('Creating new notification');
                     await AutoNewNotification(nextAssignee.name, leadId, user);
                 } else {
-                    // If notification exists, update it
-                    // await AutoUpdateNotification(nextAssignee.name, leadId, user);
+                    console.log('Updating existing notification');
                     await AutoUpdateNotification(nextAssignee.name, leadId, user);
                 }
-                notifyUser(nextAssignee.id, `Lead assigned to ${nextAssignee.name}`,leadId);
                 
+                notifyUser(nextAssignee.id, `Lead assigned to ${nextAssignee.name}`, leadId);
 
                 setTimeout(async () => {
                     const [leadDetails] = await mysqlConnection.promise().query(
@@ -103,7 +190,7 @@ const ReassignedLead = async (leadId, project, user) => {
 
                     if (leadDetails.length > 0 && leadDetails[0].view_dt === "new_lead") {
                         console.log(`Lead ${leadId} not viewed by ${nextAssignee.name}. Reassigning...`);
-                        notifyUser(nextAssignee.id, null,leadId);
+                        notifyUser(nextAssignee.id, null, leadId);
                         assignLead();
                     }
                 }, 2 * 60 * 1000);
@@ -113,13 +200,29 @@ const ReassignedLead = async (leadId, project, user) => {
                     'SELECT id, name FROM users WHERE id = ?',
                     [manager_id]
                 );
+                
                 if (manager.length > 0) {
                     await mysqlConnection.promise().query(
                         'UPDATE leads_main SET assigned_to = ?, assigned_on = NOW() WHERE id = ?',
                         [manager[0].name, leadId]
                     );
                     console.log(`Lead ${leadId} reassigned to Manager ${manager[0].name}`);
-                    notifyUser(manager[0].id, `Lead reassigned to ${manager[0].name}`,leadId);
+                    
+                    // Check if notification exists before updating
+                    const [existingNotification] = await mysqlConnection.promise().query(
+                        'SELECT * FROM leads_notification WHERE leadId = ?',
+                        [leadId]
+                    );
+                    
+                    if (existingNotification.length > 0) {
+                        console.log('Updating notification for manager reassignment');
+                        await AutoUpdateNotification(manager[0].name, leadId, user);
+                    } else {
+                        console.log('Creating new notification for manager');
+                        await AutoNewNotification(manager[0].name, leadId, user);
+                    }
+                    
+                    notifyUser(manager[0].id, `Lead reassigned to ${manager[0].name}`, leadId);
                 } else {
                     console.log('No manager found for reassignment');
                 }
@@ -131,7 +234,6 @@ const ReassignedLead = async (leadId, project, user) => {
         console.error('Error in ReassignedLead:', error);
     }
 };
-
 
 const notifyUser = async (userId, message, leadId) => {
     const [leadDetails] = await mysqlConnection.promise().query(
@@ -156,13 +258,57 @@ const CreateNewLead = async (req, res) => {
         }
 
         const [existingCustomerRows] = await mysqlConnection.promise().query(
-            'SELECT id FROM leads_customers WHERE mobile = ?',
+            'SELECT lc.id, lm.project as project, lm.assigned_to FROM leads_customers as lc INNER JOIN leads_main as lm ON lc.id=lm.customer WHERE mobile = ?',
+            [mobile]
+        );
+        
+        let customerId = existingCustomerRows.length > 0 ? existingCustomerRows[0].id : null;
+        if (customerId) {
+            
+
+// Check if this project already exists for this customer
+const projectExists = existingCustomerRows.some(row => 
+    Number(row.project) === Number(project)
+);
+
+
+if (projectExists) {
+    
+    return res.status(400).json({ 
+        success: false, 
+        message: `Same Project Lead already assigned to ${existingCustomerRows[0].assigned_to}` 
+    });
+} else {
+    
+    const [insertLeadResult] = await mysqlConnection.promise().query(
+        'INSERT INTO leads_main (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [customerId, source, project, existingCustomerRows[0].assigned_to, interested_in, investment_budget, dt, company_id, user]
+    );
+    return res.status(200).json({ 
+        success: true, 
+        message: `Different Project Lead reassigned to ${existingCustomerRows[0].assigned_to}!` 
+    });
+}
+        }
+
+
+
+
+        const [existingCustomer] = await mysqlConnection.promise().query(
+            'SELECT id, user FROM leads_customers WHERE mobile = ?',
             [mobile]
         );
 
-        let customerId = existingCustomerRows.length > 0 ? existingCustomerRows[0].id : null;
-        if (customerId) {
-            return res.status(400).json({ success: false, message: 'Lead already exist!' });
+        let customer_Id = existingCustomer.length > 0 ? existingCustomer[0].id : null;
+        if(customer_Id){
+            const [insertLeadResult] = await mysqlConnection.promise().query(
+                'INSERT INTO leads_main (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [customer_Id, source, project, existingCustomer[0].user, interested_in, investment_budget, dt, company_id, user]
+            );
+            return res.status(200).json({ 
+                success: true, 
+                message: `The customer already register to ${existingCustomer[0].user}!` 
+            });
         }
         if (!customerId) {
             const [insertCustomerResult] = await mysqlConnection.promise().query(

@@ -186,19 +186,39 @@ export const getColumns = ({
         </Text>
       ),
     },    
-     {
+    {
       title: (
         <HeaderCell
-          title="Company"
+          title="Project"
           sortable
           ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'company_title'
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'project_name'
           }
         />
       ),
-      onHeaderCell: () => onHeaderCellClick('company_title'),
-      dataIndex: 'company_title',
-      key: 'company_title',
+      onHeaderCell: () => onHeaderCellClick('project_name'),
+      dataIndex: 'project_name',
+      key: 'project_name',
+      width: 200,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value || 'N/A'}
+        </Text>
+      ),
+    }, 
+     {
+      title: (
+        <HeaderCell
+          title="Assigned to"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'assigned_to'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('assigned_to'),
+      dataIndex: 'assigned_to',
+      key: 'assigned_to',
       width: 200,
       render: (value: string | undefined) => (
         <Text className="font-medium text-gray-700 dark:text-gray-600">

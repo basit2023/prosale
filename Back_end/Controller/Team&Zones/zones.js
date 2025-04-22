@@ -158,19 +158,17 @@ const TeamData = async (req, res) => {
           tz.title AS zone_title,
           uz.title AS title,
           uz.id AS id,
-          company.title AS company_title,
+     
           uz.manager_id AS manager_id
         FROM 
           ${table} uz
         INNER JOIN 
           users u ON uz.${id} = u.id 
-        INNER JOIN
-          companies AS company ON FIND_IN_SET(company.id, u.company_id) > 0
+       
         INNER JOIN 
           users_zones tz ON uz.zone_id = tz.id
 
-          where FIND_IN_SET(u.company_id, ?) > 0;
-      `,[company_id]);
+      `);
     } else {
       [leads] = await mysqlConnection.promise().query(`
         SELECT 
@@ -178,19 +176,18 @@ const TeamData = async (req, res) => {
           tz.title AS zone_title,
           uz.title AS title,
           uz.id AS id,
-          company.title AS company_title,
+        
           uz.manager_id AS manager_id
         FROM 
           ${table} uz
         INNER JOIN 
           users u ON uz.${id} = u.id
-        INNER JOIN
-          companies AS company ON FIND_IN_SET(company.id, u.company_id) > 0
+        
         INNER JOIN 
           users_zones tz ON uz.zone_id = tz.id
         WHERE 
-        FIND_IN_SET(u.company_id, ?) > 0 AND u.id IN (SELECT manager_id FROM users_teams WHERE manager_id = ?);
-      `, [company_id, userId]);
+         u.id IN (SELECT manager_id FROM users_teams WHERE manager_id = ?);
+      `, [ userId]);
     }
 
     if (!leads.length) {
@@ -211,8 +208,8 @@ const TeamData = async (req, res) => {
         JOIN 
           users_teams ut ON u.assigned_team = ut.id
         WHERE 
-          ut.manager_id = ? AND FIND_IN_SET(u.company_id, ?) > 0;
-      `, [managerId,company_id]);
+          ut.manager_id = ? AND u.del="N";
+      `, [managerId]);
 
       return {
         ...lead,

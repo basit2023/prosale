@@ -72,6 +72,8 @@ export const useEmployeeData = (email:any) => {
     city:user.city,
     country:user.country,
     company_title:user.company_title,
+    assigned_to:user.assigned_to,
+    assigned_on:user.assigned_on,
    
 
     
