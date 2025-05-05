@@ -30,6 +30,7 @@ export const useEmployeeData = ({ id }: { id: string }) => {
         );
         
         const userData = response.data.leads;
+        console.log("tje leads data is:",userData)
         setValue(userData);
       }
     } catch (error) {
@@ -56,6 +57,7 @@ export const useEmployeeData = ({ id }: { id: string }) => {
       status: user.status,
       company_title: user.company_title,
       assigned_to: user.assigned_to,
+      lead_pass:user.lead_pass,
       last_updated: user.last_updated ? user.last_updated.substring(0, 10) : null,
     }));
   }, [value]);

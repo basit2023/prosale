@@ -27,163 +27,323 @@ const Highly_interested = async (req, res) => {
         });
     }
 };
+//befire the filter remove code
+
+// const highly_interested_table = async (req, res) => {
+//   try {
+//     const { id } = req.params; 
+//     const {field,email,company} = req.query;
+//     let [perm]= await mysqlConnection.promise().query(`
+//     SELECT ut.permission_level AS permission, u.name, u.company_id AS company_id
+//     FROM users_types ut 
+//     JOIN users u ON u.user_type = ut.type where u.email=?`,[email])
+//     let company_id;
+ 
+//     company_id=perm[0].company_id;
+//     if(company && ((perm[0].permission)>9)){
+      
+//       company_id=company
+//     }
+//   let leads;
+// if(parseFloat(perm[0].permission)>=9)
+//   {  [leads] = await mysqlConnection.promise().query(`
+//       SELECT
+//         main.id,
+//         customer.full_name AS customer_name,
+//         customer.mobile AS mobile,
+//         project.name AS project_name,
+//         project.status AS project_status,
+//         interested_in.unit AS interested_in,
+//         main.status,
+//         main.view_dt,
+//         main.user,
+//         main.assigned_on,
+//         main.assigned_to,
+//         label.label AS label,
+//         company.title AS company_title,
+//         label.bg AS bg_color,
+//         main.last_updated
+//       FROM
+//         leads_main AS main
+//       INNER JOIN
+//         leads_customers AS customer ON main.customer = customer.id
+//       INNER JOIN
+//         lead_projects AS project ON main.project = project.id
+//       INNER JOIN
+//         leads_labels AS label ON main.leads_label = label.id
+//       INNER JOIN
+//         companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
+//       INNER JOIN
+//         inventory_type AS interested_in ON main.interested_in = interested_in.id
+//       WHERE
+//         main.${field} = ? AND FIND_IN_SET(main.company_id, ?) > 0
+//       ORDER BY main.last_updated DESC
+//     `, [id,company_id]);
+
+//      if (id==12 && field==="leads_label"){
+//      [leads] = await mysqlConnection.promise().query(`
+//       SELECT
+//         main.id,
+//         customer.full_name AS customer_name,
+//         customer.mobile AS mobile,
+//         project.name AS project_name,
+//         project.status AS project_status,
+//         interested_in.unit AS interested_in,
+//         main.status,
+//         main.view_dt,
+//         main.user,
+//         main.assigned_on,
+//         main.assigned_to,
+//         label.label AS label,
+//         company.title AS company_title,
+//         label.bg AS bg_color,
+//         main.last_updated
+//       FROM
+//         leads_main AS main
+//       INNER JOIN
+//         leads_customers AS customer ON main.customer = customer.id
+//       INNER JOIN
+//         lead_projects AS project ON main.project = project.id
+//       INNER JOIN
+//         leads_labels AS label ON main.leads_label = label.id
+//       INNER JOIN
+//         companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
+//       INNER JOIN
+//         inventory_type AS interested_in ON main.interested_in = interested_in.id
+//       WHERE
+//         main.status = \'un_assigned\' AND FIND_IN_SET(main.company_id, ?) > 0
+//       ORDER BY main.last_updated DESC
+//     `,[company_id]);
+//      }
+//      if (id==11 && field==="leads_label"){
+//        [leads] = await mysqlConnection.promise().query(`
+//       SELECT
+//         main.id,
+//         customer.full_name AS customer_name,
+//         customer.mobile AS mobile,
+//         project.name AS project_name,
+//         project.status AS project_status,
+//         interested_in.unit AS interested_in,
+//         main.status,
+//         main.view_dt,
+//         main.user,
+//         main.assigned_on,
+//         main.assigned_to,
+//         label.label AS label,
+//         company.title AS company_title,
+//         label.bg AS bg_color,
+//         main.last_updated
+//       FROM
+//         leads_main AS main
+//       INNER JOIN
+//         leads_customers AS customer ON main.customer = customer.id
+//       INNER JOIN
+//         lead_projects AS project ON main.project = project.id
+//       INNER JOIN
+//         leads_labels AS label ON main.leads_label = label.id
+//       INNER JOIN
+//         companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
+//       INNER JOIN
+//         inventory_type AS interested_in ON main.interested_in = interested_in.id
+//       WHERE FIND_IN_SET(main.company_id, ?) > 0
+//       ORDER BY main.last_updated DESC
+//       `,[company_id]
+//     );
+//      }
+//     }
+//     else{
+//       [leads] = await mysqlConnection.promise().query(`
+//       SELECT
+//         main.id,
+//         customer.full_name AS customer_name,
+//         customer.mobile AS mobile,
+//         project.name AS project_name,
+//         project.status AS project_status,
+//         interested_in.unit AS interested_in,
+//         main.status,
+//         main.view_dt,
+//         main.assigned_on,
+//         main.assigned_to,
+//         main.user,
+//         label.label AS label,
+//         company.title AS company_title,
+//         label.bg AS bg_color,
+//         main.last_updated
+//       FROM
+//         leads_main AS main
+//       INNER JOIN
+//         leads_customers AS customer ON main.customer = customer.id
+//       INNER JOIN
+//         lead_projects AS project ON main.project = project.id
+//       INNER JOIN
+//         leads_labels AS label ON main.leads_label = label.id
+//       INNER JOIN
+//         inventory_type AS interested_in ON main.interested_in = interested_in.id
+//       INNER JOIN
+//         companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
+//       WHERE
+//       main.assigned_to = ? AND main.${field} = ? AND FIND_IN_SET(main.company_id, ?) > 0
+//       ORDER BY main.last_updated DESC
+//     `, [perm[0].name,id,company_id]);
+//     }
+
+//     if (!leads.length) {
+//       return res.status(200).json({
+//         success: true,
+//         message: 'No leads found',
+//       });
+//     }
+  
+//     leads = leads.map(lead => ({
+//         ...lead,
+//         permission: perm[0].permission
+//       }));
+  
+//     // Respond with all leads information
+//     res.status(200).json({
+//       success: true,
+//       message: 'All mached labels information fetched successfully',
+//       leads: leads,
+//     });
+//   } catch (error) {
+//     console.error('Error fetching table leads labels information:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error in fetching label leads information',
+//       error: error.message,
+//     });
+//   }
+// };
+
+
 
 const highly_interested_table = async (req, res) => {
   try {
-    const { id } = req.params; 
-    const {field,email,company} = req.query;
-    let [perm]= await mysqlConnection.promise().query(`
-    SELECT ut.permission_level AS permission, u.name, u.company_id AS company_id
-    FROM users_types ut 
-    JOIN users u ON u.user_type = ut.type where u.email=?`,[email])
-    let company_id;
- 
-    company_id=perm[0].company_id;
-    if(company && ((perm[0].permission)>9)){
-      
-      company_id=company
-    }
-  let leads;
-if(parseFloat(perm[0].permission)>=9)
-  {  [leads] = await mysqlConnection.promise().query(`
-      SELECT
-        main.id,
-        customer.full_name AS customer_name,
-        customer.mobile AS mobile,
-        project.name AS project_name,
-        project.status AS project_status,
-        interested_in.unit AS interested_in,
-        main.status,
-        main.view_dt,
-        main.user,
-        main.assigned_on,
-        main.assigned_to,
-        label.label AS label,
-        company.title AS company_title,
-        label.bg AS bg_color,
-        main.last_updated
-      FROM
-        leads_main AS main
-      INNER JOIN
-        leads_customers AS customer ON main.customer = customer.id
-      INNER JOIN
-        lead_projects AS project ON main.project = project.id
-      INNER JOIN
-        leads_labels AS label ON main.leads_label = label.id
-      INNER JOIN
-        companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
-      INNER JOIN
-        inventory_type AS interested_in ON main.interested_in = interested_in.id
-      WHERE
-        main.${field} = ? AND FIND_IN_SET(main.company_id, ?) > 0
-      ORDER BY main.last_updated DESC
-    `, [id,company_id]);
-
-     if (id==12 && field==="leads_label"){
-     [leads] = await mysqlConnection.promise().query(`
-      SELECT
-        main.id,
-        customer.full_name AS customer_name,
-        customer.mobile AS mobile,
-        project.name AS project_name,
-        project.status AS project_status,
-        interested_in.unit AS interested_in,
-        main.status,
-        main.view_dt,
-        main.user,
-        main.assigned_on,
-        main.assigned_to,
-        label.label AS label,
-        company.title AS company_title,
-        label.bg AS bg_color,
-        main.last_updated
-      FROM
-        leads_main AS main
-      INNER JOIN
-        leads_customers AS customer ON main.customer = customer.id
-      INNER JOIN
-        lead_projects AS project ON main.project = project.id
-      INNER JOIN
-        leads_labels AS label ON main.leads_label = label.id
-      INNER JOIN
-        companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
-      INNER JOIN
-        inventory_type AS interested_in ON main.interested_in = interested_in.id
-      WHERE
-        main.status = \'un_assigned\' AND FIND_IN_SET(main.company_id, ?) > 0
-      ORDER BY main.last_updated DESC
-    `,[company_id]);
-     }
-     if (id==11 && field==="leads_label"){
-       [leads] = await mysqlConnection.promise().query(`
-      SELECT
-        main.id,
-        customer.full_name AS customer_name,
-        customer.mobile AS mobile,
-        project.name AS project_name,
-        project.status AS project_status,
-        interested_in.unit AS interested_in,
-        main.status,
-        main.view_dt,
-        main.user,
-        main.assigned_on,
-        main.assigned_to,
-        label.label AS label,
-        company.title AS company_title,
-        label.bg AS bg_color,
-        main.last_updated
-      FROM
-        leads_main AS main
-      INNER JOIN
-        leads_customers AS customer ON main.customer = customer.id
-      INNER JOIN
-        lead_projects AS project ON main.project = project.id
-      INNER JOIN
-        leads_labels AS label ON main.leads_label = label.id
-      INNER JOIN
-        companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
-      INNER JOIN
-        inventory_type AS interested_in ON main.interested_in = interested_in.id
-      WHERE FIND_IN_SET(main.company_id, ?) > 0
-      ORDER BY main.last_updated DESC
-      `,[company_id]
+    const { id } = req.params;
+    const { field, email, company } = req.query;
+    
+    let [perm] = await mysqlConnection.promise().query(`
+      SELECT ut.permission_level AS permission, u.name, u.company_id AS company_id
+      FROM users_types ut 
+      JOIN users u ON u.user_type = ut.type WHERE u.email = ?`,
+      [email]
     );
-     }
+    
+    let company_id = perm[0].company_id;
+    if (company && (perm[0].permission > 9)) {
+      company_id = company;
     }
-    else{
+
+    let leads;
+    if (parseFloat(perm[0].permission) >= 9) {
       [leads] = await mysqlConnection.promise().query(`
-      SELECT
-        main.id,
-        customer.full_name AS customer_name,
-        customer.mobile AS mobile,
-        project.name AS project_name,
-        project.status AS project_status,
-        interested_in.unit AS interested_in,
-        main.status,
-        main.view_dt,
-        main.assigned_on,
-        main.assigned_to,
-        main.user,
-        label.label AS label,
-        company.title AS company_title,
-        label.bg AS bg_color,
-        main.last_updated
-      FROM
-        leads_main AS main
-      INNER JOIN
-        leads_customers AS customer ON main.customer = customer.id
-      INNER JOIN
-        lead_projects AS project ON main.project = project.id
-      INNER JOIN
-        leads_labels AS label ON main.leads_label = label.id
-      INNER JOIN
-        inventory_type AS interested_in ON main.interested_in = interested_in.id
-      INNER JOIN
-        companies AS company ON FIND_IN_SET(company.id, main.company_id) > 0
-      WHERE
-      main.assigned_to = ? AND main.${field} = ? AND FIND_IN_SET(main.company_id, ?) > 0
-      ORDER BY main.last_updated DESC
-    `, [perm[0].name,id,company_id]);
+        SELECT
+          main.id,
+          customer.full_name AS customer_name,
+          customer.mobile AS mobile,
+          project.name AS project_name,
+          project.status AS project_status,
+          interested_in.unit AS interested_in,
+          main.status,
+          main.view_dt,
+          main.user,
+          main.assigned_on,
+          main.assigned_to,
+          label.label AS label,
+          label.bg AS bg_color,
+          main.last_updated,
+          main.lead_pass
+        FROM leads_main AS main
+        INNER JOIN leads_customers AS customer ON main.customer = customer.id
+        INNER JOIN lead_projects AS project ON main.project = project.id
+        INNER JOIN leads_labels AS label ON main.leads_label = label.id
+        INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
+        WHERE main.${field} = ?
+        ORDER BY main.last_updated DESC`,
+        [id]
+      );
+
+      if (id == 12 && field === "leads_label") {
+        [leads] = await mysqlConnection.promise().query(`
+          SELECT
+            main.id,
+            customer.full_name AS customer_name,
+            customer.mobile AS mobile,
+            project.name AS project_name,
+            project.status AS project_status,
+            interested_in.unit AS interested_in,
+            main.status,
+            main.view_dt,
+            main.user,
+            main.assigned_on,
+            main.assigned_to,
+            label.label AS label,
+            label.bg AS bg_color,
+            main.last_updated,
+            main.lead_pass
+          FROM leads_main AS main
+          INNER JOIN leads_customers AS customer ON main.customer = customer.id
+          INNER JOIN lead_projects AS project ON main.project = project.id
+          INNER JOIN leads_labels AS label ON main.leads_label = label.id
+          INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
+          WHERE main.status = 'un_assigned'
+          ORDER BY main.last_updated DESC`
+        );
+      }
+      
+      if (id == 11 && field === "leads_label") {
+        [leads] = await mysqlConnection.promise().query(`
+          SELECT
+            main.id,
+            customer.full_name AS customer_name,
+            customer.mobile AS mobile,
+            project.name AS project_name,
+            project.status AS project_status,
+            interested_in.unit AS interested_in,
+            main.status,
+            main.view_dt,
+            main.user,
+            main.assigned_on,
+            main.assigned_to,
+            label.label AS label,
+            label.bg AS bg_color,
+            main.last_updated,
+            main.lead_pass
+          FROM leads_main AS main
+          INNER JOIN leads_customers AS customer ON main.customer = customer.id
+          INNER JOIN lead_projects AS project ON main.project = project.id
+          INNER JOIN leads_labels AS label ON main.leads_label = label.id
+          INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
+          ORDER BY main.last_updated DESC`
+        );
+      }
+    } else {
+      [leads] = await mysqlConnection.promise().query(`
+        SELECT
+          main.id,
+          customer.full_name AS customer_name,
+          customer.mobile AS mobile,
+          project.name AS project_name,
+          project.status AS project_status,
+          interested_in.unit AS interested_in,
+          main.status,
+          main.view_dt,
+          main.assigned_on,
+          main.assigned_to,
+          main.user,
+          label.label AS label,
+          label.bg AS bg_color,
+          main.last_updated,
+          main.lead_pass
+        FROM leads_main AS main
+        INNER JOIN leads_customers AS customer ON main.customer = customer.id
+        INNER JOIN lead_projects AS project ON main.project = project.id
+        INNER JOIN leads_labels AS label ON main.leads_label = label.id
+        INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
+        WHERE main.assigned_to = ? AND main.${field} = ?
+        ORDER BY main.last_updated DESC`,
+        [perm[0].name, id]
+      );
     }
 
     if (!leads.length) {
@@ -192,16 +352,15 @@ if(parseFloat(perm[0].permission)>=9)
         message: 'No leads found',
       });
     }
-  
+
     leads = leads.map(lead => ({
-        ...lead,
-        permission: perm[0].permission
-      }));
-  
-    // Respond with all leads information
+      ...lead,
+      permission: perm[0].permission
+    }));
+
     res.status(200).json({
       success: true,
-      message: 'All mached labels information fetched successfully',
+      message: 'All matched labels information fetched successfully',
       leads: leads,
     });
   } catch (error) {
@@ -213,7 +372,6 @@ if(parseFloat(perm[0].permission)>=9)
     });
   }
 };
-
 const SpecificTeamMemberLeads = async (req, res) => {
   try {
     const { id, id1 } = req.params;

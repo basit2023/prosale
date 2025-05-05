@@ -133,6 +133,114 @@ const GetSourceDepInterestLeadtype = async (req, res) => {
 //         console.error('Error in ReassignedLead:', error);
 //     }
 // };
+
+
+//updated correct code before the lead_pass columns
+// const ReassignedLead = async (leadId, project, user) => {
+//     try {
+//         const [teamRows] = await mysqlConnection.promise().query(
+//             'SELECT id AS team_id, manager_id FROM users_teams WHERE FIND_IN_SET(?, project_id) > 0',
+//             [project]
+//         );
+
+//         if (teamRows.length === 0) {
+//             throw new Error('No team found for the project');
+//         }
+
+//         const { team_id, manager_id } = teamRows[0];
+
+//         const [teamMembers] = await mysqlConnection.promise().query(
+//             'SELECT id, name FROM users WHERE del="N" AND lead_status="Y" AND assigned_team = ?',
+//             [team_id]
+//         );
+
+//         let assignedUsers = [...teamMembers];
+//         let index = 0;
+
+//         const assignLead = async () => {
+//             const [existingNotification] = await mysqlConnection.promise().query(
+//                 'SELECT * FROM leads_notification WHERE leadId = ?',
+//                 [leadId]
+//             );
+            
+//             if (index < assignedUsers.length) {
+//                 const nextAssignee = assignedUsers[index];
+//                 index++;
+
+//                 await mysqlConnection.promise().query(
+//                     'UPDATE leads_main SET assigned_to = ?, assigned_on = NOW(), status = "open", leads_label = IF(leads_label = 12, 7, leads_label) WHERE id = ?',
+//                     [nextAssignee.name, leadId]
+//                 );
+
+//                 console.log(`Lead ${leadId} assigned to ${nextAssignee.name}`);
+//                 await mysqlConnection.promise().query(
+//                     'UPDATE leads_main SET lead_pass = ? WHERE id = ?',
+//                     [nextAssignee.name, leadId]
+//                 );
+                
+//                 // Always check for existing notification and call appropriate function
+//                 if (existingNotification.length === 0) {
+//                     console.log('Creating new notification');
+//                     await AutoNewNotification(nextAssignee.name, leadId, user);
+//                 } else {
+//                     console.log('Updating existing notification');
+//                     await AutoUpdateNotification(nextAssignee.name, leadId, user);
+//                 }
+                
+//                 notifyUser(nextAssignee.id, `Lead assigned to ${nextAssignee.name}`, leadId);
+
+//                 setTimeout(async () => {
+//                     const [leadDetails] = await mysqlConnection.promise().query(
+//                         'SELECT view_dt FROM leads_main WHERE id = ?',
+//                         [leadId]
+//                     );
+
+//                     if (leadDetails.length > 0 && leadDetails[0].view_dt === "new_lead") {
+//                         console.log(`Lead ${leadId} not viewed by ${nextAssignee.name}. Reassigning...`);
+//                         notifyUser(nextAssignee.id, null, leadId);
+//                         assignLead();
+//                     }
+//                 }, 2 * 60 * 1000);
+//             } else {
+//                 // Assign back to manager if no one views it
+//                 const [manager] = await mysqlConnection.promise().query(
+//                     'SELECT id, name FROM users WHERE id = ?',
+//                     [manager_id]
+//                 );
+                
+//                 if (manager.length > 0) {
+//                     await mysqlConnection.promise().query(
+//                         'UPDATE leads_main SET assigned_to = ?, assigned_on = NOW() WHERE id = ?',
+//                         [manager[0].name, leadId]
+//                     );
+//                     console.log(`Lead ${leadId} reassigned to Manager ${manager[0].name}`);
+                    
+//                     // Check if notification exists before updating
+//                     const [existingNotification] = await mysqlConnection.promise().query(
+//                         'SELECT * FROM leads_notification WHERE leadId = ?',
+//                         [leadId]
+//                     );
+                    
+//                     if (existingNotification.length > 0) {
+//                         console.log('Updating notification for manager reassignment');
+//                         await AutoUpdateNotification(manager[0].name, leadId, user);
+//                     } else {
+//                         console.log('Creating new notification for manager');
+//                         await AutoNewNotification(manager[0].name, leadId, user);
+//                     }
+                    
+//                     notifyUser(manager[0].id, `Lead reassigned to ${manager[0].name}`, leadId);
+//                 } else {
+//                     console.log('No manager found for reassignment');
+//                 }
+//             }
+//         };
+
+//         assignLead();
+//     } catch (error) {
+//         console.error('Error in ReassignedLead:', error);
+//     }
+// };
 const ReassignedLead = async (leadId, project, user) => {
     try {
         const [teamRows] = await mysqlConnection.promise().query(
@@ -171,6 +279,20 @@ const ReassignedLead = async (leadId, project, user) => {
 
                 console.log(`Lead ${leadId} assigned to ${nextAssignee.name}`);
                 
+                // Get current lead_pass value and append new assignee
+                const [leadPassResult] = await mysqlConnection.promise().query(
+                    'SELECT lead_pass FROM leads_main WHERE id = ?',
+                    [leadId]
+                );
+                
+                const currentLeadPass = leadPassResult[0]?.lead_pass || '';
+                const newLeadPass = currentLeadPass ? `${currentLeadPass},${nextAssignee.name}` : nextAssignee.name;
+                
+                await mysqlConnection.promise().query(
+                    'UPDATE leads_main SET lead_pass = ? WHERE id = ?',
+                    [newLeadPass, leadId]
+                );
+                
                 // Always check for existing notification and call appropriate function
                 if (existingNotification.length === 0) {
                     console.log('Creating new notification');
@@ -207,6 +329,20 @@ const ReassignedLead = async (leadId, project, user) => {
                         [manager[0].name, leadId]
                     );
                     console.log(`Lead ${leadId} reassigned to Manager ${manager[0].name}`);
+                    
+                    // Get current lead_pass value and append manager's name
+                    const [leadPassResult] = await mysqlConnection.promise().query(
+                        'SELECT lead_pass FROM leads_main WHERE id = ?',
+                        [leadId]
+                    );
+                    
+                    const currentLeadPass = leadPassResult[0]?.lead_pass || '';
+                    const newLeadPass = currentLeadPass ? `${currentLeadPass},${manager[0].name}` : manager[0].name;
+                    
+                    await mysqlConnection.promise().query(
+                        'UPDATE leads_main SET lead_pass = ? WHERE id = ?',
+                        [newLeadPass, leadId]
+                    );
                     
                     // Check if notification exists before updating
                     const [existingNotification] = await mysqlConnection.promise().query(
@@ -322,7 +458,7 @@ if (projectExists) {
             'INSERT INTO leads_main (customer, leads_source, project, interested_in, investment_budget, dt, company_id, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [customerId, source, project, interested_in, investment_budget, dt, company_id, user]
         );
-
+        console.log(`the lead is reassined to ${insertLeadResult.insertId} and the user is: ${user}`)
         ReassignedLead(insertLeadResult.insertId, project, user);
 
         res.status(200).json({

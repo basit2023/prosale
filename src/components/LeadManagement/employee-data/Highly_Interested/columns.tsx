@@ -270,6 +270,40 @@ export const useGetColumns  = ({
         
       ),
     },    
+    ...((memoizedSession?.user?.permission) >= 4
+    // ...(parseFloat(data[0].permission) >= 4
+    ? [
+      {
+        title: (
+          <HeaderCell
+            title="Lead Pass"
+            sortable
+            ascending={sortConfig?.direction === 'asc' && sortConfig?.key === 'lead_pass'}
+          />
+        ),
+        onHeaderCell: () => onHeaderCellClick('lead_pass'),
+        dataIndex: 'lead_pass',
+        key: 'lead_pass',
+        width: 200,
+        render: (value: any, row: any) => {
+          const dotColor = row.view_dt === 'new_lead' ? 'red' : 'green';
+          
+          return (
+            <div className="flex items-center gap-2">
+              <Text className="font-medium text-gray-700 dark:text-gray-600">
+                {row.lead_pass || 'N/A'}
+              </Text>
+              <span 
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: dotColor }}
+              />
+            </div>
+          );
+        },
+      },
+      ]
+    : []),
+    
     {
       title: <HeaderCell title="Action" />,
       dataIndex: 'action',
