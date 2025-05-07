@@ -59,7 +59,9 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
       toast.error('Error Deleting comment. Please try again.');
     }
   };
-  
+  const sortedComments = [...comments].sort((a, b) => {
+    return new Date(b.date).getTime() - new Date(a.date).getTime();
+  });
 
   if (loading) {
     return <Text>Loading...</Text>;
@@ -67,7 +69,7 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
 
   return (
     <BasicTableWidget
-      key={comments?.length} // Update the key whenever the comments change
+      key={sortedComments?.length} // Update the key whenever the comments change
       title="All comments"
       className={cn('pb-0 lg:pb-0 [&_.rc-table-row:last-child_td]:border-b-0')}
       data={comments}
@@ -102,6 +104,29 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
             </Text>
           ),
         },
+        {
+          title: <span className="block whitespace-nowrap">Follow up</span>,
+          dataIndex: 'followup',
+          key: 'followup',
+          width: 300,
+          render: (value: string, record: any, index: number) => (
+            <Text className="font-medium text-gray-700 dark:text-gray-600">
+              {record?.followup || 'N/A'}
+            </Text>
+          ),
+        },
+        {
+          title: <span className="block whitespace-nowrap">Date</span>,
+          dataIndex: 'followupdate',
+          key: 'followupdate',
+          width: 300,
+          render: (value: string, record: any, index: number) => (
+            <Text className="font-medium text-gray-700 dark:text-gray-600">
+              {record?.followupdate || 'N/A'}
+            </Text>
+          ),
+        },
+        
         {
           title: (
             <span className="block whitespace-nowrap" style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '40px' }}>

@@ -10,6 +10,8 @@ export const CommentsFormSchema = z.object({
    user: z.string().optional(),
    status: z.string().optional(),
    dt: z.string().optional(),
+   followup:z.string().optional(),
+   followupdate:z.string().optional(),
  
 });
 
@@ -24,5 +26,7 @@ export const defaultValues = {
    dt: getCurrentTimestamp(),
    status:"N",
    user: undefined,
+   followup: undefined,
+   followupdate: undefined,
   
 };

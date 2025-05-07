@@ -402,7 +402,8 @@ const SpecificTeamMemberLeads = async (req, res) => {
         main.status,
         main.view_dt,
         main.user,
-        main.assigned_on,
+        main.last_updated,
+        main.assigned_to,
         label.label AS label,
         label.bg AS bg_color
       FROM

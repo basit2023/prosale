@@ -13,17 +13,17 @@ const CreateComments = async (req, res) => {
       }
   
       // Extract the fields from the request body
-      let { comments, dt, status, user } = req.body; // Use let instead of const
+      let { comments, dt, status, user, followupdate, followup} = req.body; // Use let instead of const
       let lead_id=id;
       
   
       // Build the INSERT query
       const insertQuery = `
-        INSERT INTO leads_comments (lead_id, comments, status, user)
-        VALUES (?, ?, ?, ?);
+        INSERT INTO leads_comments (lead_id, comments, status, user, followupdate, followup)
+        VALUES (?, ?, ?, ?, ?, ?);
       `;
   
-      const insertParams = [lead_id,comments, status, user];
+      const insertParams = [lead_id,comments, status, user, followupdate, followup];
   
       // Execute the INSERT query
       const results = await new Promise((resolve, reject) => {
@@ -54,7 +54,9 @@ const CreateComments = async (req, res) => {
                    lc.id AS id,
                    lc.comments AS comments,
                    lc.status AS status,
-                   CONCAT(u.first_name, ' ', u.last_name) AS fullName
+                   CONCAT(u.first_name, ' ', u.last_name) AS fullName,
+                   lc.followupdate,
+                   lc.followup
             FROM leads_comments lc
             JOIN users u ON lc.user = u.name WHERE lc.status = "N" AND lc.lead_id=?;
         `,[id]);

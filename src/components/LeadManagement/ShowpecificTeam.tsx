@@ -52,6 +52,8 @@ export const useSpecificTeam = ({ id, id1 }: { id: string; id1: string }) => {
       project_status: user.project_status,
       interested_in: user.interested_in,
       view_dt: user.view_dt,
+      last_updated:user.last_updated,
+      assigned_to:user.assigned_to,
       status: user.status,
       permission: parseInt(user.permission || '0', 10)
     }));
