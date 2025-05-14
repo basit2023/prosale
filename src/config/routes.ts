@@ -42,6 +42,8 @@ export const routes = {
     highly_interested:'/leads/highly_interested',
     followup: '/leads/followup',
     full_report: '/leads/activity-report/full-report',
+    Activity_list:'/leads/activity-report/list',
+    DailyActivity:'/leads/activity-report',
     // need_to_convince:'/leads/need_to_convince',
     team_member: (id: string) => `/leads/management/${id}`,
     edit: (id: string) => `/leads/${id}/edit`,
