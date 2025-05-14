@@ -86,7 +86,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     if (memoizedSession) {
       fetchComments();
     }
-  }, [memoizedSession, id, update]);
+  }, [memoizedSession]);
 
   const handleDeleteComment = async (commentId: string, leadId: string) => {
     try {
