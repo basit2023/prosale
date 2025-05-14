@@ -83,46 +83,135 @@ const CreateComments = async (req, res) => {
         });
     }
 };
+
+
+
 const GetFollowup = async (req, res) => {
-  const {user}=req.params;
-  const {permission, id}=req.query;
-  
-  try {
-      const [leads] = await mysqlConnection.promise().query(`
-          SELECT lc.dt AS date,
-                 lc.lead_id AS lead_id,
-                 lc.id AS id,
-                 lc.comments AS comments,
-                 lc.status AS status,
-                 CONCAT(u.first_name, ' ', u.last_name) AS fullName,
-                 lc.followupdate,
-                 lc.followup
-          FROM leads_comments lc
-          JOIN users u ON lc.user = u.name WHERE lc.status = "N" AND lc.user=?;
-      `,[user]);
+    const { user } = req.params;
+    const { permission, id } = req.query;
+    
+    try {
+        let query;
+        let queryParams = [];
 
-      if (!leads.length) {
-          return res.status(200).json({
-              success: true,
-              message: 'No leads found',
-          });
-      }
+        if (permission >= 9) {
+            // Admin (permission 9+) - get all followups
+            query = `
+                SELECT lc.dt AS date,
+                       lc.lead_id AS lead_id,
+                       lc.id AS id,
+                       lc.comments AS comments,
+                       lc.status AS status,
+                       CONCAT(u.first_name, ' ', u.last_name) AS fullName,
+                       lc.followupdate,
+                       lc.followup
+                FROM leads_comments lc
+                JOIN users u ON lc.user = u.name 
+                WHERE lc.status = "N" AND u.del = "N"
+                ORDER BY lc.dt DESC`;
+        } 
+        else if (permission >= 5) {
+            // Zonal Manager (permission 5-8) - get followups for their zone plus their own
+            query = `
+                SELECT lc.dt AS date,
+                       lc.lead_id AS lead_id,
+                       lc.id AS id,
+                       lc.comments AS comments,
+                       lc.status AS status,
+                       CONCAT(u.first_name, ' ', u.last_name) AS fullName,
+                       lc.followupdate,
+                       lc.followup
+                FROM leads_comments lc
+                JOIN users u ON lc.user = u.name
+                WHERE lc.status = "N" 
+                AND u.del = "N"
+                AND (
+                    u.id IN (
+                        SELECT u.id 
+                        FROM users_zones uz
+                        JOIN users_teams ut ON uz.id = ut.zone_id
+                        JOIN users u ON u.assigned_team = ut.id
+                        WHERE uz.zonal_manager = ?
+                    )
+                    OR lc.user = ?
+                )
+                ORDER BY lc.dt DESC`;
+            queryParams = [id, user];
+        } 
+        else if (permission == 4) {
+            // Team Manager (permission 4) - get followups for their team plus their own
+            query = `
+                SELECT lc.dt AS date,
+                       lc.lead_id AS lead_id,
+                       lc.id AS id,
+                       lc.comments AS comments,
+                       lc.status AS status,
+                       CONCAT(u.first_name, ' ', u.last_name) AS fullName,
+                       lc.followupdate,
+                       lc.followup
+                FROM leads_comments lc
+                JOIN users u ON lc.user = u.name
+                WHERE lc.status = "N" 
+                AND u.del = "N"
+                AND (
+                    u.id IN (
+                        SELECT u.id 
+                        FROM users_teams ut
+                        JOIN users u ON u.assigned_team = ut.id
+                        WHERE ut.manager_id = ?
+                    )
+                    OR lc.user = ?
+                )
+                ORDER BY lc.dt DESC`;
+            queryParams = [id, user];
+        } 
+        else {
+            // Regular user - only their own followups
+            query = `
+                SELECT lc.dt AS date,
+                       lc.lead_id AS lead_id,
+                       lc.id AS id,
+                       lc.comments AS comments,
+                       lc.status AS status,
+                       CONCAT(u.first_name, ' ', u.last_name) AS fullName,
+                       lc.followupdate,
+                       lc.followup
+                FROM leads_comments lc
+                JOIN users u ON lc.user = u.name 
+                WHERE lc.status = "N" 
+                AND u.del = "N"
+                AND lc.user = ?
+                ORDER BY lc.dt DESC`;
+            queryParams = [user];
+        }
 
-      // Respond with all leads information
-      res.status(200).json({
-          success: true,
-          message: 'Leads information fetched successfully',
-          leads: leads,
-      });
-  } catch (error) {
-      console.error('Error fetching leads information:', error);
-      res.status(500).json({
-          success: false,
-          message: 'Error in fetching leads information',
-          error: error.message,
-      });
-  }
+        const [leads] = await mysqlConnection.promise().query(query, queryParams);
+
+        if (!leads.length) {
+            return res.status(200).json({
+                success: true,
+                message: 'No followups found',
+                leads: []
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Followups fetched successfully',
+            leads: leads,
+        });
+    } catch (error) {
+        console.error('Error fetching followups:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error in fetching followups',
+            error: error.message,
+        });
+    }
 };
+
+
+
 const DeleteComments = async (req, res) => {
   const { id } = req.params;
   try {

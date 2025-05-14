@@ -69,7 +69,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const fetchComments = async () => {
     try {
       if (memoizedSession) {
-        const response = await apiService.get(`/follow-up/${memoizedSession.user?.username}`);
+        const response = await apiService.get(`/follow-up/${memoizedSession.user?.username}/?permission=${memoizedSession.user?.permission}&&id=${memoizedSession.user?.id}`);
         const userData = Array.isArray(response?.data?.leads) ? response.data.leads : [];
         const filtered = userData.filter(comment => comment.followupdate); // Only if followupdate exists
         setComments(filtered);
