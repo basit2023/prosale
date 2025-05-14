@@ -7,7 +7,8 @@ import cn from '@/utils/class-names';
 import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
-import { PiTrashFill } from 'react-icons/pi';
+import { PiTrashFill, PiEye } from 'react-icons/pi';
+import { routes } from '@/config/routes';
 
 interface Comment {
   id: string;
@@ -221,12 +222,21 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
           key: 'status',
           width: 300,
           render: (value: string, record: Comment) => (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '40px' }}>
+            <div className="flex justify-end gap-2 mr-5">
+             
               <button
-                className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                onClick={() => handleDeleteComment(record.id, record.lead_id)}
+                className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-full transition-colors"
+                onClick={() => router.push(routes.leads.edit(record.lead_id))}
+                title="Edit Lead"
               >
-                <PiTrashFill className="me-1 h-[17px] w-[17px]" />
+                <PiEye className="h-5 w-5" />
+              </button>
+              <button
+                className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors"
+                onClick={() => handleDeleteComment(record.id, record.lead_id)}
+                title="Delete Comment"
+              >
+                <PiTrashFill className="h-5 w-5" />
               </button>
             </div>
           ),
