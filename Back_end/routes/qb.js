@@ -23,7 +23,7 @@ const { UpdateVaultInfo } = require("../Controller/EditEmployInfo/VaultInfo");
 const { GetEmpStatus, UpdateStatusInfo } = require("../Controller/EditEmployInfo/Sms_LeadStatus");
 const { All_lables, userPermission, TotalLead, UnaginedLead, All_labels, All_labelsForMember } = require("../Controller/LeadM/Card-leadsLable");
 const { Highly_interested, highly_interested_table, GetLeadFromId, AllCustomers, HeaderLabel, SpecificTeamMemberLeads } = require("../Controller/LeadM/highly_interested");
-const { CreateComments, GetComments, DeleteComments, AllLabels, SelectForBox, UpdateLabel, SaveTime } = require("../Controller/LeadM/Comments");
+const { CreateComments, GetComments, DeleteComments, AllLabels, SelectForBox, UpdateLabel, SaveTime, GetFollowup, CreateActivityReport } = require("../Controller/LeadM/Comments");
 const { ClosedLeadController, ViewLead } = require("../Controller/LeadM/closeLeads");
 const { EditLeadCustomer, UpdateLeadCustomer, GetCountrycode, CreateLeadCustomer, GetCustomerById } = require("../Controller/LeadM/EditLeadCustomer");
 const { ZoneData, GetTeamMemeber, UpdateZoneTeam, TeamData, GetzoneMemeber, ZoneTeamData, CreateZoneTeam, GetSpecificZone } = require("../Controller/Team&Zones/zones");
@@ -38,6 +38,7 @@ const { GetSourceDepInterestLeadtype, CreateNewLead } = require("../Controller/L
 const { NewNotification, GetNotification, updateNotificationMark, saveSubscription } = require("../Controller/Dashboard/Notification");
 const { AddNewFloor, UpdateUnits, CreateNewUnits, UnitCounts, AddDuplicateFloor, DeleteProjectFloor, UpdateAllFloorRates, Getrequiredfloor } = require("../Controller/Project/floor");
 const { createNewPaymentPlan, paymentData, GetSpecificPyammentplan, DeletePaymentplan, LinkProject, GetPaymentPlan, GetTemplates, GetTemplatesUnits, GetPaymentPlanid, UpdatePaymentPlan } = require("../Controller/Project/pamymentplain");
+const { DailyReport, fullReport } = require("../Controller/LeadM/DailyReport");
 
 
 
@@ -143,7 +144,9 @@ Router.post('/api/page-time',SaveTime)
 
 //comments
 Router.post('/api/comments/:id', CreateComments);
+Router.post('/api/activity-reports', CreateActivityReport);
 Router.get('/api/show-comments/:id', GetComments);
+Router.get('/api/follow-up/:user', GetFollowup);
 Router.put('/api/delete-comments/:id', DeleteComments);
 Router.get('/api/label/:id', SelectForBox);
 Router.put('/api/lead-label/:id',UpdateLabel)
@@ -248,6 +251,11 @@ Router.get('/api/all-user-type/', GetUserType);
 Router.get('/api/emp-team/', TeamForEmployee);
 // Router.post('/fbleads/', facebookLeads);
 
+
+
+//Daily Activity Report
+Router.get('/api/daily-activity-report/:user',DailyReport)
+Router.get('/api/full-daily-activity-report',fullReport)
 
 
 

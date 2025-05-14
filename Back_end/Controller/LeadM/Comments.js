@@ -83,6 +83,46 @@ const CreateComments = async (req, res) => {
         });
     }
 };
+const GetFollowup = async (req, res) => {
+  const {user}=req.params;
+  const {permission, id}=req.query;
+  
+  try {
+      const [leads] = await mysqlConnection.promise().query(`
+          SELECT lc.dt AS date,
+                 lc.lead_id AS lead_id,
+                 lc.id AS id,
+                 lc.comments AS comments,
+                 lc.status AS status,
+                 CONCAT(u.first_name, ' ', u.last_name) AS fullName,
+                 lc.followupdate,
+                 lc.followup
+          FROM leads_comments lc
+          JOIN users u ON lc.user = u.name WHERE lc.status = "N" AND lc.user=?;
+      `,[user]);
+
+      if (!leads.length) {
+          return res.status(200).json({
+              success: true,
+              message: 'No leads found',
+          });
+      }
+
+      // Respond with all leads information
+      res.status(200).json({
+          success: true,
+          message: 'Leads information fetched successfully',
+          leads: leads,
+      });
+  } catch (error) {
+      console.error('Error fetching leads information:', error);
+      res.status(500).json({
+          success: false,
+          message: 'Error in fetching leads information',
+          error: error.message,
+      });
+  }
+};
 const DeleteComments = async (req, res) => {
   const { id } = req.params;
   try {
@@ -276,4 +316,41 @@ const SaveTime = async (req, res) => {
     });
   }
 };
-  module.exports = { SaveTime, CreateComments, GetComments,DeleteComments,AllLabels,SelectForBox,UpdateLabel};
+
+
+const CreateActivityReport = async (req, res) => {
+  try {
+   
+
+    // Extract the fields from the request body
+    let { daily_office_visits, client_matured, daily_lead_follow_up, lead_assigned, dealers_meeting, dealers_register, office_activity, user, del} = req.body; // Use let instead of const
+    
+    
+
+    // Build the INSERT query
+    const insertQuery = `
+      INSERT INTO leads_activity_report (daily_office_visits, client_matured, daily_lead_follow_up, lead_assigned, dealers_meeting, dealers_register, office_activity, user, del)
+      VALUES (?, ?, ?, ?, ?,? , ?, ?, ?);
+    `;
+
+    const insertParams = [daily_office_visits, client_matured, daily_lead_follow_up, lead_assigned, dealers_meeting, dealers_register, office_activity, user, del];
+
+    // Execute the INSERT query
+    const results = await new Promise((resolve, reject) => {
+      mysqlConnection.query(insertQuery, insertParams, (error, results) => {
+        if (error) {
+          reject(error);
+          return; 
+        }
+        resolve(results);
+      });
+    });
+
+  
+    res.status(200).json({ success: true, message: "Report saved successfully", results });
+  } catch (error) {
+    console.error('Error executing MySQL query:', error);
+    res.status(500).json({ success: false, message: "Internal Server Error", error });
+  }
+};
+  module.exports = { SaveTime, CreateComments, GetComments,DeleteComments,AllLabels,SelectForBox,UpdateLabel, GetFollowup,CreateActivityReport};

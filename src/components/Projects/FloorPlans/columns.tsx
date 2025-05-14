@@ -13,19 +13,19 @@ import { ActionIcon } from '@/components/ui/action-icon';
 import EyeIcon from '@/components/icons/eye';
 import { useModalHook } from './floorAction/UpdateRatesModel';
 import {useModalHook1} from './floorAction/PaymentPlanModel'
-import { PiCopyLight } from "react-icons/pi";
+
 import apiService from '@/utils/apiService';
 import { LiaEditSolid } from "react-icons/lia";
 import {encodeId} from '@/components/encriptdycriptdata';
 import { BsRepeat } from "react-icons/bs";
-import { PiPlusBold } from 'react-icons/pi';
-import { PiFolderLight } from "react-icons/pi";
-import { PiUploadSimpleThin } from "react-icons/pi";
-import { PiCopyThin } from "react-icons/pi";
+
+import { PiFolderLight, PiUploadSimpleThin , PiPlusBold,PiTrashFill, PiCopyLight} from "react-icons/pi";
+
+
 import { Button } from '@/components/ui/button';
 import { Popover } from '@/components/ui/popover';
 import TrashIcon from '@/components/icons/trash';
-import { PiTrashFill } from 'react-icons/pi';
+
 import toast from 'react-hot-toast';
 
 import { useEmployeeData } from '@/components/employee-data/employeeList';

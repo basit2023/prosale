@@ -535,7 +535,7 @@ const GetProjects = async (req, res) => {
         const [rows, fields] = await mysqlConnection.promise().query(`
             SELECT id, name 
             FROM lead_projects 
-            WHERE status = "N";
+            WHERE status = "Y" AND del="N";
         `);
 
 

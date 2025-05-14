@@ -40,6 +40,8 @@ export const routes = {
     management:'/leads/management',
     new_lead:'/leads/new-lead',
     highly_interested:'/leads/highly_interested',
+    followup: '/leads/followup',
+    full_report: '/leads/activity-report/full-report',
     // need_to_convince:'/leads/need_to_convince',
     team_member: (id: string) => `/leads/management/${id}`,
     edit: (id: string) => `/leads/${id}/edit`,
@@ -194,5 +196,7 @@ export const routes = {
   onboarding:'/onboarding',
   tamplets:{
     detailPlained:(slug: string) => `/tamplets/detailed-planed/${slug}`,
+    DailyActivityReport:(slug: string) => `/tamplets/Daily-Activity-Report/${slug}`,
+    FullReport:(slug: string) => `/tamplets/generate-full-report/${slug}`,
   }
 };
