@@ -3,9 +3,10 @@ import plugin from 'tailwindcss/plugin';
 
 export default {
   content: [
-    './src/**/*.{js,ts,jsx,tsx}',
-    './node_modules/rizzui/dist/*.{js,ts,jsx,tsx}', // must use this line to compile and generate our RizzUI components style
-    './public/**/*.{js,map,json}',
+    './src/**/*.{js,ts,jsx,tsx}', // This includes your main app code
+    './node_modules/rizzui/dist/**/*.{js,ts,jsx,tsx}', // Ensure this targets the correct RizzUI components
+    // Remove the public directory unless it's necessary
+    // './public/**/*.{js,map,json}', // It's better to avoid this unless you know you have relevant Tailwind CSS classes in your static files
   ],
   darkMode: ['class', '[data-theme="dark"]'],
   theme: {

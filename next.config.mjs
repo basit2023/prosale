@@ -1,7 +1,12 @@
 import withPWA from 'next-pwa';
-import './src/env.mjs';
 
 const nextConfig = {
+  reactStrictMode: true,
+  trailingSlash: true,
+  swcMinify: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -46,21 +51,15 @@ const nextConfig = {
       },
     ],
   },
-  reactStrictMode: true,
-  trailingSlash: true,
-  swcMinify: true,
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   experimental: {
     webpackBuildWorker: true,
   },
 };
 
 export default withPWA({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: process.env.NODE_ENV === 'development',
-  sw: 'sw.js',
+  dest: 'public',              // Output destination for PWA assets
+  register: true,              // Automatically register service worker
+  skipWaiting: true,           // Immediately take control of the page once the service worker is installed
+  disable: process.env.NODE_ENV === 'development',  // Disable PWA in development mode (for faster testing)
+  sw: 'sw.js',                 // Define the service worker file location
 })(nextConfig);
