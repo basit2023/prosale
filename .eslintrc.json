@@ -6,6 +6,7 @@
     "no-duplicate-imports": "warn",
     // "import/no-unresolved": "error",
     "react/react-in-jsx-scope": "off",
-    "react/no-unknown-property": "error"
+ 
+    "react/no-unknown-property": ['error', { ignore: ['css'] }]
   }
 }
