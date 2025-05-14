@@ -234,3 +234,4 @@ export default function PrintFullReport({ slug }: { slug: string }) {
     </div>
   );
 }
+//code updated aboce==
