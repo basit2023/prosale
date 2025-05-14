@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation'; // Import useRouter from next/router
 import { SubmitHandler, Controller } from 'react-hook-form';
@@ -30,7 +30,7 @@ export default function ChangeStatus({ id }: any) {
   const [value1, setUserData] = useState<any>();
   const [phone, setPhone] = useState<any>('N');
   const previousPathname = useRef<string | null>(null); // Ref to store previous pathname
-
+const memoizedSession=useMemo(()=>session,[session])
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -46,7 +46,7 @@ export default function ChangeStatus({ id }: any) {
     };
 
     fetchUserData();
-  }, [session]);
+  }, [memoizedSession]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,7 +66,7 @@ export default function ChangeStatus({ id }: any) {
         toast.error('Error fetching job data. Please try again.');
       }
       try {
-        if (session) {
+        if (memoizedSession) {
           const response = await apiService.get(`/get-highlyinterest-by-id/${id}`);
           const userData = response.data.leads;
           setValue(userData);
@@ -76,10 +76,10 @@ export default function ChangeStatus({ id }: any) {
       }
     };
 
-    if (session) {
+    if (memoizedSession) {
       fetchData();
     }
-  }, [session]);
+  }, [memoizedSession]);
 
   useEffect(() => {
     let startTime: any;
@@ -145,16 +145,33 @@ export default function ChangeStatus({ id }: any) {
     });
   };
 
-  const handleButtonClick = async () => {
-    const phoneNumber = value[0]?.mobile;
-    setPhone('Y');
+ const [isCalling, setIsCalling] = useState(false);
 
-    // Wait for the state update to be processed
-    setTimeout(() => {
-      const telLink = `tel:${phoneNumber}`;
-      window.location.href = telLink;
-    }, 0);
-  };
+const handleButtonClick = async () => {
+  if (isCalling) return;
+  
+  const phoneNumber = value[0]?.mobile;
+  
+  if (!phoneNumber) {
+    toast.error('No phone number available');
+    return;
+  }
+
+  setIsCalling(true);
+  try {
+    setPhone('Y');
+    const getCurrentTimestamp = () => Math.floor(new Date().getTime() / 1000).toString();
+    await apiService.put(`/lead-open/${id}`, {
+      dt: getCurrentTimestamp(),
+      email: memoizedSession?.user?.email
+    });
+    window.location.href = `tel:${phoneNumber}`;
+  } catch (error) {
+    console.error('Error while updating lead status:', error);
+    toast.error('Failed to initiate call');
+    setIsCalling(false);
+  }
+};
 
   return (
     <div className="flex flex-col-reverse sm:flex-row justify-end relative">
@@ -226,11 +243,12 @@ export default function ChangeStatus({ id }: any) {
             Close Lead
           </button>
         )}
-        <button
-          className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 ml-0 mt-0.5"
+       <button
+          className={`bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 ml-0 mt-0.5 ${isCalling ? 'opacity-75' : ''}`}
           onClick={handleButtonClick}
+          disabled={isCalling}
         >
-          Call
+          {isCalling ? 'Calling...' : 'Call'}
         </button>
       </div>
     </div>

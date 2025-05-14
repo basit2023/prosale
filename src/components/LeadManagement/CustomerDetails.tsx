@@ -73,7 +73,7 @@ export function CustomerDetails({ id }: any) {
         alt="avatar"
         className="object-cover"
         sizes="(max-width: 768px) 100vw"
-        src="https://isomorphic-furyroad.s3.amazonaws.com/public/avatar.png"
+        src="data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23ddd'/%3E%3Ctext x='50%' y='50%' font-size='40' text-anchor='middle' dominant-baseline='middle' fill='%23666'%3E👤%3C/text%3E%3C/svg%3E"
       />
     </div>
     <div className="ps-4 @5xl:ps-6">
@@ -87,7 +87,9 @@ export function CustomerDetails({ id }: any) {
          {value[0]?.email ? value[0]?.email : "N/A"}
       </Text>
       <Text as="p" className="mb-2 last:mb-0">
-         {value[0]?.mobile ? value[0]?.mobile : "N/A"}
+         {value[0]?.view_dt === "new_lead" 
+        ? "Lead Not Opened" 
+        : (value[0]?.mobile || 'N/A')}
       </Text>
     </div>
     </WidgetCard>

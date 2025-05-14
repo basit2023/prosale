@@ -37,21 +37,7 @@ export const useGetColumns  = ({
   // const { openModal } = useModal();
   const { data: session } = useSession();
   const memoizedSession = useMemo(() => session, [session]);
- const handleClick= async (id: string) =>{
-      try {
-        const getCurrentTimestamp = () => Math.floor(new Date().getTime() / 1000).toString();
-        
 
-        const result = await apiService.put(`/lead-open/${id}` ,{
-          dt:getCurrentTimestamp(),
-          email:memoizedSession?.user?.email
-        });
-      
-    } catch (error) {
-        console.error('Error while updating lead status:', error);
-        // Handle error if necessary
-    }
-    }
 
 
   // const handleViewInvoice = (rowId: string) => {
@@ -138,25 +124,25 @@ export const useGetColumns  = ({
     },
     
     {
-      title: (
-        <HeaderCell
-          title="Mobile"
-          sortable
-          ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'mobile'
-          }
-        />
-      ),
-      onHeaderCell: () => onHeaderCellClick('mobile'),
-      dataIndex: 'mobile',
-      key: 'mobile',
-      width: 200,
-      render: (value: string | undefined) => (
-        <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
-        </Text>
-      ),
-    },
+  title: (
+    <HeaderCell
+      title="Mobile"
+      sortable
+      ascending={
+        sortConfig?.direction === 'asc' && sortConfig?.key === 'mobile'
+      }
+    />
+  ),
+  onHeaderCell: () => onHeaderCellClick('mobile'),
+  dataIndex: 'mobile',
+  key: 'mobile',
+  width: 200,
+  render: (value: any, row: any) => (
+    <Text className="font-medium text-gray-700 dark:text-gray-600">
+      {row.view_dt === "new_lead" ? "Lead Not Opened" : (value || 'N/A')}
+    </Text>
+  ),
+},
     {
       title: (
         <HeaderCell
@@ -317,7 +303,7 @@ export const useGetColumns  = ({
             placement="top"
             color="invert"
           >
-            <button onClick={() => handleClick(row.id)}>
+            
             <Link href={routes.leads.edit(row.id)}>
               <ActionIcon
                 tag="span"
@@ -328,7 +314,7 @@ export const useGetColumns  = ({
                 <EyeIcon className="h-4 w-4" />
               </ActionIcon>
             </Link>
-          </button>
+          
           </Tooltip>
          
         </div>
