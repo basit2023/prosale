@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import apiService from '@/utils/apiService';                                          
 import { NewProjectInfoFormSchema, NewProjectInfoFormTypes, defaultValues } from '@/utils/validators/new-project.schema';
 import AvatarUpload from '@/components/ui/file-upload/avatar-project';
@@ -39,7 +39,7 @@ interface SelectOption {
 export default function Unitscard({ slug, id }:any) {
   console.log("the id and the slug is:",id, slug)
   const items = useManageUnits(slug, id);
- 
+  console.log("the items at the floor is:",items)
   const { data: session } = useSession();
   const [department, setDepartment] = useState<any>([]);
   const [startDate, setStartDate] = useState<Date>(new Date());
@@ -49,63 +49,17 @@ export default function Unitscard({ slug, id }:any) {
   const [value, setUserData] = useState<any>();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [remarks, setRemarks] = useState<string>('');
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        } 
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-    };
-
-    fetchUserData();
-  }, [session]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await apiService.get(`/supper-admin/${session?.user?.email}`);
-        const userData = response.data;
-        setCompany(userData);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-
-      try {
-        const response = await apiService.get(`/project-status`);
-        const userData = response.data;
-        setDepartment(userData.data);
-      } catch (error) {
-        console.error('Error fetching department data:', error);
-        toast.error('Error fetching departments data. Please try again.');
-      }
-    };
-
-    if (session) {
-      fetchData();
-    }
-  }, [session]);
+  const memoizedSession=useMemo(()=>session,[session])
 
   const onSubmit: SubmitHandler<NewProjectInfoFormTypes> = async (data) => {
     setIsLoading(true); 
     try {
-      if (company?.user_data?.number <= 1) {
-        data.company_id = company?.user_data?.company_id;
-      }
-      
       const result = await apiService.post(`/create-n-project`, {
-        ...data, user: value?.user?.name
+        ...data, user: memoizedSession?.user?.username
       });
       toast.success(result.data.message);
       if (result.data.success) {
-        logsCreate({ user: value?.user?.name, desc: 'Add new project' });
+        logsCreate({ user: memoizedSession?.user?.username, desc: 'Add new project' });
         back();
       } 
     } catch (error: any) {
@@ -142,8 +96,34 @@ export default function Unitscard({ slug, id }:any) {
 
   const handleCardClick = (item: any) => {
     setSelectedItem(item);
-    setSelectedStatus(item.status); // Pre-fill the status with the current status of the selected item
+    setSelectedStatus(item.status);
     setModalState(true);
+  };
+
+  const getCardColorClass = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 hover:bg-green-200 border-green-300';
+      case 'sold':
+        return 'bg-red-100 hover:bg-red-200 border-red-300';
+      case 'hold':
+        return 'bg-orange-100 hover:bg-orange-200 border-orange-300';
+      default:
+        return 'bg-white hover:bg-gray-100 border-gray-300';
+    }
+  };
+
+  const getStatusTextColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'text-green-600';
+      case 'sold':
+        return 'text-red-600';
+      case 'hold':
+        return 'text-orange-600';
+      default:
+        return 'text-gray-600';
+    }
   };
 
   return (
@@ -170,33 +150,26 @@ export default function Unitscard({ slug, id }:any) {
                   <div
                     key={item.id}
                     onClick={() => handleCardClick(item)}
-                    className="cursor-pointer bg-white shadow-lg rounded-lg p-4 hover:bg-gray-100"
+                    className={`cursor-pointer shadow-lg rounded-lg p-4 border-2 ${getCardColorClass(item.status)}`}
                   >
                     <h3 className="text-lg font-bold mb-2">{item.Label}</h3>
+                    
                     <p className="text-sm font-semibold mb-1">{item.Size} SQFT.</p>
-                    <span
-                    className={`text-sm uppercase ${
-                      item.status === "hold"
-                        ? "text-orange-500"
+                    <span className={`text-sm uppercase font-bold ${getStatusTextColor(item.status)}`}>
+                      {item.status === "hold"
+                        ? "On Hold"
                         : item.status === "sold"
-                        ? "text-red-500"
-                        : item.status === "available"
-                        ? "text-green-500"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    {item.status === "hold"
-                      ? "On Hold"
-                      : item.status === "sold"
-                      ? "Sold"
-                      : item.status === "available"
-                      ? "Available"
-                      : "Unknown"}
-                  </span>
-
-
+                        ? "Sold"
+                        : item.status === "active"
+                        ? "Available"
+                        : "Unknown"}
+                    </span>
+                    {(item.status === "hold" ||item.status === "sold"  ) && (
+                      <p className="text-sm font-semibold mb-1"> by {item.user}</p>
+                    )}
                   </div>
                 ))}
+                
               </div>
 
               {selectedItem && (

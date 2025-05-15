@@ -201,7 +201,7 @@ const ManageUnits = async (req, res) => {
                 hold_units,
                 available_units,
                 status, 
-                Type,  Unit, Size, SqFtRate, Category, Label, Extra
+                Type,  Unit, Size, SqFtRate, Category, Label, Extra, user
             FROM 
                 floor_units
             WHERE 

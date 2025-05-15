@@ -68,6 +68,7 @@ export const useManageUnits = (slug: any, id: any) => {
     Category: user.Category,
     Label: user.Label,
     Extra: user.Extra,
+    user: user.user,
   }));
 
   return data; // Return data, loading state, and error state
