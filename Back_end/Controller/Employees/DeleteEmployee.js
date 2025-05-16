@@ -50,8 +50,8 @@ const DeleteEmployee = async (req, res) => {
       sql += 'del = ?, ';
       values.push(del);
     } else if (table === "lead_projects") {
-      sql += 'status = ?, ';
-      values.push(status);
+      sql += 'del = ?, ';
+      values.push(del);
     } else {
       return res.status(400).json({
         success: false,

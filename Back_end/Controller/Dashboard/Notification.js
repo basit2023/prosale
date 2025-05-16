@@ -231,10 +231,10 @@ const updateNotificationMark = async (req, res) => {
         const currentTimestamp  = Math.floor(Date.now() / 1000);
       
         // Update the notification_mark field to mark the notification as read
-        const [viewdate] = await mysqlConnection.promise().query(
-          "UPDATE leads_main SET view_dt = ? WHERE id = ?",
-          [currentTimestamp, leadId] // Pass the current timestamp and leadId
-      );
+      //   const [viewdate] = await mysqlConnection.promise().query(
+      //     "UPDATE leads_main SET view_dt = ? WHERE id = ?",
+      //     [currentTimestamp, leadId] // Pass the current timestamp and leadId
+      // );
 
 
         const [result] = await mysqlConnection.promise().query(
@@ -300,39 +300,51 @@ async function saveSubscriptionToDatabase(username, subscription) {
   await mysqlConnection.promise().query(query, [username, JSON.stringify(subscription)]);
 }
 
-const sendNotificationToUser = async (username, message) => {
-
-  
+const sendNotificationToUser = async (username, leadDetails) => {
   try {
-      const [results] = await mysqlConnection.promise().query('SELECT subscription FROM lead_subscription WHERE username = ?', [username]);
+    const [results] = await mysqlConnection.promise().query(
+      'SELECT subscription FROM lead_subscription WHERE username = ?', 
+      [username]
+    );
 
-      if (results.length === 0) {
+    if (results.length === 0) {
+      console.warn(`No subscription found for user: ${username}`);
+      return false;
+    }
 
-          throw new Error('No subscription found for the user');
+    const subscriptionData = results[0].subscription;
+    const subscription = JSON.parse(subscriptionData);
+
+    if (!subscription?.endpoint) {
+      console.error('Invalid subscription object:', subscription);
+      return false;
+    }
+
+    const payload = JSON.stringify({
+      title: 'New Lead Assigned',
+      body: `You've been assigned a new lead: ${leadDetails.name || 'Lead #'+leadDetails.id}`,
+      icon: '/icons/icon-192x192.png',
+      data: {
+        url: `/leads/${leadDetails.id}`, // URL to open when notification is clicked
+        leadId: leadDetails.id
       }
+    });
 
-      const subscriptionData = results[0].subscription;
-
-
-      // Parse the outer JSON to get the nested subscription object as a string
-      const parsedOuter = JSON.parse(subscriptionData);
-
-
-      // Parse the nested subscription object to get the actual subscription data
-      const subscription = JSON.parse(parsedOuter.body);
-
-
-      if (!subscription.endpoint) {
-          console.error('Invalid subscription object:', subscription);
-          throw new Error('Invalid subscription object: missing endpoint');
-      }
-
-      const payload = JSON.stringify({ title: 'New Notification', body: message });
-
-      await webpush.sendNotification(subscription, payload);
-      console.log('Notification sent successfully');
+    await webpush.sendNotification(subscription, payload);
+    console.log(`Notification sent successfully to ${username}`);
+    return true;
   } catch (error) {
-      console.error('Error sending notification:', error);
+    console.error('Error sending notification:', error);
+    
+    // Remove invalid subscriptions
+    if (error.statusCode === 410) { // GONE status (subscription no longer valid)
+      await mysqlConnection.promise().query(
+        'DELETE FROM lead_subscription WHERE username = ?',
+        [username]
+      );
+      console.log(`Removed expired subscription for ${username}`);
+    }
+    return false;
   }
 };
 
@@ -374,4 +386,4 @@ const sendMessage = async (to, text, unicode = false) => {
 
 
 
-module.exports = { saveSubscription, NewNotification, GetNotification,updateNotificationMark, sendMessage};
+module.exports = { saveSubscription, NewNotification, GetNotification,updateNotificationMark, sendMessage, sendNotificationToUser};

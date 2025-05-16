@@ -4,7 +4,7 @@ const projectData = async (req, res) => {
     const {email}=req.query;
 
     try {
-        [user]=await mysqlConnection.promise().query('SELECT company_id from users where email=?',[email])
+        
         let projects;
         [projects] = await mysqlConnection.promise().query(`
         SELECT 
@@ -19,14 +19,10 @@ const projectData = async (req, res) => {
             lp.Image,
             lp.Location,
             lp.del,
-            lp.slug,
-            c.title AS company_title
+            lp.slug
+            
         FROM 
-            lead_projects lp
-        LEFT JOIN 
-            companies c ON lp.company_id = c.id
-        WHERE 
-            FIND_IN_SET(lp.company_id, ?) > 0;`, [user[0].company_id]);
+            lead_projects lp where lp.del="N"`);
 
 
         if (!projects.length) {

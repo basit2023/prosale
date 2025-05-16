@@ -26,8 +26,16 @@ const pageHeader = {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '24px' }}>
         
+         <TableLayout
+      title={pageHeader.title}
+      breadcrumb={pageHeader.breadcrumb}
+      data={invoiceData}
+      fileName="invoice_data"
+      header="ID,Name,Email,Mobile,CNIC,Designation,Department,Assigned Office,Status"
+    >
+      <Empty text="No Data found" textClassName="mt-2" />;
+    </TableLayout>
         
-        <Empty text="No Data found" textClassName="mt-2" />;
       </div>
     );
   }

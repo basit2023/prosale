@@ -4,7 +4,7 @@ const { io } = require('../../server');
 
 // Create a single WebSocket server instance
 const wss = new WebSocket.Server({ port: 4001 });
-
+const { sendNotificationToUser } =require( '../Dashboard/Notification');
 
 // const fs = require('fs');
 // const https = require('https');
@@ -241,6 +241,8 @@ const GetSourceDepInterestLeadtype = async (req, res) => {
 //         console.error('Error in ReassignedLead:', error);
 //     }
 // };
+
+
 const ReassignedLead = async (leadId, project, user) => {
     try {
         const [teamRows] = await mysqlConnection.promise().query(
@@ -293,7 +295,21 @@ const ReassignedLead = async (leadId, project, user) => {
                     [newLeadPass, leadId]
                 );
                 
-                // Always check for existing notification and call appropriate function
+                // Get lead details for notification
+                const [leadDetails] = await mysqlConnection.promise().query(
+                    'SELECT id, full_name FROM leads_customers WHERE id = (SELECT customer FROM leads_main WHERE id = ?)',
+                    [leadId]
+                );
+
+                // Send push notification
+                if (leadDetails.length > 0) {
+                    await sendNotificationToUser(nextAssignee.name, {
+                        id: leadId,
+                        name: leadDetails[0].full_name || `Lead #${leadId}`
+                    });
+                }
+
+                // Existing notification logic
                 if (existingNotification.length === 0) {
                     console.log('Creating new notification');
                     await AutoNewNotification(nextAssignee.name, leadId, user);
@@ -343,6 +359,20 @@ const ReassignedLead = async (leadId, project, user) => {
                         'UPDATE leads_main SET lead_pass = ? WHERE id = ?',
                         [newLeadPass, leadId]
                     );
+                    
+                    // Get lead details for notification
+                    const [leadDetails] = await mysqlConnection.promise().query(
+                        'SELECT id, full_name FROM leads_customers WHERE id = (SELECT customer FROM leads_main WHERE id = ?)',
+                        [leadId]
+                    );
+
+                    // Send push notification to manager
+                    if (leadDetails.length > 0) {
+                        await sendNotificationToUser(manager[0].name, {
+                            id: leadId,
+                            name: leadDetails[0].full_name || `Lead #${leadId}`
+                        });
+                    }
                     
                     // Check if notification exists before updating
                     const [existingNotification] = await mysqlConnection.promise().query(
@@ -400,35 +430,34 @@ const CreateNewLead = async (req, res) => {
         
         let customerId = existingCustomerRows.length > 0 ? existingCustomerRows[0].id : null;
         if (customerId) {
-            
+            // Check if this project already exists for this customer
+            const projectExists = existingCustomerRows.some(row => 
+                Number(row.project) === Number(project)
+            );
 
-// Check if this project already exists for this customer
-const projectExists = existingCustomerRows.some(row => 
-    Number(row.project) === Number(project)
-);
-
-
-if (projectExists) {
-    
-    return res.status(400).json({ 
-        success: false, 
-        message: `Same Project Lead already assigned to ${existingCustomerRows[0].assigned_to}` 
-    });
-} else {
-    
-    const [insertLeadResult] = await mysqlConnection.promise().query(
-        'INSERT INTO leads_main (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [customerId, source, project, existingCustomerRows[0].assigned_to, interested_in, investment_budget, dt, company_id, user]
-    );
-    return res.status(200).json({ 
-        success: true, 
-        message: `Different Project Lead reassigned to ${existingCustomerRows[0].assigned_to}!` 
-    });
-}
+            if (projectExists) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: `Same Project Lead already assigned to ${existingCustomerRows[0].assigned_to}` 
+                });
+            } else {
+                const [insertLeadResult] = await mysqlConnection.promise().query(
+                    'INSERT INTO leads_main (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                    [customerId, source, project, existingCustomerRows[0].assigned_to, interested_in, investment_budget, dt, company_id, user]
+                );
+                
+                // Send notification to the assigned user
+                await sendNotificationToUser(existingCustomerRows[0].assigned_to, {
+                    id: insertLeadResult.insertId,
+                    name: full_name || `Lead #${insertLeadResult.insertId}`
+                });
+                
+                return res.status(200).json({ 
+                    success: true, 
+                    message: `Different Project Lead reassigned to ${existingCustomerRows[0].assigned_to}!` 
+                });
+            }
         }
-
-
-
 
         const [existingCustomer] = await mysqlConnection.promise().query(
             'SELECT id, user FROM leads_customers WHERE mobile = ?',
@@ -441,11 +470,19 @@ if (projectExists) {
                 'INSERT INTO leads_main (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [customer_Id, source, project, existingCustomer[0].user, interested_in, investment_budget, dt, company_id, user]
             );
+            
+            // Send notification to the existing user
+            await sendNotificationToUser(existingCustomer[0].user, {
+                id: insertLeadResult.insertId,
+                name: full_name || `Lead #${insertLeadResult.insertId}`
+            });
+            
             return res.status(200).json({ 
                 success: true, 
                 message: `The customer already register to ${existingCustomer[0].user}!` 
             });
         }
+
         if (!customerId) {
             const [insertCustomerResult] = await mysqlConnection.promise().query(
                 'INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type) VALUES (?, ?, ?, ?, ?, ?)',
@@ -458,7 +495,16 @@ if (projectExists) {
             'INSERT INTO leads_main (customer, leads_source, project, interested_in, investment_budget, dt, company_id, user) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
             [customerId, source, project, interested_in, investment_budget, dt, company_id, user]
         );
-        console.log(`the lead is reassined to ${insertLeadResult.insertId} and the user is: ${user}`)
+        
+        console.log(`the lead is reassigned to ${insertLeadResult.insertId} and the user is: ${user}`);
+        
+        // Send initial notification
+        await sendNotificationToUser(user, {
+            id: insertLeadResult.insertId,
+            name: full_name || `Lead #${insertLeadResult.insertId}`
+        });
+        
+        // Start the reassignment process
         ReassignedLead(insertLeadResult.insertId, project, user);
 
         res.status(200).json({

@@ -9,14 +9,14 @@ import { Popover } from '@/components/ui/popover';
 import { Title } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { PiCheck } from 'react-icons/pi';
+import { PiCheck } from 'react-icons/pi'; 
 import apiService from '@/utils/apiService';
-import SimpleBar from '@/components/ui/simplebar';
-import Link from 'next/link';
+import SimpleBar from '@/components/ui/simplebar'; 
+import Link from 'next/link';    
 import { useMedia } from '@/hooks/use-media';
 import { routes } from '@/config/routes';
-
-// Extend dayjs with required plugins
+import { subscribeUser, showPushNotification  }from '@/app/pushService';
+// Extend dayjs with required pluginsff
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -197,39 +197,53 @@ export default function NotificationDropdown({ children }) {
   }, []);
 
   // WebSocket message handler
-  const handleWebSocketMessage = useCallback((message) => {
-    if (!userId) return;
+const handleWebSocketMessage = useCallback(async (message) => {
+  if (!userId) return;
 
-    const { event, data } = message;
-    const { userId: messageUserId, leadId, created_at } = data || {};
+  const { event, data } = message;
+  const { userId: messageUserId, leadId, created_at } = data || {};
 
-    // Only process notifications for the current user
-    if (parseInt(messageUserId) === parseInt(userId)) {
-      if (event === 'lead_assigned') {
-        const newNotification = {
-          id: Date.now(),
-          leadId,
-          message: data.message,
-          created_at: parseTimestamp(created_at), // Use parsed timestamp
-          notification_mark: 0,
-          userId: messageUserId,
-        };
+  // Only process notifications for the current user
+  if (parseInt(messageUserId) === parseInt(userId)) {
+    if (event === 'lead_assigned') {
+      const newNotification = {
+        id: Date.now(),
+        leadId,
+        message: data.message,
+        created_at: parseTimestamp(created_at),
+        notification_mark: 0,
+        userId: messageUserId,
+      };
 
-        setNotifications(prev => {
-          const updated = [newNotification, ...prev];
-          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
-          return updated;
+      setNotifications(prev => {
+        const updated = [newNotification, ...prev];
+        setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
+        return updated;
+      });
+
+      // Trigger push notification
+      try {
+        await showPushNotification('New Lead Assigned', {
+          body: `You have been assigned a new lead (ID: ${leadId})`,
+          icon: '/path-to-your-icon.png',
+          vibrate: [200, 100, 200],
+          data: {
+            url: `${window.location.origin}${routes.leads.edit(leadId)}`
+          }
         });
-      } 
-      else if (event === 'lead_reassigned') {
-        setNotifications(prev => {
-          const updated = prev.filter(n => n.leadId !== leadId);
-          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
-          return updated;
-        });
+      } catch (error) {
+        console.error('Error showing push notification:', error);
       }
+    } 
+    else if (event === 'lead_reassigned') {
+      setNotifications(prev => {
+        const updated = prev.filter(n => n.leadId !== leadId);
+        setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
+        return updated;
+      });
     }
-  }, [userId]);
+  }
+}, [userId]);
 
   // WebSocket connection
   const ws = useWebSocket(websocketUrl, handleWebSocketMessage);

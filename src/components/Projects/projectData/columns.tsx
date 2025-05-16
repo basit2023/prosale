@@ -219,26 +219,26 @@ export const getColumns = ({
         </Text>
       ),
     },
-    {
-      title: (
-        <HeaderCell
-          title="Company"
-          sortable
-          ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'company_title'
-          }
-        />
-      ),
-      onHeaderCell: () => onHeaderCellClick('company_title'),
-      dataIndex: 'company_title',
-      key: 'company_title',
-      width: 100,
-      render: (value: string | undefined) => (
-        <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
-        </Text>
-      ),
-    },
+    // {
+    //   title: (
+    //     <HeaderCell
+    //       title="Company"
+    //       sortable
+    //       ascending={
+    //         sortConfig?.direction === 'asc' && sortConfig?.key === 'company_title'
+    //       }
+    //     />
+    //   ),
+    //   onHeaderCell: () => onHeaderCellClick('company_title'),
+    //   dataIndex: 'company_title',
+    //   key: 'company_title',
+    //   width: 100,
+    //   render: (value: string | undefined) => (
+    //     <Text className="font-medium text-gray-700 dark:text-gray-600">
+    //       {value || 'N/A'}
+    //     </Text>
+    //   ),
+    // },
     {
       title: (
         <HeaderCell
@@ -318,7 +318,7 @@ export const getColumns = ({
               id={row.id}
               table={`lead_projects`}
               name={`Project`}
-              inactive="Yes"
+              inactive="No"
             />
           </div>
         );
