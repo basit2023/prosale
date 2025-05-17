@@ -97,7 +97,7 @@ const router = useRouter();
 const [userData, setUserData] = useState<any>(null);
 const [project, setProject] = useState<any>([]);
 const [loading, setLoading] = useState(true);
-
+const memoizedSession=useMemo(()=>session,[session])
 // Define the PaymentPlan type
 type PaymentPlan = {
   name: string;
@@ -141,10 +141,10 @@ useEffect(() => {
 // Memoize the project fetch function using useCallback
 const fetchProjectData = useCallback(async () => {
   try {
-    if (!userData?.user?.company_id) return;
+  
 
     const projectResponse = await apiService.get(
-      `/PaymentPlanid/?company_id=${userData.user.company_id}&&slug=${slug}`
+      `/PaymentPlanid/?slug=${slug}`
     );
     setProject((prevProject):any => 
       prevProject !== projectResponse.data.data ? projectResponse.data.data : prevProject
@@ -153,14 +153,14 @@ const fetchProjectData = useCallback(async () => {
   } catch (error) {
     console.error('Error fetching project or payment template data:', error);
   }
-}, [userData, slug]); // Only re-create the function if userData or slug changes
+}, [ slug]); // Only re-create the function if userData or slug changes
 
 // Fetch project data when userData changes
 useEffect(() => {
-  if (userData) {
+  if (memoizedSession) {
     fetchProjectData();
   }
-}, [userData, fetchProjectData]); // Ensure the effect only runs when necessary
+}, [memoizedSession, fetchProjectData]); // Ensure the effect only runs when necessary
 
   // Check for loading state and render spinner
   if (loading) {

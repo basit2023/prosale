@@ -58,6 +58,7 @@ const memoizedSession=useMemo(()=>session,[session])
           apiService.get(`/emp-personalinfo/${id}`),
           apiService.get('/all-user-type')
         ]);
+        
 
         setUserData(userResponse.data);
         setInitialData(userResponse.data);
@@ -117,8 +118,8 @@ const memoizedSession=useMemo(()=>session,[session])
         mode: 'onChange',
         defaultValues: {
           ...defaultValues,
-          name: memoizedSession?.user?.username || '',
-          user_type: memoizedSession?.user?.user_type || ''
+          name: userData?.user?.name || '',
+          user_type: userData?.user?.user_type || ''
         },
       }}
     >
@@ -145,8 +146,8 @@ const memoizedSession=useMemo(()=>session,[session])
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
-                defaultValue={memoizedSession?.user?.username}
-                  placeholder={`${memoizedSession?.user?.username}` || "example123"}
+                defaultValue={userData?.user?.name}
+                  placeholder={`${userData?.user?.name}` || "example123"}
                   {...register('name')}
                   className="flex-grow"
                 />
@@ -176,7 +177,7 @@ const memoizedSession=useMemo(()=>session,[session])
                   name="user_type"
                   render={({ field: { value, onChange } }) => (
                     <SelectBox
-                      placeholder={memoizedSession?.user?.user_type || "Select User Type"}
+                      placeholder={userData?.user?.user_type || "Select User Type"}
                       options={userTypes}
                       onChange={onChange}
                       value={value}

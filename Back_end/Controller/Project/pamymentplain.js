@@ -493,9 +493,8 @@ const GetPaymentPlanid = async (req, res) => {
         const [rows, fields] = await mysqlConnection.promise().query(`
             SELECT id
             FROM lead_projects 
-            WHERE FIND_IN_SET(company_id, ?) > 0 
-              AND status = "N" and slug=?;
-        `, [company_id,slug]);
+            WHERE status = "N" and slug=?;
+        `, [slug]);
 
         // Respond with an array of objects containing name and sign
         const [rows1, fields1] = await mysqlConnection.promise().query(`
