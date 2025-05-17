@@ -143,7 +143,10 @@ export default function PaymentTamplate({
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-  
+
+  //
+  //
+  //
 
   // Helper function to safely access Unitspr
   const unitspr = useMemo((): Unitspr | null => {
@@ -153,31 +156,53 @@ export default function PaymentTamplate({
   
 
   // Process data to determine rowSpan for Category
-  const processedData = useMemo(() => {
-    if (!templateData?.data) return [];
+// Process data to group units by size and determine rowSpan for Category
+const processedData = useMemo(() => {
+  if (!templateData?.data) return [];
 
-    const data = templateData.data;
-    const categoryCount: { [key: string]: number } = {};
+  const data = templateData.data;
+  
+  // Group units by size
+  const sizeGroups: {[key: string]: DataItem[]} = {};
+  data.forEach(item => {
+    const size = item.Size;
+    if (!sizeGroups[size]) {
+      sizeGroups[size] = [];
+    }
+    sizeGroups[size].push(item);
+  });
 
-    // Count occurrences of each Category
-    data.forEach(item => {
-      const category = item.Category;
-      categoryCount[category] = (categoryCount[category] || 0) + 1;
-    });
+  // Create grouped data
+  const groupedData = Object.values(sizeGroups).map(group => {
+    return {
+      ...group[0], // Take first item as base
+      groupedUnits: group.map(item => item.Unit_Grouped).join(', '),
+      count: group.length,
+      isFirst: true, // Since we're grouping, each row is first in its category
+      rowSpan: 1 // Each group gets its own row
+    };
+  });
 
-    // Mark first occurrence and assign rowSpan
-    const processed = data.map((item, index) => {
-      const category = item.Category;
-      const firstIndex = data.findIndex(i => i.Category === category);
-      return {
-        ...item,
-        isFirst: index === firstIndex,
-        rowSpan: categoryCount[category],
-      };
-    });
+  // Count occurrences of each Category for rowSpan
+  const categoryCount: {[key: string]: number} = {};
+  groupedData.forEach(item => {
+    const category = item.Category;
+    categoryCount[category] = (categoryCount[category] || 0) + 1;
+  });
 
-    return processed;
-  }, [templateData]);
+  // Mark first occurrence and assign rowSpan for category
+  const processed = groupedData.map((item, index) => {
+    const category = item.Category;
+    const firstIndex = groupedData.findIndex(i => i.Category === category);
+    return {
+      ...item,
+      isFirst: index === firstIndex,
+      rowSpan: categoryCount[category]
+    };
+  });
+
+  return processed;
+}, [templateData]);
 
   
  return (
