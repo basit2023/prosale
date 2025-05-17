@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import apiService from '@/utils/apiService';                                          
 import { NewProjectInfoFormSchema, NewProjectInfoFormTypes, defaultValues } from '@/utils/validators/new-project.schema';
 import AvatarUpload from '@/components/ui/file-upload/avatar-project';
@@ -41,25 +41,28 @@ export default function Unitscard({ slug, id }:any) {
   const items = useManageUnits(slug, id);
   console.log("the items at the floor is:",items)
   const { data: session } = useSession();
-  const [department, setDepartment] = useState<any>([]);
-  const [startDate, setStartDate] = useState<Date>(new Date());
-  const [company, setCompany] = useState<any>();
+  
   const [isLoading, setIsLoading] = useState(false); 
   const { back } = useRouter();
   const [value, setUserData] = useState<any>();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [remarks, setRemarks] = useState<string>('');
-  const memoizedSession=useMemo(()=>session,[session])
+
+const sessionRef = useRef(session);
+useEffect(() => {
+  if (sessionRef.current === session) return;
+  sessionRef.current = session;
+}, [session]);
 
   const onSubmit: SubmitHandler<NewProjectInfoFormTypes> = async (data) => {
     setIsLoading(true); 
     try {
       const result = await apiService.post(`/create-n-project`, {
-        ...data, user: memoizedSession?.user?.username
+        ...data, user: sessionRef?.current?.user?.username
       });
       toast.success(result.data.message);
       if (result.data.success) {
-        logsCreate({ user: memoizedSession?.user?.username, desc: 'Add new project' });
+        logsCreate({ user: sessionRef?.current?.user?.username, desc: 'Add new project' });
         back();
       } 
     } catch (error: any) {
@@ -71,7 +74,7 @@ export default function Unitscard({ slug, id }:any) {
   };
 
   const status_value = [
-    { name: "Active", value: "active" },
+    { name: "Active", value: "available" },
     { name: "Sold", value: "sold" },
     { name: "Put On Hold", value: "hold" },
   ];
@@ -115,7 +118,7 @@ export default function Unitscard({ slug, id }:any) {
 
   const getStatusTextColor = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'available':
         return 'text-green-600';
       case 'sold':
         return 'text-red-600';
@@ -160,7 +163,7 @@ export default function Unitscard({ slug, id }:any) {
                         ? "On Hold"
                         : item.status === "sold"
                         ? "Sold"
-                        : item.status === "active"
+                        : item.status === "available"
                         ? "Available"
                         : "Unknown"}
                     </span>

@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = params.id;
   const slug=params.slug
 
-  return metaObject(`Edit floor ${slug}`);
+  return metaObject(`Add Units to ${slug}`);
 }
 
 const pageHeader = {
@@ -28,7 +28,7 @@ const pageHeader = {
   breadcrumb: [
     
     {
-      // href: routes.invoice.home,
+      // href: routes.project.viewProject(slug),
       name: 'Floor',
     },
     {

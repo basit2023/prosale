@@ -264,15 +264,12 @@ import { useSession } from 'next-auth/react';
 import { SubmitHandler } from 'react-hook-form';
 import { Form} from '@/components/ui/form';
 import Spinner from '@/components/ui/spinner';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, useRef} from 'react';
 import apiService from '@/utils/apiService';                                          
 import { FloorFormSchema, FloorFormTypes, defaultValues } from '@/utils/validators/floor-unit.schema';
 import { useRouter } from 'next/navigation';
 import { decryptData } from '@/components/encriptdycriptdata';
-import { Tooltip } from '@/components/ui/tooltip';
-import { ActionIcon } from '@/components/ui/action-icon';
-import { LiaEditSolid } from "react-icons/lia";
-import DeletePopover from '@/app/shared/delete-popover1';
+
 import { Input } from "rizzui";
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ssr: false,
@@ -288,58 +285,23 @@ const QuillEditor = dynamic(() => import('@/components/ui/quill-editor'), {
 export default function AddUnites({id ,slug}:any) {
  
   const { data: session } = useSession();
-  const [department, setDepartment] = useState<any>([]);
-  const [company, setCompany] = useState<any>();
+
   const [isLoading, setIsLoading] = useState(false); 
   const { back } = useRouter();
-  const [userData, setUserData] = useState<any>();
-  const [rows, setRows] = useState([{ Type: "", Unit: "", Size: "", SqFtRate: "", status: "available", Category: "N/A" }]);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        } 
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-    };
+  const [rows, setRows] = useState([{ Type: "", Unit: "", Size: "", SqFtRate: "", status: "available", Category: "" }]);
+const sessionRef = useRef(session);
+useEffect(() => {
+  if (sessionRef.current === session) return;
+  sessionRef.current = session;
+}, [session]);
 
-    fetchUserData();
-  }, [session]);
+ 
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await apiService.get(`/supper-admin/${session?.user?.email}`);
-        const userData = response.data;
-        setCompany(userData);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
 
-      try {
-        const response = await apiService.get(`/project-status`);
-        const departmentData = response.data;
-        setDepartment(departmentData.data);
-      } catch (error) {
-        console.error('Error fetching department data:', error);
-        toast.error('Error fetching department data. Please try again.');
-      }
-    };
-
-    if (session) {
-      fetchData();
-    }
-  }, [session]);
 
   const handleAddRow = () => {
-    setRows([...rows, { Type: "", Unit: "", Size: "", SqFtRate: "", status: "available", Category: "N/A" }]);
+    setRows([...rows, { Type: "", Unit: "", Size: "", SqFtRate: "", status: "available", Category: "" }]);
   };
 
   const onSubmit: SubmitHandler<FloorFormTypes> = async (data) => {
@@ -352,15 +314,15 @@ const projectData = {
   ...rows,        
   id: id,            
   slug: slug,      
-  user: userData?.user?.name, 
+  user: sessionRef?.current?.user?.username, 
 };
-  console.log("the data at the backend is:",projectData)
+
       const result = await apiService.post(`/floor-units`, projectData);
 
       toast.success(result.data.message);
 
       if (result.data.success) {
-        logsCreate({ user: userData?.user?.name, desc: 'New Units' });
+        logsCreate({ user: sessionRef?.current?.user?.username, desc: 'New Units' });
         back();
       }
     } catch (error: any) {
