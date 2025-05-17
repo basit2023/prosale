@@ -143,10 +143,7 @@ export default function PaymentTamplate({
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  //
-  //
-  //
+  
 
   // Helper function to safely access Unitspr
   const unitspr = useMemo((): Unitspr | null => {
@@ -156,53 +153,60 @@ export default function PaymentTamplate({
   
 
   // Process data to determine rowSpan for Category
-// Process data to group units by size and determine rowSpan for Category
 const processedData = useMemo(() => {
   if (!templateData?.data) return [];
 
-  const data = templateData.data;
-  
-  // Group units by size
-  const sizeGroups: {[key: string]: DataItem[]} = {};
-  data.forEach(item => {
-    const size = item.Size;
-    if (!sizeGroups[size]) {
-      sizeGroups[size] = [];
+  const groupedBySize = new Map<string, DataItem & { Unit_Grouped_List: string[] }>();
+
+  // Step 1: Group units by size
+  templateData.data.forEach((item) => {
+    const key = `${item.Size}`;
+
+    if (!groupedBySize.has(key)) {
+      groupedBySize.set(key, {
+        ...item,
+        Unit_Grouped_List: [item.Unit_Grouped],
+      });
+    } else {
+      groupedBySize.get(key)!.Unit_Grouped_List.push(item.Unit_Grouped);
     }
-    sizeGroups[size].push(item);
   });
 
-  // Create grouped data
-  const groupedData = Object.values(sizeGroups).map(group => {
-    return {
-      ...group[0], // Take first item as base
-      groupedUnits: group.map(item => item.Unit_Grouped).join(', '),
-      count: group.length,
-      isFirst: true, // Since we're grouping, each row is first in its category
-      rowSpan: 1 // Each group gets its own row
-    };
-  });
+  const groupedArray = Array.from(groupedBySize.values()).map((item) => ({
+    ...item,
+    Unit_Grouped: item.Unit_Grouped_List.join(', '),
+  }));
 
-  // Count occurrences of each Category for rowSpan
-  const categoryCount: {[key: string]: number} = {};
-  groupedData.forEach(item => {
+  // Step 2: Group again by Category to determine rowSpan
+  const categoryGroups = new Map<string, { items: any[] }>();
+
+  groupedArray.forEach((item) => {
     const category = item.Category;
-    categoryCount[category] = (categoryCount[category] || 0) + 1;
+    if (!categoryGroups.has(category)) {
+      categoryGroups.set(category, { items: [item] });
+    } else {
+      categoryGroups.get(category)!.items.push(item);
+    }
   });
 
-  // Mark first occurrence and assign rowSpan for category
-  const processed = groupedData.map((item, index) => {
-    const category = item.Category;
-    const firstIndex = groupedData.findIndex(i => i.Category === category);
-    return {
-      ...item,
-      isFirst: index === firstIndex,
-      rowSpan: categoryCount[category]
-    };
-  });
+  // Step 3: Assign rowSpan and mark the first item for each category
+  const finalData: any[] = [];
 
-  return processed;
+  for (const [category, group] of categoryGroups.entries()) {
+    group.items.forEach((item, index) => {
+      finalData.push({
+        ...item,
+        showCategory: index === 0,
+        rowSpan: index === 0 ? group.items.length : 0,
+      });
+    });
+  }
+
+  return finalData;
 }, [templateData]);
+
+
+
 
   
  return (
@@ -297,11 +301,14 @@ const processedData = useMemo(() => {
             processedData.map((item, index) => (
               <tr key={index} className="bg-white dark:bg-gray-800">
                 {/* Category Cell with Row Span */}
-                {item.isFirst && (
-                  <td className="p-3 border border-gray-300 text-center" rowSpan={item.rowSpan}>
-                    {item.Category}
-                  </td>
-                )}
+                 {item.showCategory && (
+      <td
+        className="p-3 border border-gray-300 text-center align-middle font-bold"
+        rowSpan={item.rowSpan}
+      >
+        {item.Category}
+      </td>
+    )}
 
                 {/* Unit Numbers */}
                 <td className="p-3 border border-gray-300">{item.Unit_Grouped}</td>
@@ -522,11 +529,14 @@ const processedData = useMemo(() => {
               processedData.map((item, index) => (
                 <tr key={index} className="bg- dark:bg-gray-800">
                   {/* Category Cell with Row Span */}
-                  {item.isFirst && (
-                    <td className="bg-blue-100 p-3 border border-gray-300 text-center" rowSpan={item.rowSpan}>
-                      {item.Category}
-                    </td>
-                  )}
+                   {item.showCategory && (
+      <td
+        className="p-3 border border-gray-300 text-center align-middle font-bold"
+        rowSpan={item.rowSpan}
+      >
+        {item.Category}
+      </td>
+    )}
 
                   {/* Unit Numbers */}
                   <td className="bg-lime-100 p-3 border border-gray-300">{item.Unit_Grouped}</td>
@@ -732,11 +742,14 @@ const processedData = useMemo(() => {
     processedData.map((item, index) => (
       <tr key={index} className="bg-dark dark:bg-gray-800">
         {/* Category Cell with Row Span */}
-        {item.isFirst && (
-          <td className="bg-blue-100 p-3 border border-gray-300 text-center" rowSpan={item.rowSpan}>
-            {item.Category}
-          </td>
-        )}
+        {item.showCategory && (
+      <td
+        className="p-3 border border-gray-300 text-center align-middle font-bold"
+        rowSpan={item.rowSpan}
+      >
+        {item.Category}
+      </td>
+    )}
 
         {/* Unit Numbers */}
         <td className="bg-lime-100 p-3 border border-gray-300">{item.Unit_Grouped}</td>
@@ -927,11 +940,14 @@ const processedData = useMemo(() => {
               processedData.map((item, index) => (
                 <tr key={index} className="bg-[#253F4B] dark:bg-gray-800">
                   {/* Category Cell with Row Span */}
-                  {item.isFirst && (
-                    <td className="bg-[#253F4B] p-3 text-white border border-gray-300 text-center" rowSpan={item.rowSpan}>
-                      {item.Category}
-                    </td>
-                  )}
+                   {item.showCategory && (
+      <td
+        className="p-3 border border-gray-300 text-center align-middle font-bold"
+        rowSpan={item.rowSpan}
+      >
+        {item.Category}
+      </td>
+    )}
 
                   {/* Unit Numbers */}
                   <td className="bg-[#253F4B] p-3 text-white border border-gray-300">{item.Unit_Grouped}</td>
