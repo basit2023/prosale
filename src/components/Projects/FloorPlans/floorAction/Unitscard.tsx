@@ -37,31 +37,31 @@ interface SelectOption {
 }
 
 export default function Unitscard({ slug, id }: any) {
-  const prevValuesRef = useRef<{ slug: string; id: string } | null>(null);
-  const [shouldFetch, setShouldFetch] = useState(true);
-  const [items, setItems] = useState<any[]>([]);
+  // const prevValuesRef = useRef<{ slug: string; id: string } | null>(null);
+  // const [shouldFetch, setShouldFetch] = useState(true);
+  // const [items, setItems] = useState<any[]>([]);
 
   // Prevent re-fetching if same values
-  useEffect(() => {
-    if (
-      prevValuesRef.current?.slug === slug &&
-      prevValuesRef.current?.id === id &&
-      slug === id
-    ) {
-      setShouldFetch(false);
-    } else {
-      prevValuesRef.current = { slug, id };
-      setShouldFetch(true);
-    }
-  }, [slug, id]);
+  // useEffect(() => {
+  //   if (
+  //     prevValuesRef.current?.slug === slug &&
+  //     prevValuesRef.current?.id === id &&
+  //     slug === id
+  //   ) {
+  //     setShouldFetch(false);
+  //   } else {
+  //     prevValuesRef.current = { slug, id };
+  //     setShouldFetch(true);
+  //   }
+  // }, [slug, id]);
 
   // Call useManageUnits only when needed
-  const fetchedItems = useManageUnits(slug, id);
-  useEffect(() => {
-    if (shouldFetch) {
-      setItems(fetchedItems);
-    }
-  }, [fetchedItems, shouldFetch]);
+  const items = useManageUnits(slug, id);
+  // useEffect(() => {
+  //   if (shouldFetch) {
+  //     setItems(fetchedItems);
+  //   }
+  // }, [fetchedItems, shouldFetch]);
 
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false); 
