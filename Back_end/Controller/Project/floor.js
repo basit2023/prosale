@@ -139,167 +139,276 @@ const UpdateUnits = async (req, res) => {
         });
     }
 };
+// const CreateNewUnits = async (req, res) => {
+//     try {
+//         const { id, slug, user, start, end, ...data } = req.body;
+//       console.log("the id and the slug is:",id,slug)
+//         const [projectResult] = await mysqlConnection.promise().query(
+//             'SELECT id FROM project_floors WHERE floor_slug = ? AND floor_id = ?',
+//             [slug, id]
+//         );
+
+//         // Check if the project exists
+//         if (projectResult.length === 0) {
+//             return res.status(404).send({ message: 'Project not found', success: false });
+//         }
+//         const project_id = projectResult[0].id;
+
+//         let [floors] = await mysqlConnection.promise().query(`
+//             SELECT 
+                
+//                 f.floor_name,
+//                 count(*) AS total
+//             FROM 
+//                 floors f
+//             INNER JOIN 
+//                 project_floors pf ON f.id = pf.floor_id
+//             INNER JOIN 
+//                  floor_units fu ON pf.floor_id =fu.project_floor_id
+//             WHERE 
+              
+//                fu.project_floor_id = ?
+//                AND pf.floor_slug=?;
+//         `, [project_id, slug]);
+       
+//         const totalFloors = floors.length;
+        
+//         if (!floors[0].floor_name) {
+//             // If floor_name is null, fetch the floor name using another query
+//             [floors] = await mysqlConnection.promise().query(`
+//                 SELECT 
+//                     f.floor_name
+//                 FROM 
+//                     floors f
+//                 INNER JOIN 
+//                     project_floors pf ON f.id = pf.floor_id
+//                 WHERE 
+//                     pf.floor_id = ?
+//                     AND pf.floor_slug = ?;
+//             `, [id, slug]);
+
+//             if (floors.length === 0 || !floors[0].floor_name) {
+//                 return res.status(404).send({ message: 'Floor name not found', success: false });
+//             }
+//         }
+// // Extract the first character and the number after space from the floor name
+// let formattedFloorName = '';
+// if (totalFloors > 0) {
+//     const floorName = floors[0].floor_name;
+//     const firstChar = floorName.charAt(0).toUpperCase();
+//     const numberAfterSpace = floorName.split(' ')[1];
+//     formattedFloorName = `${firstChar}${numberAfterSpace}`;
+// }
+
+// const Label=`${formattedFloorName} - ${totalFloors+1}`
+
+       
+
+//         if (start && end) {
+//             const count = end - start; 
+//             if(count<=0){
+//                 return res.status(404).send({message:"Please Enter the units Greater then the starting", success:false})
+//             }
+//             for (let i = 0; i < count; i++) {
+//                 let sql = 'INSERT INTO floor_units SET ';
+//                 let values = [];
+
+//                 if (project_id !== undefined && project_id !== '') {
+//                     sql += 'project_floor_id = ?, ';
+//                     values.push(project_id);
+//                 }
+//                 if (data.Type !== undefined && data.Type !== '') {
+//                     sql += 'Type = ?, ';
+//                     values.push(data.Type);
+//                 }
+//                 if (data.SqFtRate !== undefined && data.SqFtRate !== '') {
+//                     sql += 'SqFtRate = ?, ';
+//                     values.push(data.SqFtRate);
+//                 }
+//                 if (data.status !== undefined && data.status !== '') {
+//                     sql += 'status = ?, ';
+//                     values.push(data.status);
+//                 }
+//                 if (user !== undefined && user !== '') {
+//                     sql += 'user = ?, ';
+//                     values.push(user);
+//                 }
+//                 if (Label !== undefined && Label !== '') {
+//                     sql += 'Label = ?, ';
+//                     values.push(Label);
+//                 }
+
+//                 sql += 'Unit = ?, ';
+//                 values.push(start + i); 
+
+//                 sql = sql.slice(0, -2); // Remove the trailing comma and space
+
+//                 // Execute the query
+//                 await mysqlConnection.promise().query(sql, values);
+//             }
+
+//             // Return success message after adding the units
+//             return res.status(201).json({ message: `${count} Units added successfully`, success: true });
+//         }
+
+//         // Iterate through each item in the data to insert into the database
+//         for (const key in data) {
+//             if (data.hasOwnProperty(key) && !isNaN(parseInt(key))) {
+//                 const { Type, Unit, Size, SqFtRate, status, Category } = data[key];
+
+//                 let sql = 'INSERT INTO floor_units SET ';
+//                 let values = [];
+
+//                 if (project_id !== undefined && project_id !== '') {
+//                     sql += 'project_floor_id = ?, ';
+//                     values.push(project_id);
+//                 }
+//                 if (Type !== undefined && Type !== '') {
+//                     sql += 'Type = ?, ';
+//                     values.push(Type);
+//                 }
+//                 if (Unit !== undefined && Unit !== '') {
+//                     sql += 'Unit = ?, ';
+//                     values.push(Unit);
+//                 }
+//                 if (Size !== undefined && Size !== '') {
+//                     sql += 'Size = ?, ';
+//                     values.push(Size);
+//                 }
+//                 if (SqFtRate !== undefined && SqFtRate !== '') {
+//                     sql += 'SqFtRate = ?, ';
+//                     values.push(SqFtRate);
+//                 }
+//                 if (status !== undefined && status !== '') {
+//                     sql += 'status = ?, ';
+//                     values.push(status);
+//                 }
+//                 if (Category !== undefined && Category !== '') {
+//                     sql += 'Category = ?, ';
+//                     values.push(Category);
+//                 }
+//                 if (user !== undefined && user !== '') {
+//                     sql += 'user = ?, ';
+//                     values.push(user);
+//                 }
+//                 if (Label !== undefined && Label !== '') {
+//                     sql += 'Label = ?, ';
+//                     values.push(Label);
+//                 }
+
+//                 sql = sql.slice(0, -2); // Remove the trailing comma and space
+
+//                 // Execute the query
+//                 await mysqlConnection.promise().query(sql, values);
+//             }
+//         }
+
+//         res.status(200).json({
+//             success: true,
+//             message: `New Units Created successfully`,
+//         });
+//     } catch (error) {
+//         console.error('Error Creating Units:', error);
+//         return res.status(500).json({
+//             success: false,
+//             message: `Error in creating Units`,
+//             error: error.message,
+//         });
+//     }
+// };
+
+
 const CreateNewUnits = async (req, res) => {
     try {
         const { id, slug, user, start, end, ...data } = req.body;
-      console.log("the id and the slug is:",id,slug)
+      
+
         const [projectResult] = await mysqlConnection.promise().query(
             'SELECT id FROM project_floors WHERE floor_slug = ? AND floor_id = ?',
             [slug, id]
         );
 
-        // Check if the project exists
         if (projectResult.length === 0) {
             return res.status(404).send({ message: 'Project not found', success: false });
         }
         const project_id = projectResult[0].id;
 
+        // Get floor name
         let [floors] = await mysqlConnection.promise().query(`
-            SELECT 
-                
-                f.floor_name,
-                count(*) AS total
-            FROM 
-                floors f
-            INNER JOIN 
-                project_floors pf ON f.id = pf.floor_id
-            INNER JOIN 
-                 floor_units fu ON pf.floor_id =fu.project_floor_id
-            WHERE 
-              
-               fu.project_floor_id = ?
-               AND pf.floor_slug=?;
-        `, [project_id, slug]);
-       
-        const totalFloors = floors.length;
-        
-        if (!floors[0].floor_name) {
-            // If floor_name is null, fetch the floor name using another query
-            [floors] = await mysqlConnection.promise().query(`
-                SELECT 
-                    f.floor_name
-                FROM 
-                    floors f
-                INNER JOIN 
-                    project_floors pf ON f.id = pf.floor_id
-                WHERE 
-                    pf.floor_id = ?
-                    AND pf.floor_slug = ?;
-            `, [id, slug]);
+            SELECT f.floor_name
+            FROM floors f
+            INNER JOIN project_floors pf ON f.id = pf.floor_id
+            WHERE pf.floor_id = ? AND pf.floor_slug = ?;
+        `, [id, slug]);
 
-            if (floors.length === 0 || !floors[0].floor_name) {
-                return res.status(404).send({ message: 'Floor name not found', success: false });
-            }
+        if (floors.length === 0 || !floors[0].floor_name) {
+            return res.status(404).send({ message: 'Floor name not found', success: false });
         }
-// Extract the first character and the number after space from the floor name
-let formattedFloorName = '';
-if (totalFloors > 0) {
-    const floorName = floors[0].floor_name;
-    const firstChar = floorName.charAt(0).toUpperCase();
-    const numberAfterSpace = floorName.split(' ')[1];
-    formattedFloorName = `${firstChar}${numberAfterSpace}`;
-}
 
-const Label=`${formattedFloorName} - ${totalFloors+1}`
+        // Create floor prefix (first letters of floor name)
+        const floorName = floors[0].floor_name;
+        const floorPrefix = floorName.split(' ')
+            .map(word => word.charAt(0).toUpperCase())
+            .join('');
 
-       
+        // Get current unit count for this floor
+        const [existingUnits] = await mysqlConnection.promise().query(
+            'SELECT COUNT(*) as count FROM floor_units WHERE project_floor_id = ?',
+            [project_id]
+        );
+        let unitCounter = existingUnits[0].count + 1;
 
+        // Handle multiple units creation
         if (start && end) {
             const count = end - start; 
-            if(count<=0){
-                return res.status(404).send({message:"Please Enter the units Greater then the starting", success:false})
+            if(count <= 0){
+                return res.status(400).send({message: "End unit must be greater than start unit", success: false});
             }
+
             for (let i = 0; i < count; i++) {
-                let sql = 'INSERT INTO floor_units SET ';
-                let values = [];
+                const typePrefix = data.Type ? data.Type.charAt(0).toUpperCase() : 'U'; // 'U' for unknown type
+                const Label = `${floorPrefix}${typePrefix}-${unitCounter++}`;
 
-                if (project_id !== undefined && project_id !== '') {
-                    sql += 'project_floor_id = ?, ';
-                    values.push(project_id);
-                }
-                if (data.Type !== undefined && data.Type !== '') {
-                    sql += 'Type = ?, ';
-                    values.push(data.Type);
-                }
-                if (data.SqFtRate !== undefined && data.SqFtRate !== '') {
-                    sql += 'SqFtRate = ?, ';
-                    values.push(data.SqFtRate);
-                }
-                if (data.status !== undefined && data.status !== '') {
-                    sql += 'status = ?, ';
-                    values.push(data.status);
-                }
-                if (user !== undefined && user !== '') {
-                    sql += 'user = ?, ';
-                    values.push(user);
-                }
-                if (Label !== undefined && Label !== '') {
-                    sql += 'Label = ?, ';
-                    values.push(Label);
-                }
-
-                sql += 'Unit = ?, ';
-                values.push(start + i); // Assign unit number based on the start value
-
-                sql = sql.slice(0, -2); // Remove the trailing comma and space
-
-                // Execute the query
-                await mysqlConnection.promise().query(sql, values);
+                await mysqlConnection.promise().query(
+                    'INSERT INTO floor_units SET ?', 
+                    {
+                        project_floor_id: project_id,
+                        Type: data.Type,
+                        Unit: start + i,
+                        SqFtRate: data.SqFtRate,
+                        status: data.status,
+                        user: user,
+                        Label: Label,
+                        ...(data.Size && { Size: data.Size }),
+                        ...(data.Category && { Category: data.Category })
+                    }
+                );
             }
 
-            // Return success message after adding the units
             return res.status(201).json({ message: `${count} Units added successfully`, success: true });
         }
 
-        // Iterate through each item in the data to insert into the database
+        // Handle single unit or multiple units in data object
         for (const key in data) {
             if (data.hasOwnProperty(key) && !isNaN(parseInt(key))) {
-                const { Type, Unit, Size, SqFtRate, status, Category } = data[key];
+                const unitData = data[key];
+                const typePrefix = unitData.Type ? unitData.Type.charAt(0).toUpperCase() : 'U';
+                const Label = `${floorPrefix}${typePrefix}-${unitCounter++}`;
 
-                let sql = 'INSERT INTO floor_units SET ';
-                let values = [];
-
-                if (project_id !== undefined && project_id !== '') {
-                    sql += 'project_floor_id = ?, ';
-                    values.push(project_id);
-                }
-                if (Type !== undefined && Type !== '') {
-                    sql += 'Type = ?, ';
-                    values.push(Type);
-                }
-                if (Unit !== undefined && Unit !== '') {
-                    sql += 'Unit = ?, ';
-                    values.push(Unit);
-                }
-                if (Size !== undefined && Size !== '') {
-                    sql += 'Size = ?, ';
-                    values.push(Size);
-                }
-                if (SqFtRate !== undefined && SqFtRate !== '') {
-                    sql += 'SqFtRate = ?, ';
-                    values.push(SqFtRate);
-                }
-                if (status !== undefined && status !== '') {
-                    sql += 'status = ?, ';
-                    values.push(status);
-                }
-                if (Category !== undefined && Category !== '') {
-                    sql += 'Category = ?, ';
-                    values.push(Category);
-                }
-                if (user !== undefined && user !== '') {
-                    sql += 'user = ?, ';
-                    values.push(user);
-                }
-                if (Label !== undefined && Label !== '') {
-                    sql += 'Label = ?, ';
-                    values.push(Label);
-                }
-
-                sql = sql.slice(0, -2); // Remove the trailing comma and space
-
-                // Execute the query
-                await mysqlConnection.promise().query(sql, values);
+                await mysqlConnection.promise().query(
+                    'INSERT INTO floor_units SET ?',
+                    {
+                        project_floor_id: project_id,
+                        Type: unitData.Type,
+                        Unit: unitData.Unit,
+                        Size: unitData.Size,
+                        SqFtRate: unitData.SqFtRate,
+                        status: unitData.status,
+                        Category: unitData.Category,
+                        user: user,
+                        Label: Label
+                    }
+                );
             }
         }
 
@@ -316,9 +425,6 @@ const Label=`${formattedFloorName} - ${totalFloors+1}`
         });
     }
 };
-
-
-
 
 const UnitCounts = async (req, res) => {
     const {slug,id}=req.query;

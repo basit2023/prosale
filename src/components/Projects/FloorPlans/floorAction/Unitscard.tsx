@@ -36,29 +36,52 @@ interface SelectOption {
   value: string;
 }
 
-export default function Unitscard({ slug, id }:any) {
-  console.log("the id and the slug is:",id, slug)
-  const items = useManageUnits(slug, id);
-  console.log("the items at the floor is:",items)
+export default function Unitscard({ slug, id }: any) {
+  const prevValuesRef = useRef<{ slug: string; id: string } | null>(null);
+  const [shouldFetch, setShouldFetch] = useState(true);
+  const [items, setItems] = useState<any[]>([]);
+
+  // Prevent re-fetching if same values
+  useEffect(() => {
+    if (
+      prevValuesRef.current?.slug === slug &&
+      prevValuesRef.current?.id === id &&
+      slug === id
+    ) {
+      setShouldFetch(false);
+    } else {
+      prevValuesRef.current = { slug, id };
+      setShouldFetch(true);
+    }
+  }, [slug, id]);
+
+  // Call useManageUnits only when needed
+  const fetchedItems = useManageUnits(slug, id);
+  useEffect(() => {
+    if (shouldFetch) {
+      setItems(fetchedItems);
+    }
+  }, [fetchedItems, shouldFetch]);
+
   const { data: session } = useSession();
-  
   const [isLoading, setIsLoading] = useState(false); 
   const { back } = useRouter();
   const [value, setUserData] = useState<any>();
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [remarks, setRemarks] = useState<string>('');
 
-const sessionRef = useRef(session);
-useEffect(() => {
-  if (sessionRef.current === session) return;
-  sessionRef.current = session;
-}, [session]);
+  const sessionRef = useRef(session);
+  useEffect(() => {
+    if (sessionRef.current === session) return;
+    sessionRef.current = session;
+  }, [session]);
 
   const onSubmit: SubmitHandler<NewProjectInfoFormTypes> = async (data) => {
     setIsLoading(true); 
     try {
       const result = await apiService.post(`/create-n-project`, {
-        ...data, user: sessionRef?.current?.user?.username
+        ...data,
+        user: sessionRef?.current?.user?.username
       });
       toast.success(result.data.message);
       if (result.data.success) {
@@ -78,7 +101,7 @@ useEffect(() => {
     { name: "Sold", value: "sold" },
     { name: "Put On Hold", value: "hold" },
   ];
-  
+
   const [modalState, setModalState] = useState(false);
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
@@ -105,7 +128,7 @@ useEffect(() => {
 
   const getCardColorClass = (status: string) => {
     switch (status) {
-      case 'active':
+      case 'available': // ✅ fixed from 'active' to 'available'
         return 'bg-green-100 hover:bg-green-200 border-green-300';
       case 'sold':
         return 'bg-red-100 hover:bg-red-200 border-red-300';
@@ -118,7 +141,7 @@ useEffect(() => {
 
   const getStatusTextColor = (status: string) => {
     switch (status) {
-      case 'available':
+      case "available":
         return 'text-green-600';
       case 'sold':
         return 'text-red-600';
@@ -156,7 +179,6 @@ useEffect(() => {
                     className={`cursor-pointer shadow-lg rounded-lg p-4 border-2 ${getCardColorClass(item.status)}`}
                   >
                     <h3 className="text-lg font-bold mb-2">{item.Label}</h3>
-                    
                     <p className="text-sm font-semibold mb-1">{item.Size} SQFT.</p>
                     <span className={`text-sm uppercase font-bold ${getStatusTextColor(item.status)}`}>
                       {item.status === "hold"
@@ -167,19 +189,18 @@ useEffect(() => {
                         ? "Available"
                         : "Unknown"}
                     </span>
-                    {(item.status === "hold" ||item.status === "sold"  ) && (
-                      <p className="text-sm font-semibold mb-1"> by {item.user}</p>
+                    {(item.status === "hold" || item.status === "sold") && (
+                      <p className="text-sm font-semibold mb-1">by {item.user}</p>
                     )}
                   </div>
                 ))}
-                
               </div>
 
               {selectedItem && (
                 <Modal isOpen={modalState} onClose={() => setModalState(false)}>
                   <div className="m-auto px-7 pt-6 pb-8">
                     <div className="mb-7 flex items-center justify-between">
-                      <Text as="h3">Change Status for {selectedItem.name}? </Text>
+                      <Text as="h3">Change Status for {selectedItem.name}?</Text>
                       <ActionIcon
                         size="sm"
                         variant="text"
@@ -210,6 +231,7 @@ useEffect(() => {
                         />
                       )}
                     />
+
                     <Input 
                       label="Remarks / Note" 
                       inputClassName="border-2" 
@@ -217,6 +239,7 @@ useEffect(() => {
                       value={remarks}
                       onChange={(e) => setRemarks(e.target.value)}
                     />
+
                     <Button
                       type="button"
                       size="lg"
