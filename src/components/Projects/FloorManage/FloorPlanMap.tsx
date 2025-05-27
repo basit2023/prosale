@@ -94,7 +94,7 @@ const FloorPlanMap: React.FC<FloorPlanMapProps> = ({slug, id, onUnitClick}) => {
 
         {/* Passage */}
         <div className={styles.passage}>
-          <div className={styles.passageLabel}>10'-0" WIDE PASSAGE</div>
+          <div className={styles.passageLabel}>10&#39;-0&#34; WIDE PASSAGE</div>
         </div>
 
         {/* Right side shops */}
