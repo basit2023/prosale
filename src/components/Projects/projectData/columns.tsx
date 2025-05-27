@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect,useMemo, useRef } from 'react';
 import Link from 'next/link';
 import { type Invoice } from '@/data/invoice-data';
 import { routes } from '@/config/routes';
@@ -14,7 +14,7 @@ import VaultInformationModalView from '@/app/shared/VaultInformationModalView';
 import { useModal } from '@/app/shared/modal-views/use-modal';
 import apiService from '@/utils/apiService';
 import { LiaEditSolid } from "react-icons/lia";
-
+import { useSession } from 'next-auth/react';
 type Columns = {
   data: any[];
   sortConfig?: any;
@@ -24,7 +24,7 @@ type Columns = {
   onHeaderCellClick: (value: string) => void;
   onChecked?: (id: string) => void;
 };
-export const getColumns = ({
+export const useGetColumns = ({
   data,
   sortConfig,
   checkedItems,
@@ -35,8 +35,9 @@ export const getColumns = ({
 }: Columns) => {
 
  // eslint-disable-next-line react-hooks/exhaustive-deps
+const { data: session } = useSession();
+  const memoizedSession = useMemo(() => session, [session]);
 
- 
 
 
 
@@ -62,7 +63,6 @@ export const getColumns = ({
         </Text>
       ),
     },
-
     {
       title: (
         <HeaderCell
@@ -271,7 +271,8 @@ export const getColumns = ({
       key: 'action',
       width: 200,
       render: (_: string, row: any) => {
-        const editPermission = row.Edit_permission; // Implement a function to check user's permission level
+        
+        
         
         return (
           <div className="flex items-center justify-start gap-3 pe-3">
@@ -294,7 +295,7 @@ export const getColumns = ({
               </Link>
             </Tooltip>
             
-              <Tooltip
+              {memoizedSession?.user?.View_permission>=9 && ( <>  <Tooltip
                 size="sm"
                 content={() => 'Edit Details'}
                 placement="top"
@@ -320,6 +321,7 @@ export const getColumns = ({
               name={`Project`}
               inactive="No"
             />
+            </> )}
           </div>
         );
       },

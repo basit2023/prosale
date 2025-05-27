@@ -35,7 +35,7 @@ export const useGetColumns = ({
 }: Columns) => {
   const [editableRow, setEditableRow] = useState<string | null>(null);
   const [formData, setFormData] = useState<Record<string, any>>({});
-  console.log("the data at the columns is:",data)
+  
 
   const handleEditClick = (row: any) => {
     setEditableRow(row.id);

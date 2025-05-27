@@ -6,7 +6,8 @@ import { useTable } from '@/hooks/use-table';
 import { useColumn } from '@/hooks/use-column';
 import { Button } from '@/components/ui/button';
 import ControlledTable from '@/components/controlled-table';
-import { getColumns } from './columns';
+import { useGetColumns  } from './columns';
+
 
 
 const FilterElement = dynamic(
@@ -26,8 +27,6 @@ const filterState = {
 
 const InvoiceTable = ({ data = [] }: { data: any[] }) => {
   const [pageSize, setPageSize] = useState(10);
-// eslint-disable-next-line react-hooks/rules-of-hooks
-  // Destructure the hook values outside of the JSX
   const {
     isLoading,
     isFiltered,
@@ -54,28 +53,23 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
       handleSort(value);
     },
   }), [handleSort]);
- // eslint-disable-next-line react-hooks/rules-of-hooks
+
   const onDeleteItem = useCallback((id: string) => {
     handleDelete(id);
   }, [handleDelete]);
 
-  // useMemo for memoized columns
-  const columns = React.useMemo(
-    () =>
-      getColumns({
-        data,
-        sortConfig,
-        checkedItems: selectedRowKeys,
-        onHeaderCellClick,
-        onDeleteItem,
-        onChecked: handleRowSelect,
-        handleSelectAll,
-      }),
-    [selectedRowKeys, onHeaderCellClick, sortConfig.key, sortConfig.direction, onDeleteItem, handleRowSelect, handleSelectAll]
-  );
+  const columns = useGetColumns({
+    data,
+    sortConfig,
+    checkedItems: selectedRowKeys,
+    onHeaderCellClick,
+    onDeleteItem,
+    onChecked: handleRowSelect,
+    handleSelectAll,
+  });
 
   const { visibleColumns, checkedColumns, setCheckedColumns } = useColumn(columns);
-// eslint-disable-next-line react-hooks/rules-of-hooks
+
   return (
     <>
       <ControlledTable
@@ -92,27 +86,19 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
           current: currentPage,
           onChange: (page: number) => handlePaginate(page),
         }}
-        filterOptions={{
-          searchTerm,
-          onSearchClear: () => {
-            handleSearch('');
-          },
-          onSearchChange: (event) => {
-            handleSearch(event.target.value);
-          },
-          hasSearched: isFiltered,
-          columns,
-          checkedColumns,
-          setCheckedColumns,
-        }}
-        // filterElement={
-        //   <FilterElement
-        //     isFiltered={isFiltered}
-        //     filters={filters}
-        //     updateFilter={updateFilter}
-        //     handleReset={handleReset}
-        //   />
-        // }
+        // filterOptions={{
+        //   searchTerm,
+        //   onSearchClear: () => {
+        //     handleSearch('');
+        //   },
+        //   onSearchChange: (event) => {
+        //     handleSearch(event.target.value);
+        //   },
+        //   hasSearched: isFiltered,
+        //   columns,
+        //   checkedColumns,
+        //   setCheckedColumns,
+        // }}
         // tableFooter={
         //   <TableFooter
         //     checkedItems={selectedRowKeys}

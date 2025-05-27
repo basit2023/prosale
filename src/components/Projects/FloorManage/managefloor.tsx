@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import apiService from '@/utils/apiService';
+import { identity } from 'lodash';
 
 export type Invoice = {
   id: string;
@@ -23,6 +24,7 @@ export type Invoice = {
 };
 
 export const useManageUnits = (slug: any, id: any) => {
+  console.log("the slug and ait as the unit manage:",slug, identity)
   const { data: session } = useSession();
   const [value, setValue] = useState<any>([]); // This stores the fetched data
   const [isLoading, setIsLoading] = useState<boolean>(true); // Add loading state

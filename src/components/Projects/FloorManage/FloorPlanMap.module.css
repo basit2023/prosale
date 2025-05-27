@@ -1,0 +1,76 @@
+.floorPlanVisualization {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+  background-color: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.shopColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 45%;
+}
+
+.shopUnit {
+  padding: 10px;
+  text-align: center;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.shopUnit:hover {
+  transform: scale(1.03);
+}
+
+.passage {
+  width: 10%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #e9ecef;
+  position: relative;
+}
+
+.passageLabel {
+  transform: rotate(-90deg);
+  white-space: nowrap;
+  font-weight: bold;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .floorPlanVisualization {
+    flex-direction: column;
+  }
+  
+  .shopColumn {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-around;
+  }
+  
+  .passage {
+    width: 100%;
+    height: 40px;
+    margin: 15px 0;
+  }
+  
+  .passageLabel {
+    transform: none;
+  }
+}
+.shopUnit {
+  min-width: 80px;
+  min-height: 60px;
+  text-align: center;
+}

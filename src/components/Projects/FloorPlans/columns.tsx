@@ -1,6 +1,6 @@
 
 'use client';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { type Invoice } from '@/data/invoice-data';
 import { routes } from '@/config/routes';
@@ -13,7 +13,7 @@ import { ActionIcon } from '@/components/ui/action-icon';
 import EyeIcon from '@/components/icons/eye';
 import { useModalHook } from './floorAction/UpdateRatesModel';
 import {useModalHook1} from './floorAction/PaymentPlanModel'
-
+import { useSession } from 'next-auth/react';
 import apiService from '@/utils/apiService';
 import { LiaEditSolid } from "react-icons/lia";
 import {encodeId} from '@/components/encriptdycriptdata';
@@ -51,7 +51,8 @@ export const useGetColumns = ({
 }: Columns) => {
   const { handleViewInvoice }: any = useModalHook();
   const { handlePaymentplan }: any = useModalHook1();
-
+const { data: session } = useSession();
+  const memoizedSession = useMemo(() => session, [session]);
  // eslint-disable-next-line react-hooks/exhaustive-deps
  const actionIconClassName = "rizzui-action-icon-root inline-flex items-center justify-center active:enabled:translate-y-px focus:outline-none focus-visible:ring-2 focus-visible:ring-opacity-50 transition-colors duration-200 p-0.5 w-7 h-7 rounded-md bg-transparent border-0 focus-visible:ring-offset-2 border-gray-300 hover:enabled:border-0 focus-visible:enabled:border-0 focus-visible:ring-gray-900/30";
  const handleDelete = async (id: any, slug: any, setOpen: (value: boolean) => void) => {
@@ -263,7 +264,7 @@ export const useGetColumns = ({
                 </ActionIcon>
               </Link>
             </Tooltip>
-            <Tooltip
+          {memoizedSession?.user?.View_permission>=9 &&( <> <Tooltip
               size="sm"
               content={() => 'Update Rates'}
               placement="top"
@@ -299,7 +300,7 @@ export const useGetColumns = ({
                   <PiPlusBold className="h-4 w-4" /> Units
                 </ActionIcon>
               </Link>
-            </Tooltip>
+            </Tooltip></>)}
             <Tooltip
               size="sm"
               content={() => 'View Details'}
@@ -319,7 +320,7 @@ export const useGetColumns = ({
               </button>
             </Tooltip>
             
-            <Tooltip
+          {memoizedSession?.user?.View_permission>=9 &&( <> <Tooltip
               size="sm"
               content={() => 'Edit Floor'}
               placement="top"
@@ -427,7 +428,7 @@ export const useGetColumns = ({
                 </Popover>
              </ActionIcon>
               </Tooltip>
-              
+              </> )}
           </div>
         );
       },

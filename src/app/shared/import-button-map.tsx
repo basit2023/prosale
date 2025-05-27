@@ -9,7 +9,7 @@ import cn from '@/utils/class-names';
 import { routes } from '@/config/routes';
 import Link from 'next/link';
 
-import { PiPencilSimpleLight,PiPlusBold,PiMapTrifoldThin   } from "react-icons/pi";
+import { PiPencilSimpleLight,PiPlusBold,PiArrowLineDownBold  } from "react-icons/pi";
 
 
 type ImportButtonProps = {
@@ -20,29 +20,15 @@ type ImportButtonProps = {
   slug?:any;
 };
 
-export default function ImportButton({
+export default function ImportButtonMap({
   title,
   id,
   slug,
   className,
-  buttonLabel = 'Manage Units',
+  buttonLabel = 'Map View',
 }: React.PropsWithChildren<ImportButtonProps>) {
   return (
-    <>
-    <Link href={routes.project.floormap(slug,id)} passHref>
-      <Button
-         // Use "as" prop to specify the rendered element
-        className={cn(
-          'w-full @lg:w-auto dark:bg-gray-100 dark:text-white dark:active:bg-gray-100',
-          className
-        )}
-      >
-        <PiMapTrifoldThin className="me-1.5 h-4 w-4" />
-        
-        Map View
-      </Button>
-    </Link>
-     <Link href={routes.project.managefloor(slug,id)} passHref>
+    <Link href={routes.project.managefloor(slug,id)} passHref>
       <Button
          // Use "as" prop to specify the rendered element
         className={cn(
@@ -54,6 +40,5 @@ export default function ImportButton({
         {buttonLabel}
       </Button>
     </Link>
-    </>
   );
 }

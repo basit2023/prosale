@@ -68,6 +68,7 @@ export const routes = {
       editFloor:(slug: string, id: string) => `/project/${slug}/${id}`,
       addnewunites:(slug: string, id: string) => `/project/${slug}/addunites/${id}`,
       floorunites:(slug: string, id: string) => `/project/${slug}/view/floor/${id}`,
+      floormap:(slug: string, id: string) => `/project/${slug}/view/floor/${id}/map`,
       managefloor:(slug: string, id: string) => `/project/${slug}/view/manage/${id}`,
       addbulkunit:(slug: string, id: string) => `/project/${slug}/bulkunits/${id}`,
       duplicatefloor:(slug: string, id: string) => `/project/${slug}/duplicatefloor/${id}`,
