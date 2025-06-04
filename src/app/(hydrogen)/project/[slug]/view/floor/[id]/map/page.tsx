@@ -18,16 +18,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const id = params.id;
   const slug=params.slug
   
-  return metaObject(`Edit floor ${slug}`);
+  return metaObject(`Map for ${slug}`);
 }
 
 const pageHeader = {
-  title: 'Edit Floor',
+  title: `Floor Map`,
   breadcrumb: [
     
     {
       href: "#",
-      name: 'Floor',
+      name: 'Complete Floor Map',
     },
     {
       // name: 'Edit',
@@ -41,7 +41,7 @@ function EnhancedTablePage({ params }: Props) {
     return (
       <>
   
-        <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
+        <PageHeader title={`${params.slug} ${pageHeader.title}`} breadcrumb={pageHeader.breadcrumb}>
           <div className="mt-4 flex items-center gap-3 @lg:mt-0">
                     <ImportButton slug={params.slug} id={params.id}/>
                     

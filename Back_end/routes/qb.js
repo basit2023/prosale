@@ -36,7 +36,7 @@ const { getCounts, getTopLead } = require("../Controller/Dashboard/Dashboard");
 const { GetSourceDepInterestLeadtype, CreateNewLead } = require("../Controller/LeadM/NewLead");
 // const { GetSourceDepInterestLeadtype, CreateNewLead, facebookLeads } = require("../Controller/LeadM/NewLead");
 const { NewNotification, GetNotification, updateNotificationMark, saveSubscription } = require("../Controller/Dashboard/Notification");
-const { AddNewFloor, UpdateUnits, CreateNewUnits, UnitCounts, AddDuplicateFloor, DeleteProjectFloor, UpdateAllFloorRates, Getrequiredfloor } = require("../Controller/Project/floor");
+const { AddNewFloor, UpdateUnits, CreateNewUnits, UnitCounts, AddDuplicateFloor, DeleteProjectFloor, UpdateAllFloorRates, Getrequiredfloor, UpdateImage, GetImg, SaveMapUnits, GetMapUnits } = require("../Controller/Project/floor");
 const { createNewPaymentPlan, paymentData, GetSpecificPyammentplan, DeletePaymentplan, LinkProject, GetPaymentPlan, GetTemplates, GetTemplatesUnits, GetPaymentPlanid, UpdatePaymentPlan } = require("../Controller/Project/pamymentplain");
 const { DailyReport, fullReport } = require("../Controller/LeadM/DailyReport");
 
@@ -176,11 +176,17 @@ Router.post('/api/create-new-project', CreateNewProject);
 Router.get('/api/get-project/:id', GetProjectDetails);
 Router.put('/api/update-project/:id', UpdateProject);
 //floor data
+Router.get('/api/floors-map-data', GetImg);
+Router.post('/api/shapes', SaveMapUnits);
+Router.get('/api/shapes', GetMapUnits);
+
 Router.put('/api/floor-status-update', UpdateUnits);
 Router.post('/api/floor-units', CreateNewUnits);
+Router.put('/api/upload-floor-image', UpdateImage);
 //updates all units
 
-Router.put('/api/floor-rates-update', UpdateAllFloorRates);
+Router.put('/api/floor-rates-update',  UpdateAllFloorRates);
+
 
 
 //Payment Plan      

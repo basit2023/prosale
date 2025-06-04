@@ -13,12 +13,13 @@ import { ActionIcon } from '@/components/ui/action-icon';
 import EyeIcon from '@/components/icons/eye';
 import { useModalHook } from './floorAction/UpdateRatesModel';
 import {useModalHook1} from './floorAction/PaymentPlanModel'
+import { useModalHookImage } from './floorAction/UploadImage';
 import { useSession } from 'next-auth/react';
 import apiService from '@/utils/apiService';
 import { LiaEditSolid } from "react-icons/lia";
 import {encodeId} from '@/components/encriptdycriptdata';
 import { BsRepeat } from "react-icons/bs";
-
+import { AiOutlineGroup } from "react-icons/ai";
 import { PiFolderLight, PiUploadSimpleThin , PiPlusBold,PiTrashFill, PiCopyLight} from "react-icons/pi";
 
 
@@ -51,6 +52,8 @@ export const useGetColumns = ({
 }: Columns) => {
   const { handleViewInvoice }: any = useModalHook();
   const { handlePaymentplan }: any = useModalHook1();
+const { handleUploadImage } = useModalHookImage();
+
 const { data: session } = useSession();
   const memoizedSession = useMemo(() => session, [session]);
  // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -242,7 +245,7 @@ const { data: session } = useSession();
       key: 'action',
       width: 200,
       render: (_: string, row: any) => {
-        const editPermission = row.Edit_permission; // Implement a function to check user's permission level
+        const image = row.image; 
         
         return (
           <div className="flex items-center justify-start gap-3 pe-3">
@@ -356,23 +359,43 @@ const { data: session } = useSession();
                 </ActionIcon>
               </Link>
             </Tooltip>
-            <Tooltip
-              size="sm"
-              content={() => 'View Details'}
-              placement="top"
-              color="invert"
-            >
-              <Link href={routes.employee.members(row.manager_id)}>
-                <ActionIcon
-                  tag="span"
+            {image ?   (
+                <Tooltip
                   size="sm"
-                  variant="outline"
-                  className="hover:!border-gray-900 hover:text-gray-700"
+                  content={() => 'View map'}
+                  placement="top"
+                  color="invert"
                 >
-                  <PiUploadSimpleThin className="h-4 w-4" />
-                </ActionIcon>
-              </Link>
-            </Tooltip>
+                  <Link href={routes.project.FloorMap(row.slug, encodeId(row.id))}>
+                    <ActionIcon
+                      tag="span"
+                      size="sm"
+                      variant="outline"
+                      className="hover:!border-gray-900 hover:text-gray-700"
+                    >
+                      <AiOutlineGroup className="h-4 w-4" />
+                    </ActionIcon>
+                  </Link>
+                </Tooltip>
+              ):(
+                <Tooltip
+                  size="sm"
+                  content={() => 'Upload image'}
+                  placement="top"
+                  color="invert"
+                >
+                  <button onClick={() => handleUploadImage(row.slug, row.id, row.floor, row.SqFtRate)}>
+                    <ActionIcon
+                      tag="span"
+                      size="sm"
+                      variant="outline"
+                      className="hover:!border-gray-900 hover:text-gray-700"
+                    >
+                      < PiUploadSimpleThin className="h-4 w-4" />
+                    </ActionIcon>
+                  </button>
+                </Tooltip>
+              )}
               <Tooltip
                 size="sm"
                 content={() => 'Delete Floor'}

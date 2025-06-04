@@ -93,7 +93,8 @@ const FloorsData = async (req, res) => {
                 f.id,
                 pf.id AS p_id,
                 f.floor_name,
-                pf.floor_slug AS slug
+                pf.floor_slug AS slug,
+                pf.image_data As image
             FROM 
                 floors f
             INNER JOIN 
@@ -182,12 +183,12 @@ const ManageUnits = async (req, res) => {
         }
 
         const companyId = user[0].company_id;
-       console.log("the project id and the slug:",floor_slug,floor_id) 
+      
         const [floor] = await mysqlConnection.promise().query(
             'SELECT id FROM project_floors WHERE floor_slug = ? AND floor_id = ?', 
             [floor_slug, floor_id]
         );
-        console.log("the floors is at units:",floor)
+ 
         // Fetch the floors related to the company and the provided slug
         const [floors] = await mysqlConnection.promise().query(`
             SELECT 

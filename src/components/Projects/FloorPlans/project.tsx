@@ -96,7 +96,7 @@ export const ProjectData = (slug: any) => {
        
         const response = await apiService.get(`/floors-data/?email=${session?.user?.email}&&slug=${slug}`);
         const userData = response.data.floors;
-        console.log("Data from floors:", userData);
+       
         setValue(userData);
       }
     } catch (error) {
@@ -130,6 +130,7 @@ export const ProjectData = (slug: any) => {
       Category: user.Category,
       Label: user.Label,
       project_floor_id: user.unitsCounts.project_floor_id,
+      image:user.image,
     }));
   }, [value]);
 

@@ -617,7 +617,7 @@ const DeleteProjectFloor = async (req, res) => {
 };
 const UpdateAllFloorRates = async (req, res) => {
     const { id, slug, SqFtRate } = req.body;
-    console.log("The id and the slug is:", id, slug);
+  
     try {
         // Fetch the floor ID from project_floors based on the provided slug and id
         const [existingFloorResult] = await mysqlConnection.promise().query(
@@ -648,12 +648,84 @@ const UpdateAllFloorRates = async (req, res) => {
 };
 
 
+
+const UpdateImage = async (req, res) => {
+    const { id, slug, image } = req.body;
+  
+  
+    try {
+        
+
+
+        // Update all SqFtRate in floor_units where project_floor_id matches existingFloorId
+        await mysqlConnection.promise().query(
+            'UPDATE project_floors SET image_data = ? WHERE floor_slug = ? AND floor_id = ?',
+            [image, slug, id]
+        );
+
+        res.status(200).send({
+            message: 'Map Image Saved Successfully',
+            success: true,
+        });
+    } catch (error) {
+        console.error('Error in Updating Map Image:', error);
+        res.status(500).send({ error: 'Server error', success: false });
+    }
+};
+
+
+const GetImg = async (req, res) => {
+    const { id, slug } = req.query;
+
+    try {
+        // Get floor information including the image
+        const [floorResults] = await mysqlConnection.promise().query(
+            'SELECT id, image_data FROM project_floors WHERE floor_slug = ? AND floor_id = ?',
+            [slug, id]
+        );
+    
+        if (floorResults.length === 0) {
+            return res.status(404).send({ 
+                error: 'Floor not found', 
+                success: false 
+            });
+        }
+
+        const floorId = floorResults[0].id;
+        const imageData = floorResults[0].image_data;
+
+        // Get all units for this floor
+        const [unitResults] = await mysqlConnection.promise().query(
+            'SELECT fu.id, fu.Label FROM floor_units fu WHERE fu.project_floor_id = ? AND fu.id NOT IN (SELECT DISTINCT s.unit_id FROM shapes s WHERE s.unit_id IS NOT NULL)',
+            [floorId]
+        );
+
+        res.status(200).send({
+            data: {
+                image: imageData,          
+                units: unitResults,     
+                floorId: floorId          
+            },
+            message: 'Data fetched successfully',
+            success: true,
+        });
+
+    } catch (error) {
+        console.error('Error fetching floor data:', error);
+        res.status(500).send({ 
+            error: 'Server error', 
+            success: false 
+        });
+    }
+};
+
+
 //get all the floor.
 const Getrequiredfloor = async (req, res) => {
     try {
         const { id, slug } = req.query;
 
-        // Use a connection pool to handle connections
+      
     
         const [rows] = await mysqlConnection.promise().query(
             `SELECT f.floor_name 
@@ -663,8 +735,7 @@ const Getrequiredfloor = async (req, res) => {
              WHERE pf.floor_id = ? AND pf.floor_slug = ?`, 
              [id, slug]
         );
-     
-        // Check if data exists
+  
         if (rows.length === 0) {
             return res.status(404).json({
                 success: false,
@@ -672,7 +743,7 @@ const Getrequiredfloor = async (req, res) => {
             });
         }
 
-        // Respond with an array of objects containing the floor name
+
         res.status(200).json({
             success: true,
             message: 'Data fetched successfully',
@@ -690,9 +761,154 @@ const Getrequiredfloor = async (req, res) => {
 };
 
 
+const SaveMapUnits = async (req, res) => {
+  const { floorId, unitId, shapeType, coordinates, properties } = req.body;
+
+  if (!floorId || !unitId || !shapeType || !coordinates) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+    const [result] = await mysqlConnection.promise().query(
+      'INSERT INTO shapes (floor_id, unit_id, shape_type, coordinates, properties) VALUES (?, ?, ?, ?, ?)',
+      [
+        floorId,
+        typeof unitId === 'object' ? unitId.value : unitId,
+        shapeType,
+        JSON.stringify(coordinates),
+        JSON.stringify(properties),
+      ]
+    );
+
+    const insertedId = result.insertId;
+    return res.status(200).json({ success: true, id: insertedId }); // ✅ Exit after success
+  } catch (error) {
+    console.error('DB Insert Error:', error);
+    return res.status(500).json({ error: 'Server error' });
+  }
+};
 
 
-module.exports = {Getrequiredfloor, UpdateAllFloorRates, DeleteProjectFloor, AddNewFloor,UpdateUnits, CreateNewUnits,UnitCounts, AddDuplicateFloor };
+
+
+
+const GetMapUnits = async (req, res) => {
+  const { floorId } = req.query;
+
+  if (!floorId) {
+    return res.status(400).json({ error: 'Missing query parameters' });
+  }
+
+  try {
+    const [rows] = await mysqlConnection.promise().query(
+      'SELECT s.id, s.shape_type, s.coordinates, s.properties, u.status FROM shapes as s INNER JOIN floor_units AS u ON s.unit_id = u.id WHERE s.floor_id = ?',
+      [floorId]
+    );
+
+    console.log("the rows is :", rows);
+
+    const result = rows.map(row => {
+      try {
+        // Get status color first - this takes highest priority
+        const statusColor = getStatusColor(row.status);
+        
+        // Parse existing properties (if any)
+        const existingProperties = typeof row.properties === 'string' 
+          ? JSON.parse(row.properties) 
+          : row.properties || {};
+
+        // Create final properties object
+        const properties = {
+          ...existingProperties,  // Spread existing properties first
+          fill: statusColor,      // Then override fill with status color
+          stroke: existingProperties.stroke || '#ff0000',
+          strokeWidth: existingProperties.strokeWidth || 2
+        };
+
+        return {
+          id: row.id,
+          shapeType: row.shape_type,
+          coordinates: ensureArray(parseFlexibleJSON(row.coordinates)),
+          properties
+        };
+      } catch (parseError) {
+        console.error('Error parsing row:', row.id, parseError);
+        return {
+          id: row.id,
+          shapeType: row.shape_type,
+          coordinates: [],
+          properties: {
+            fill: getStatusColor(row.status),
+            stroke: '#ff0000',
+            strokeWidth: 2
+          }
+        };
+      }
+    });
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error('DB Fetch Error:', error);
+    return res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// Improved status color function
+function getStatusColor(status) {
+  if (!status) return 'rgba(255, 0, 0, 0.3)'; // Default red
+
+  const normalizedStatus = String(status).toLowerCase().trim();
+  
+  if (normalizedStatus === 'available') return 'rgba(0, 255, 0, 0.3)'; // Green
+  if (normalizedStatus === 'hold') return 'rgba(255, 165, 0, 0.3)'; // Orange
+  if (normalizedStatus === 'sold') return 'rgba(255, 0, 0, 0.3)'; // Red
+  
+  return 'rgba(255, 0, 0, 0.3)'; // Default red
+}
+
+// Rest of your helper functions...
+
+// Existing helper functions remain unchanged
+function parseFlexibleJSON(data) {
+  if (typeof data === 'string') {
+    try {
+      if (data.startsWith('"') && data.endsWith('"')) {
+        data = data.slice(1, -1).replace(/\\"/g, '"');
+      }
+      return JSON.parse(data);
+    } catch (e) {
+      console.warn('JSON parse failed, returning raw:', data);
+      return data;
+    }
+  }
+  return data;
+}
+
+function ensureArray(data) {
+  if (Array.isArray(data)) return data;
+  if (data?.points) return data.points;
+  if (data?.coordinates) return data.coordinates;
+  return [];
+}
+
+function ensureShapeProperties(data) {
+  const defaults = {
+    fill: 'rgba(255, 0, 0, 0.5)',
+    stroke: '#ff0000',
+    strokeWidth: 2
+  };
+  
+  if (typeof data !== 'object' || data === null) return defaults;
+  
+  return {
+    fill: data.fill || defaults.fill,
+    stroke: data.stroke || defaults.stroke,
+    strokeWidth: data.strokeWidth || defaults.strokeWidth
+  };
+}
+
+
+module.exports = {Getrequiredfloor, UpdateAllFloorRates, DeleteProjectFloor, AddNewFloor,UpdateUnits, CreateNewUnits,UnitCounts, AddDuplicateFloor, UpdateImage, GetImg, SaveMapUnits, GetMapUnits };
 
 
 
