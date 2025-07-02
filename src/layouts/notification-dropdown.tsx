@@ -192,8 +192,8 @@ export default function NotificationDropdown({ children }) {
   // WebSocket URL configuration
   const websocketUrl = useMemo(() => {
     return window.location.protocol === 'https:' 
-      ? 'wss://api.prosale.sale' 
-       : 'ws://prosale.sale';
+      ? 'ws://api.prosale.sale' 
+      : 'ws://localhost:4001';
   }, []);
 
   // WebSocket message handler
