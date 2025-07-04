@@ -190,11 +190,12 @@ export default function NotificationDropdown({ children }) {
   const userId = session?.user?.id;
 
   // WebSocket URL configuration
-  const websocketUrl = useMemo(() => {
-    return window.location.protocol === 'https:' 
-      ? 'wss://api.prosale.sale' 
-      : 'ws://localhost:4001';
-  }, []);
+ const websocketUrl = useMemo(() => {
+  return window.location.protocol === 'https:' 
+    ? 'wss://api.prosale.sale:8443' 
+    : 'ws://localhost:4001';
+}, []);
+
 
   // WebSocket message handler
 const handleWebSocketMessage = useCallback(async (message) => {

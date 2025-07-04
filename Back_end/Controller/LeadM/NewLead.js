@@ -1,9 +1,8 @@
 const mysqlConnection = require('../../utils/database');
 const WebSocket = require('ws');
 const { io } = require('../../server');
+require('../../wss-server'); 
 
-// Create a single WebSocket server instance
-const wss = new WebSocket.Server({ port: 4001 });
 const { sendNotificationToUser } =require( '../Dashboard/Notification');
 
 // const fs = require('fs');
