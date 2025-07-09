@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Title, Text } from '@/components/ui/text';
 import Spinner from '@/components/ui/spinner';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useState,useMemo } from 'react';
 import apiService from '@/utils/apiService';
 import FormGroup from '@/app/shared/form-group';
 import toast from 'react-hot-toast';
@@ -40,7 +40,7 @@ export default function TableFooter({
   const [country, setCountry] = useState<any>([]);
   const [loading, setLoading] = useState(false);
   const [socket, setSocket] = useState<WebSocket | null>(null);
-
+  const memoizedSession = useMemo(() => session, [session]);
   useEffect(() => {
     if (checkedItems.length === 0 || !session) {
       return; // Early return if no items are checked or session is not available
@@ -126,63 +126,71 @@ export default function TableFooter({
   };
 
   return (
-    <Form<editTeamZoneFormTypes>
-      validationSchema={footAssinedFormSchema}
-      onSubmit={onSubmit}
-      className="@container"
-      useFormProps={{
-        mode: 'onChange',
-        defaultValues,
-      }}
-    >
-      {({ register, control, setValue, getValues, formState: { errors }, handleSubmit }) => (
-        <div className="sticky bottom-0 right-0 z-10 mt-2.5 flex items-center justify-between rounded-md border border-gray-300 bg-gray-0 px-5 py-3.5 text-gray-900 shadow-sm dark:border-gray-300 dark:bg-gray-100 dark:text-white dark:active:bg-gray-100">
-          <div className="flex-grow">
-            <Text as="strong">{checkedItems.length}</Text> selected{' '}
-            <div className="flex items-center justify-between">
-              <div className="mr-4 flex-grow text-left">
-                <Controller
-                  control={control}
-                  name="assigned_to"
-                  render={({ field: { value, onChange } }) => {
-                    const selectedOption = country.find((item: { value: any }): any => String(item.value) === value);
+  <>
+    {(memoizedSession?.user?.permission) >= 4 && (
+      <Form<editTeamZoneFormTypes>
+        validationSchema={footAssinedFormSchema}
+        onSubmit={onSubmit}
+        className="@container"
+        useFormProps={{
+          mode: 'onChange',
+          defaultValues,
+        }}
+      >
+        {({ register, control, setValue, getValues, formState: { errors }, handleSubmit }) => (
+          <div className="sticky bottom-0 right-0 z-10 mt-2.5 flex items-center justify-between rounded-md border border-gray-300 bg-gray-0 px-5 py-3.5 text-gray-900 shadow-sm dark:border-gray-300 dark:bg-gray-100 dark:text-white dark:active:bg-gray-100">
+            <div className="flex-grow">
+              <Text as="strong">{checkedItems.length}</Text> selected{' '}
+              <div className="flex items-center justify-between">
+                <div className="mr-4 flex-grow text-left">
+                  <Controller
+                    control={control}
+                    name="assigned_to"
+                    render={({ field: { value, onChange } }) => {
+                      const selectedOption = country.find((item: { value: any }) => String(item.value) === value);
 
-                    return (
-                      <div className="relative">
-                        <SelectBox
-                          value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null}
-                          placeholder="Select One"
-                          options={country.map((item: { name: any; value: any }) => ({ label: item.name, value: String(item.value) }))}
-                          onChange={(selectedOption: SelectOption | null) => {
-                            onChange(selectedOption ? selectedOption.value : '');
-                          }}
-                          error={errors?.assigned_to?.message}
-                        />
-                      </div>
-                    );
-                  }}
-                />
+                      return (
+                        <div className="relative">
+                          <SelectBox
+                            value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null}
+                            placeholder="Select One"
+                            options={country.map((item: { name: any; value: any }) => ({
+                              label: item.name,
+                              value: String(item.value),
+                            }))}
+                            onChange={(selectedOption: SelectOption | null) => {
+                              onChange(selectedOption ? selectedOption.value : '');
+                            }}
+                            error={errors?.assigned_to?.message}
+                          />
+                        </div>
+                      );
+                    }}
+                  />
+                </div>
+
+                <Button
+                  size="sm"
+                  className="dark:bg-gray-300 dark:text-gray-800 relative"
+                  type="submit"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <div className="flex items-center justify-center">
+                      <Spinner className="w-4 h-4" />
+                    </div>
+                  ) : (
+                    'Assign Them'
+                  )}
+                </Button>
               </div>
-
-              <Button
-                size="sm"
-                className="dark:bg-gray-300 dark:text-gray-800 relative"
-                type="submit"
-                disabled={loading}
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center">
-                    <Spinner className="w-4 h-4" />
-                  </div>
-                ) : (
-                  'Assign Them'
-                )}
-              </Button>
             </div>
+            {children}
           </div>
-          {children}
-        </div>
-      )}
-    </Form>
-  );
+        )}
+      </Form>
+    )}
+  </>
+);
+
 }

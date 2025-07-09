@@ -1,10 +1,10 @@
 const mysqlConnection = require('../../utils/database');
 const WebSocket = require('ws');
 const { io } = require('../../server');
-require('../../wss-server'); 
+// require('../../wss-server'); 
 
 const { sendNotificationToUser } =require( '../Dashboard/Notification');
-
+const https = require('https');
 // const fs = require('fs');
 // const https = require('https');
 // const WebSocket = require('ws');
@@ -13,8 +13,8 @@ const { sendNotificationToUser } =require( '../Dashboard/Notification');
 //     cert: fs.readFileSync('/etc/letsencrypt/live/api.prosale.cloud/fullchain.pem'),
 //     key: fs.readFileSync('/etc/letsencrypt/live/api.prosale.cloud/privkey.pem')
 // });
+const wss = new WebSocket.Server({ port: 4001 });
 
-// const wss = new WebSocket.Server({ server });
 
 const GetSourceDepInterestLeadtype = async (req, res) => {
     try {

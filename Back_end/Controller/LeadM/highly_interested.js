@@ -518,7 +518,7 @@ const SpecificTeamMemberLeads = async (req, res) => {
   };
   
 //All customer data
-// 
+//The global var//
 const AllCustomers = async (req, res) => {
   try {
     const email = req.params.user;
@@ -557,7 +557,7 @@ const AllCustomers = async (req, res) => {
             project.status AS project_status,
             interested_in.unit AS interested_in,
             customer.email AS email,
-            customer.job_title AS job_title,
+           
             customer.city AS city,
             customer.country AS country,
             main.status,
@@ -613,8 +613,7 @@ const AllCustomers = async (req, res) => {
         city,
         type,
         country,
-        dt,
-        company_title
+        dt
       FROM leads_customers 
       WHERE id IN (?)`,
       [customerIds]
