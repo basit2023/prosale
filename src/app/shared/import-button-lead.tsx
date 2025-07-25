@@ -23,6 +23,9 @@ export default function ImportButton({
   buttonLabel = 'New Lead',
 }: React.PropsWithChildren<ImportButtonProps>) {
   return (
+    <>
+    <div className='flex flex-row gap-2'>
+      <div className='flex'>
     <Link href={routes.leads.new_lead} passHref>
       <Button
          // Use "as" prop to specify the rendered element
@@ -35,5 +38,22 @@ export default function ImportButton({
         {buttonLabel}
       </Button>
     </Link>
+    </div>
+    <div className='flex'>
+    <Link href={routes.leads.Csv_lead}passHref>
+      <Button
+         // Use "as" prop to specify the rendered element
+        className={cn(
+          'w-full @lg:w-auto dark:bg-gray-100 dark:text-white dark:active:bg-gray-100',
+          className
+        )}
+      >
+        <PiPlusBold className="me-1.5 h-4 w-4" />
+       { "import CSV"}
+      </Button>
+    </Link>
+    </div>
+    </div>
+    </>
   );
 }

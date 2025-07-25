@@ -30,7 +30,7 @@ export const useEmployeeData = ({ id }: { id: string }) => {
         );
         
         const userData = response.data.leads;
-        console.log("tje leads data is:",userData)
+    
         setValue(userData);
       }
     } catch (error) {

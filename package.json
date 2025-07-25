@@ -69,6 +69,7 @@
     "nookies": "^2.5.2",
     "os": "^0.1.2",
     "pako": "^2.1.0",
+    "papaparse": "^5.5.3",
     "pdfjs-dist": "^4.0.379",
     "pretty-bytes": "^6.1.1",
     "prop-types": "^15.8.1",

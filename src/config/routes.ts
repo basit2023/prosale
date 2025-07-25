@@ -39,6 +39,7 @@ export const routes = {
     dashboard:'/leads',
     management:'/leads/management',
     new_lead:'/leads/new-lead',
+    Csv_lead:'/leads/new-lead/csv',
     highly_interested:'/leads/highly_interested',
     followup: '/leads/followup',
     full_report: '/leads/activity-report/full-report',
