@@ -1,7 +1,7 @@
 const mysqlConnection = require('../../utils/database');
 const { io } = require('../../server'); // Ensure this path is correct
 const webpush = require('web-push');
-// const NewNotification = async (req, res) => {
+// const NewNotification = async (req, res) {
 //     try {
 //         const { ids, assigned_to, view_dt, assigned_on, assigned_through } = req.body;
        
@@ -274,9 +274,8 @@ webpush.setVapidDetails(
   VAPID_PRIVATE_KEY
 );
 const saveSubscription = async (req, res) => {
-  const subscription = req.body;
+  const { subscription } = req.body; // <-- FIXED: get subscription from body.subscription
   const { email } = req.params;
-
 
   try {
       const [leads] = await mysqlConnection.promise().query("SELECT name FROM users WHERE email=?", [email]);
@@ -285,9 +284,8 @@ const saveSubscription = async (req, res) => {
       }
 
       const username = leads[0].name;
-      
 
-      await saveSubscriptionToDatabase(username, subscription);
+      await saveSubscriptionToDatabase(username, subscription); // subscription is now correct
       res.status(201).json({ message: 'Subscription saved successfully' });
   } catch (error) {
       console.error('Error saving subscription:', error);

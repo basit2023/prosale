@@ -80,6 +80,7 @@ export default function EditTeam({id}:any) {
       try {
         const response = await apiService.get(`/all-members/?email=${session?.user?.email}`);
         const pro = await apiService.get(`/projects`);
+        console.log("the project dat is:",pro)
         setProject(pro.data.data)
         const userData = response.data.data;
         setCountry(userData);

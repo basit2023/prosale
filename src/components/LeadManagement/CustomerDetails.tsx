@@ -129,7 +129,7 @@ export function InvoiceDetails({ id }: any) {
 
   return (
     <div className="rounded-xl border border-gray-300 p-4 w-full bg-transparent">
-      <ul className="grid grid-cols-2 gap-3"> 
+      <ul className="grid grid-cols-1 xs:grid-cols-2 gap-3"> 
         <li className="flex items-center gap-3 justify-start sm:gap-2">
         <span className="font-semibold text-gray-900">Lead Id:</span>
           <span className="font-semibold text-gray-900">
