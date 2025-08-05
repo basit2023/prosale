@@ -251,107 +251,53 @@ const ReassignedLead = async (leadId, project, user) => {
         );
         if (teamRows.length === 0) throw new Error('No team found for the project');
 
-        // Gather all team members from all teams
-        let assignedUsers = [];
-        for (const team of teamRows) {
-            const [teamMembers] = await mysqlConnection.promise().query(
-                'SELECT id, name FROM users WHERE del="N" AND lead_status="Y" AND assigned_team = ?',
-                [team.team_id]
+        // Gather all managers for all teams (avoid duplicates)
+        const managerIds = [...new Set(teamRows.map(team => team.manager_id))];
+        const managers = [];
+        for (const manager_id of managerIds) {
+            const [managerRows] = await mysqlConnection.promise().query(
+                'SELECT id AS manager_id, name FROM users WHERE id = ?',
+                [manager_id]
             );
-            assignedUsers.push(...teamMembers);
-        }
-
-        // Get the next member in round-robin for this project
-        const nextAssignee = await getNextMemberForProject(project, assignedUsers);
-
-        let index = assignedUsers.findIndex(u => u.id === nextAssignee.id);
-
-        const assignLead = async () => {
-            const [existingNotification] = await mysqlConnection.promise().query(
-                'SELECT * FROM leads_notification WHERE leadId = ?',
-                [leadId]
-            );
-            if (index < assignedUsers.length) {
-                const currentAssignee = assignedUsers[index];
-                index++;
-
-                await mysqlConnection.promise().query(
-                    'UPDATE leads_main SET assigned_to = ?, assigned_on = NOW(), status = "open", leads_label = IF(leads_label = 12, 7, leads_label) WHERE id = ?',
-                    [currentAssignee.name, leadId]
-                );
-
-                // Update lead_pass
-                const [leadPassResult] = await mysqlConnection.promise().query(
-                    'SELECT lead_pass FROM leads_main WHERE id = ?',
-                    [leadId]
-                );
-                const currentLeadPass = leadPassResult[0]?.lead_pass || '';
-                const newLeadPass = currentLeadPass ? `${currentLeadPass},${currentAssignee.name}` : currentAssignee.name;
-                await mysqlConnection.promise().query(
-                    'UPDATE leads_main SET lead_pass = ? WHERE id = ?',
-                    [newLeadPass, leadId]
-                );
-
-                // Notification logic
-                if (existingNotification.length === 0) {
-                    await AutoNewNotification(currentAssignee.name, leadId, user);
-                } else {
-                    await AutoUpdateNotification(currentAssignee.name, leadId, user);
-                }
-                notifyUser(currentAssignee.id, `Lead assigned to ${currentAssignee.name}`, leadId);
-
-                setTimeout(async () => {
-                    const [leadDetails] = await mysqlConnection.promise().query(
-                        'SELECT view_dt FROM leads_main WHERE id = ?',
-                        [leadId]
-                    );
-                    if (leadDetails.length > 0 && leadDetails[0].view_dt === "new_lead") {
-                        assignLead();
-                    }
-                }, 2 * 60 * 1000);
-            } else {
-                // Assign to next manager in round-robin
-                const nextManager = await getNextManagerForProject(project, teamRows);
-                if (nextManager) {
-                    const [manager] = await mysqlConnection.promise().query(
-                        'SELECT id, name FROM users WHERE id = ?',
-                        [nextManager.manager_id]
-                    );
-                    if (manager.length > 0) {
-                        await mysqlConnection.promise().query(
-                            'UPDATE leads_main SET assigned_to = ?, assigned_on = NOW() WHERE id = ?',
-                            [manager[0].name, leadId]
-                        );
-                        // Update lead_pass
-                        const [leadPassResult] = await mysqlConnection.promise().query(
-                            'SELECT lead_pass FROM leads_main WHERE id = ?',
-                            [leadId]
-                        );
-                        const currentLeadPass = leadPassResult[0]?.lead_pass || '';
-                        const newLeadPass = currentLeadPass ? `${currentLeadPass},${manager[0].name}` : manager[0].name;
-                        await mysqlConnection.promise().query(
-                            'UPDATE leads_main SET lead_pass = ? WHERE id = ?',
-                            [newLeadPass, leadId]
-                        );
-                        // Notification logic
-                        const [existingNotification] = await mysqlConnection.promise().query(
-                            'SELECT * FROM leads_notification WHERE leadId = ?',
-                            [leadId]
-                        );
-                        if (existingNotification.length > 0) {
-                            await AutoUpdateNotification(manager[0].name, leadId, user);
-                        } else {
-                            await AutoNewNotification(manager[0].name, leadId, user);
-                        }
-                        notifyUser(manager[0].id, `Lead reassigned to ${manager[0].name}`, leadId);
-                    }
-                } else {
-                    console.log('No manager found for reassignment');
-                }
+            if (managerRows.length > 0) {
+                managers.push(managerRows[0]);
             }
-        };
+        }
+        if (managers.length === 0) throw new Error('No managers found for the project');
 
-        assignLead();
+        // Get the next manager in round-robin for this project
+        const nextManager = await getNextManagerForProject(project, managers);
+
+        // Assign the lead to the selected manager
+        await mysqlConnection.promise().query(
+            'UPDATE leads_main SET assigned_to = ?, assigned_on = NOW(), status = "open", leads_label = IF(leads_label = 12, 7, leads_label) WHERE id = ?',
+            [nextManager.name, leadId]
+        );
+
+        // Update lead_pass
+        const [leadPassResult] = await mysqlConnection.promise().query(
+            'SELECT lead_pass FROM leads_main WHERE id = ?',
+            [leadId]
+        );
+        const currentLeadPass = leadPassResult[0]?.lead_pass || '';
+        const newLeadPass = currentLeadPass ? `${currentLeadPass},${nextManager.name}` : nextManager.name;
+        await mysqlConnection.promise().query(
+            'UPDATE leads_main SET lead_pass = ? WHERE id = ?',
+            [newLeadPass, leadId]
+        );
+
+        // Notification logic
+        const [existingNotification] = await mysqlConnection.promise().query(
+            'SELECT * FROM leads_notification WHERE leadId = ?',
+            [leadId]
+        );
+        if (existingNotification.length === 0) {
+            await AutoNewNotification(nextManager.name, leadId, user);
+        } else {
+            await AutoUpdateNotification(nextManager.name, leadId, user);
+        }
+        notifyUser(nextManager.manager_id, `Lead assigned to ${nextManager.name}`, leadId);
+
     } catch (error) {
         console.error('Error in ReassignedLead:', error);
     }
@@ -370,6 +316,10 @@ const notifyUser = async (userId, message, leadId) => {
         }
     });
 };
+
+
+
+
 
 
 
@@ -417,8 +367,9 @@ const CreateNewLead = async (req, res) => {
           company_id = '',
           user = '',
         } = lead;
+        const normalizedMobile = normalizeMobile(mobile);
 
-        if (!mobile) {
+        if (!normalizedMobile) {
           results.push({ success: false, mobile, message: 'Mobile Number is required' });
           continue;
         }
@@ -439,7 +390,7 @@ const CreateNewLead = async (req, res) => {
         // Check if customer exists
         const [customerCheck] = await mysqlConnection.promise().query(
           `SELECT id FROM leads_customers WHERE mobile = ?`,
-          [mobile]
+          [normalizedMobile]
         );
 
         let customerId = customerCheck.length > 0 ? customerCheck[0].id : null;
@@ -887,3 +838,16 @@ const getNextMemberForProject = async (projectId, members) => {
     }
     return nextMember;
 };
+
+// Helper to normalize mobile numbers (handles scientific notation)
+function normalizeMobile(mobile) {
+    if (typeof mobile === 'number') {
+        // Convert number to string without scientific notation
+        return mobile.toLocaleString('fullwide', {useGrouping:false});
+    }
+    if (typeof mobile === 'string' && mobile.match(/e\+/i)) {
+        // If string is in scientific notation, convert to number then to string
+        return Number(mobile).toLocaleString('fullwide', {useGrouping:false});
+    }
+    return mobile;
+}
