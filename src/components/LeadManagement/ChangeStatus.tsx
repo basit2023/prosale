@@ -149,22 +149,30 @@ const memoizedSession=useMemo(()=>session,[session])
 
 const handleButtonClick = async () => {
   if (isCalling) return;
-  
-  const phoneNumber = value[0]?.mobile;
-  
+
+  let phoneNumber = value[0]?.mobile;
+
   if (!phoneNumber) {
     toast.error('No phone number available');
     return;
   }
 
+  // 🔹 Add '+' if the number starts with '92'
+  if (phoneNumber.startsWith('92')) {
+    phoneNumber = `+${phoneNumber}`;
+  }
+
   setIsCalling(true);
   try {
     setPhone('Y');
-    const getCurrentTimestamp = () => Math.floor(new Date().getTime() / 1000).toString();
+    const getCurrentTimestamp = () =>
+      Math.floor(new Date().getTime() / 1000).toString();
     await apiService.put(`/lead-open/${id}`, {
       dt: getCurrentTimestamp(),
-      email: memoizedSession?.user?.email
+      email: memoizedSession?.user?.email,
     });
+
+    // Trigger phone call
     window.location.href = `tel:${phoneNumber}`;
   } catch (error) {
     console.error('Error while updating lead status:', error);
@@ -172,6 +180,7 @@ const handleButtonClick = async () => {
     setIsCalling(false);
   }
 };
+
 
   return (
     <div className="flex flex-col-reverse sm:flex-row justify-end relative">
