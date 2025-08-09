@@ -23,7 +23,7 @@ import {
   PersonalInfoFormTypes,
 } from '@/utils/validators/personal-info.schema';
 import AvatarUpload from '@/components/ui/file-upload/avatar-upload';
-import { decryptData } from '@/components/encriptdycriptdata';
+
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ssr: false,
   loading: () => (
@@ -55,36 +55,51 @@ interface ValueType {
 export default function PersonalInfoView() {
   const { data: session } = useSession();
   const [isEditing, setIsEditing] = useState<boolean>(false);
-  const [value, setUserData]=useState<any>();
+  const [value, setUserData] = useState<any>();
+
+  // 🔹 Load user data from API (not from localStorage)
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        } 
+        if (session?.user?.email) {
+          const response = await apiService.get(`/personalinfo/${session.user.email}`);
+          // console.log("the result is:",response)
+     
+          setUserData(response.data);
+        }
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Error fetching user data. Please try again.');
       }
     };
-
-    fetchUserData();
+    fetchData();
   }, [session]);
- 
 
   const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
     try {
-      const avatarImage = localStorage.getItem('img');
+      const avatarImage = localStorage.getItem('img'); // keep temp avatar behavior
       const updateData = avatarImage ? { ...data, avatar: avatarImage } : data;
 
       const result = await apiService.put(`/personalinfo/${session?.user?.email}`, updateData);
       toast.success(result.data.message);
 
+      // 🔹 Re-fetch the latest data from API so UI shows fresh values
+      if (session?.user?.email) {
+        const refreshed = await apiService.get(`/personalinfo/${session.user.email}`);
+
+        setUserData(refreshed.data);
+      }
+
+      // clean up temp avatar
       localStorage.removeItem('img');
+
       if (result.data.success && value) {
         logs({ user: value.user.name, desc: 'Profile Details' });
+        // if another component listens for this, keep the event
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('profile-updated'));
+        }
+        // show the (read-only) profile view
         setIsEditing(true);
       }
     } catch (error) {
@@ -99,12 +114,12 @@ export default function PersonalInfoView() {
 
   const first = value?.user?.first_name;
   const last = value?.user?.last_name;
-  const sim1 = `${value?.user?.isp}`;
-  const gender1 = `${value?.user?.gender}`;
+  const sim1 = `${value?.user?.isp ?? ''}`;
+  const gender1 = `${value?.user?.gender ?? ''}`;
 
-  const base64Image = value ? `${value.user.img}` : '';
+  const base64Image = value ? `${value.user.img ?? ''}` : '';
   const parts = base64Image.split(';base64,');
-  const mimeType = parts[0].split(':')[1];
+  const mimeType = parts[0]?.split(':')[1];
   const imageData = parts[1];
   const imageBuffer = imageData ? Buffer.from(imageData, 'base64') : undefined;
 
@@ -119,7 +134,7 @@ export default function PersonalInfoView() {
         defaultValues,
       }}
     >
-      {({ register, control, setValue, getValues, formState: { errors } }:any) => {
+      {({ register, control, setValue, getValues, formState: { errors } }: any) => {
         return (
           <>
             <FormGroup
@@ -159,6 +174,7 @@ export default function PersonalInfoView() {
                   <span className="text-gray-700">{session?.user?.email}</span>
                 </div>
               </FormGroup>
+
               <FormGroup
                 title="Mobile Number"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
@@ -175,9 +191,8 @@ export default function PersonalInfoView() {
                   name="isp"
                   render={({ field: { value, onChange } }) => (
                     <SelectBox
-                      // value={value?.user?.isp}
                       defaultValue={sim1}
-                      placeholder={sim1 ? sim1 : "SIM Provider"}
+                      placeholder={sim1 ? sim1 : 'SIM Provider'}
                       options={sim}
                       onChange={onChange}
                       value={value}
@@ -186,11 +201,11 @@ export default function PersonalInfoView() {
                       displayValue={(selected) =>
                         sim?.find((r) => r.value === selected)?.name ?? ''
                       }
-                      // error={errors?.role?.message as string}
                     />
                   )}
                 />
               </FormGroup>
+
               <FormGroup
                 title="CNIC Number"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
@@ -199,7 +214,6 @@ export default function PersonalInfoView() {
                   defaultValue={value?.user?.cnic}
                   placeholder="XXXXX-XXXXXXX-X"
                   {...register('cnic')}
-                  // error={errors.cnic?.message}
                   className="flex-grow"
                 />
               </FormGroup>
@@ -212,12 +226,8 @@ export default function PersonalInfoView() {
                 <div className="flex flex-col gap-6 @container @3xl:col-span-2">
                   <AvatarUpload
                     name="image"
-                    // setValue={setValue}
-                    // getValues={getValues}
                     defaultValue={imageBuffer ? `data:${mimeType};base64,${imageData}` : 'fallback_url'}
-                    // error={errors?.image?.message as string}
                   />
-                  {/* <UploadPhoto/> */}
                 </div>
               </FormGroup>
 
@@ -231,7 +241,7 @@ export default function PersonalInfoView() {
                   render={({ field: { value, onChange } }) => (
                     <SelectBox
                       defaultValue={gender1}
-                      placeholder={gender1 ? gender1 : "Select Gender"}
+                      placeholder={gender1 ? gender1 : 'Select Gender'}
                       options={roles}
                       onChange={onChange}
                       value={value}
@@ -240,12 +250,12 @@ export default function PersonalInfoView() {
                       displayValue={(selected) =>
                         roles?.find((r) => r.value === selected)?.name ?? ''
                       }
-                      // error={errors?.role?.message as string}
                     />
                   )}
                 />
               </FormGroup>
             </div>
+
             <FormFooter altBtnText="Cancel" submitBtnText="Save" />
           </>
         );

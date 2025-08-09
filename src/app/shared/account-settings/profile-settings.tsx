@@ -1,10 +1,10 @@
 'use client';
 import { useSession } from 'next-auth/react';
-import { useEffect,useState } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
-import { SubmitHandler, Controller } from 'react-hook-form';
-import { PiEnvelopeSimple, PiSealCheckFill } from 'react-icons/pi';
+import { SubmitHandler } from 'react-hook-form';
+import { PiSealCheckFill } from 'react-icons/pi';
 import { Form } from '@/components/ui/form';
 import { Title, Text } from '@/components/ui/text';
 import { Button } from '@/components/ui/button';
@@ -20,45 +20,53 @@ import { useLayout } from '@/hooks/use-layout';
 import { useBerylliumSidebars } from '@/layouts/beryllium/beryllium-utils';
 import { LAYOUT_OPTIONS } from '@/config/enums';
 import apiService from '@/utils/apiService';
-import { decryptData } from '@/components/encriptdycriptdata';
 import PersonalInfoView from './profile-edit';
+
 const QuillEditor = dynamic(() => import('@/components/ui/quill-editor'), {
   ssr: false,
-
 });
-
 
 export default function ProfileSettingsView() {
   const { data: session } = useSession();
-  // const [value, setValue] = useState<any>();
   const [isEditing, setIsEditing] = useState(true);
-  const [value, setUserData]=useState<any>();
-  
+  const [value, setUserData] = useState<any>();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // listen for "profile-updated" and bump refreshKey to re-fetch
   useEffect(() => {
-    const fetchUserData = async () => {
+    const onUpdated = () => setRefreshKey((k) => k + 1);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('profile-updated', onUpdated);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('profile-updated', onUpdated);
+      }
+    };
+  }, []);
+
+  // fetch profile from API (no localStorage)
+  useEffect(() => {
+    const fetchData = async () => {
       try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data = decryptData(encryptedData);
-          setUserData(data);
-        } 
+        if (session?.user?.email) {
+          const response = await apiService.get(`/personalinfo/${session.user.email}`);
+          setUserData(response.data);
+        }
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast.error('Error fetching user data. Please try again.');
       }
     };
+    fetchData();
+  }, [session, refreshKey]);
 
-    fetchUserData();
-  }, [session]);
-
-
-
-  const onSubmit: SubmitHandler<ProfileFormTypes> = (data) => {
+  const onSubmit: SubmitHandler<ProfileFormTypes> = () => {
     toast.success(<b>Profile successfully updated!</b>);
-    // Your logic for submitting the form
   };
 
-  const displayName = value ? `${value.user.first_name} ${value.user.last_name}` : 'User';
+  const displayName =
+    value?.user ? `${value.user.first_name} ${value.user.last_name}` : 'User';
 
   const handleEditProfileClick = () => {
     setIsEditing((prev) => !prev);
@@ -67,135 +75,129 @@ export default function ProfileSettingsView() {
   return (
     <>
       {isEditing ? (
-    <>
-      <Form<ProfileFormTypes>
-        validationSchema={profileFormSchema}
-        onSubmit={onSubmit}
-        className="@container"
-        useFormProps={{
-          mode: 'onChange',
-          defaultValues,
-        }}
-      >
-        {({
-          register,
-          control,
-          getValues,
-          setValue,
-          formState: { errors },
-        }) => {
-          return (
-            <>
-              <ProfileHeader
-                title={displayName}
-                description="press edit profile to update profile"
-              >
-                <div className="w-full sm:w-auto md:ms-auto">
-                  {/* <Link href={routes.profile}> */}
-                    <Button
-                      tag="span"
-                      className="dark:bg-gray-100 dark:text-white dark:focus:bg-gray-100"
-                      onClick={handleEditProfileClick}
-                      style={{ cursor: 'pointer' }}
+        <>
+          <Form<ProfileFormTypes>
+            validationSchema={profileFormSchema}
+            onSubmit={onSubmit}
+            className="@container"
+            useFormProps={{
+              mode: 'onChange',
+              defaultValues,
+            }}
+          >
+            {() => {
+              return (
+                <>
+                  <ProfileHeader
+                    title={displayName}
+                    description="press edit profile to update profile"
+                    user={value?.user}
+                  >
+                    <div className="w-full sm:w-auto md:ms-auto">
+                      <Button
+                        tag="span"
+                        className="dark:bg-gray-100 dark:text-white dark:focus:bg-gray-100"
+                        onClick={handleEditProfileClick}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        Edit Profile
+                      </Button>
+                    </div>
+                  </ProfileHeader>
+
+                  <div className="mx-auto mb-10 grid w-full max-w-screen-2xl gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
+                    <FormGroup
+                      title="Username"
+                      className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
                     >
-                      Edit Profile
-                    </Button>
-                  {/* </Link> */}
-                </div>
-              </ProfileHeader>
+                      <div className="col-span-full">
+                        <Text as="b">{value?.user?.name}</Text>
+                      </div>
+                    </FormGroup>
 
-              <div className="mx-auto mb-10 grid w-full max-w-screen-2xl gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
-                <FormGroup
-                  title="Username"
-                  className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                >
-                  <div className="col-span-full">
-                    <Text as="b">{value?.user?.name}</Text>
-                  </div>
-                </FormGroup>
-                <FormGroup
-                  title="First Name"
-                  className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                >
-                  <div className="col-span-full">
-                    <Text as="b">{value?.user?.first_name}</Text>
-                  </div>
-                </FormGroup>
-                <FormGroup
-                  title="Last Name"
-                  className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                >
-                  <div className="col-span-full">
-                    <Text as="b">{value?.user?.last_name}</Text>
-                  </div>
-                </FormGroup>
-                
-                <FormGroup
-                  title="Designation"
-                  className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                >
-                  <div className="col-span-full">
-                    <Text as="b">{value?.user?.role}</Text>
-                  </div>
-                </FormGroup>
-                <FormGroup
-                  title="Department"
-                  className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                >
-                  <div className="col-span-full">
-                    <Text as="b">{value?.user?.department}</Text>
-                  </div>
-                </FormGroup>
-                <FormGroup
-                  title="Mobile Number"
-                  className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                >
-                  <div className="col-span-full">
-                    <Text as="b">{value?.user?.mobile}</Text>
-                  </div>
-                </FormGroup>
-                <FormGroup
-                  title="CNIC Number"
-                  className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                >
-                  <div className="col-span-full">
-                    <Text as="b">{value?.user?.cnic}</Text>
-                  </div>
-                </FormGroup>
+                    <FormGroup
+                      title="First Name"
+                      className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+                    >
+                      <div className="col-span-full">
+                        <Text as="b">{value?.user?.first_name}</Text>
+                      </div>
+                    </FormGroup>
 
-                
-              </div>
-              
-            </>
-          );
-        }}
-      </Form>
-    </>
-     ) : (
-      < PersonalInfoView />
-      
+                    <FormGroup
+                      title="Last Name"
+                      className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+                    >
+                      <div className="col-span-full">
+                        <Text as="b">{value?.user?.last_name}</Text>
+                      </div>
+                    </FormGroup>
+
+                    <FormGroup
+                      title="Designation"
+                      className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+                    >
+                      <div className="col-span-full">
+                        <Text as="b">{value?.user?.role}</Text>
+                      </div>
+                    </FormGroup>
+
+                    <FormGroup
+                      title="Department"
+                      className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+                    >
+                      <div className="col-span-full">
+                        <Text as="b">{value?.user?.department}</Text>
+                      </div>
+                    </FormGroup>
+
+                    <FormGroup
+                      title="Mobile Number"
+                      className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+                    >
+                      <div className="col-span-full">
+                        <Text as="b">{value?.user?.mobile}</Text>
+                      </div>
+                    </FormGroup>
+
+                    <FormGroup
+                      title="CNIC Number"
+                      className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+                    >
+                      <div className="col-span-full">
+                        <Text as="b">{value?.user?.cnic}</Text>
+                      </div>
+                    </FormGroup>
+                  </div>
+                </>
+              );
+            }}
+          </Form>
+        </>
+      ) : (
+        <PersonalInfoView />
       )}
-      </>
+    </>
   );
 }
-
 
 interface ProfileHeaderProps {
   title: string;
   description?: string;
   children?: React.ReactNode;
+  user?: {
+    img?: string;
+  } | null;
 }
 
-export function ProfileHeader({ title, description, children }: ProfileHeaderProps) {
+export function ProfileHeader({ title, description, children, user }: ProfileHeaderProps) {
   const { layout } = useLayout();
   const { expandedLeft } = useBerylliumSidebars();
-  const { data: session } = useSession();
-  const encryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(encryptedData)
 
-  const base64Image = value ? `${value.user.img}` : '';
+  // use the user object passed from parent (no localStorage)
+  const base64Image = user?.img ?? '';
   const parts = base64Image.split(';base64,');
-  const mimeType = parts[0].split(':')[1];
+  const mimeType = parts[0]?.split(':')[1];
   const imageData = parts[1];
   const imageBuffer = imageData ? Buffer.from(imageData, 'base64') : undefined;
 
@@ -211,7 +213,11 @@ export function ProfileHeader({ title, description, children }: ProfileHeaderPro
       <div className="relative z-10 mx-auto flex w-full max-w-screen-2xl flex-wrap items-end justify-start gap-6 border-b border-dashed border-gray-300 pb-10">
         <div className="relative -top-1/3 aspect-square w-[110px] overflow-hidden rounded-full border-[6px] border-white bg-gray-100 shadow-profilePic @2xl:w-[130px] @5xl:-top-2/3 @5xl:w-[150px] dark:border-gray-50 3xl:w-[200px]">
           <Image
-            src={imageBuffer ? `data:${mimeType};base64,${imageData}` : 'https://isomorphic-furyroad.s3.amazonaws.com/public/avatars-blur/avatar-01.webp'}
+            src={
+              imageBuffer
+                ? `data:${mimeType};base64,${imageData}`
+                : 'https://isomorphic-furyroad.s3.amazonaws.com/public/avatars-blur/avatar-01.webp'
+            }
             alt="profile-pic"
             fill
             sizes="(max-width: 768px) 100vw"

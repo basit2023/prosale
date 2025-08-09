@@ -45,6 +45,7 @@ export default function ProfileSettingsView() {
       try {
         
         const response = await apiService.get(`/user-details/${session?.user?.email}`);
+        // console.log("the user details is:",response)
         const userData = response.data.results[0]
         ;
         

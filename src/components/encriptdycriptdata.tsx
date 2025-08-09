@@ -14,16 +14,22 @@ export function encryptData(data: any) {
 export function decryptData(encryptedData: any) {
     const secretKey = "prosalewebsite";
     const salt = "randomsalt123";
-    if(!encryptedData){
-        return;
+    if (!encryptedData) {
+        return null;
     }
-    const decryptedData = AES.decrypt(encryptedData, secretKey).toString(enc.Utf8);
-   
-   
-    
-    const dataWithoutSalt = decryptedData.replace(salt, '');
-    
-    return JSON.parse(dataWithoutSalt);
+    try {
+        const bytes = AES.decrypt(encryptedData, secretKey);
+        const decryptedData = bytes.toString(enc.Utf8);
+        if (!decryptedData || !decryptedData.startsWith(salt)) {
+            // Decryption failed or salt missing
+            return null;
+        }
+        const dataWithoutSalt = decryptedData.replace(salt, '');
+        return JSON.parse(dataWithoutSalt);
+    } catch (error) {
+        console.error("Decryption failed:", error);
+        return null;
+    }
 }
 
 
