@@ -1,14 +1,15 @@
+
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useTable } from '@/hooks/use-table';
 import { useColumn } from '@/hooks/use-column';
-import { Button } from '@/components/ui/button';
 import ControlledTable from '@/components/controlled-table';
-import { useGetColumns  } from './columns';
+import { useGetColumns } from './columns';
 
-
+// ⬇️ NEW: read & write query params
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 const FilterElement = dynamic(
   () => import('@/app/shared/invoice/invoice-list/filter-element'),
@@ -27,6 +28,7 @@ const filterState = {
 
 const InvoiceTable = ({ data = [] }: { data: any[] }) => {
   const [pageSize, setPageSize] = useState(10);
+
   const {
     isLoading,
     isFiltered,
@@ -48,15 +50,44 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
     handleReset,
   } = useTable(data, pageSize, filterState);
 
-  const onHeaderCellClick = useCallback((value: string) => ({
-    onClick: () => {
-      handleSort(value);
-    },
-  }), [handleSort]);
+  // ⬇️ NEW: router helpers
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  const onDeleteItem = useCallback((id: string) => {
-    handleDelete(id);
-  }, [handleDelete]);
+  // ⬇️ NEW: hydrate initial page + size from URL on first mount
+  useEffect(() => {
+    const qp = Number(searchParams.get('page') || '') || 1;
+    const qs = Number(searchParams.get('size') || '') || pageSize;
+
+    if (qs !== pageSize) setPageSize(qs);
+    if (qp !== currentPage) handlePaginate(qp);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
+
+  // ⬇️ NEW: keep URL in sync with current page/size (shallow, no scroll)
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('page', String(currentPage));
+    params.set('size', String(pageSize));
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }, [currentPage, pageSize, router, pathname, searchParams]);
+
+  const onHeaderCellClick = useCallback(
+    (value: string) => ({
+      onClick: () => {
+        handleSort(value);
+      },
+    }),
+    [handleSort]
+  );
+
+  const onDeleteItem = useCallback(
+    (id: string) => {
+      handleDelete(id);
+    },
+    [handleDelete]
+  );
 
   const columns = useGetColumns({
     data,
@@ -68,7 +99,8 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
     handleSelectAll,
   });
 
-  const { visibleColumns, checkedColumns, setCheckedColumns } = useColumn(columns);
+  const { visibleColumns, checkedColumns, setCheckedColumns } =
+    useColumn(columns);
 
   return (
     <>
@@ -81,10 +113,12 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
         columns={visibleColumns}
         paginatorOptions={{
           pageSize,
-          setPageSize,
+          setPageSize: (size: number) => {
+            setPageSize(size); // URL sync happens via effect above
+          },
           total: totalItems,
           current: currentPage,
-          onChange: (page: number) => handlePaginate(page),
+          onChange: (page: number) => handlePaginate(page), // URL sync happens via effect above
         }}
         filterOptions={{
           searchTerm,
@@ -107,10 +141,7 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
               handleDelete(ids);
             }}
           >
-            {/* <Button size="sm" className="dark:bg-gray-300 dark:text-gray-800">
-              Re-send {selectedRowKeys.length}{' '}
-              {selectedRowKeys.length > 1 ? 'Invoices' : 'Invoice'}{' '}
-            </Button> */}
+            {/* add bulk actions here if needed */}
           </TableFooter>
         }
         className="overflow-hidden rounded-md border border-gray-200 text-sm shadow-sm [&_.rc-table-placeholder_.rc-table-expanded-row-fixed>div]:h-60 [&_.rc-table-placeholder_.rc-table-expanded-row-fixed>div]:justify-center [&_.rc-table-row:last-child_td.rc-table-cell]:border-b-0 [&_thead.rc-table-thead]:border-t-0"
@@ -120,3 +151,130 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
 };
 
 export default InvoiceTable;
+
+
+//before adding the specific location
+
+
+// 'use client';
+
+// import React, { useCallback, useState } from 'react';
+// import dynamic from 'next/dynamic';
+// import { useTable } from '@/hooks/use-table';
+// import { useColumn } from '@/hooks/use-column';
+// import { Button } from '@/components/ui/button';
+// import ControlledTable from '@/components/controlled-table';
+// import { useGetColumns  } from './columns';
+
+
+
+// const FilterElement = dynamic(
+//   () => import('@/app/shared/invoice/invoice-list/filter-element'),
+//   { ssr: false }
+// );
+// const TableFooter = dynamic(() => import('@/app/shared/table-footer'), {
+//   ssr: false,
+// });
+
+// const filterState = {
+//   amount: ['', ''],
+//   createdAt: [null, null],
+//   dueDate: [null, null],
+//   status: '',
+// };
+
+// const InvoiceTable = ({ data = [] }: { data: any[] }) => {
+//   const [pageSize, setPageSize] = useState(10);
+//   const {
+//     isLoading,
+//     isFiltered,
+//     tableData,
+//     currentPage,
+//     totalItems,
+//     handlePaginate,
+//     filters,
+//     updateFilter,
+//     searchTerm,
+//     handleSearch,
+//     sortConfig,
+//     handleSort,
+//     selectedRowKeys,
+//     setSelectedRowKeys,
+//     handleRowSelect,
+//     handleSelectAll,
+//     handleDelete,
+//     handleReset,
+//   } = useTable(data, pageSize, filterState);
+
+//   const onHeaderCellClick = useCallback((value: string) => ({
+//     onClick: () => {
+//       handleSort(value);
+//     },
+//   }), [handleSort]);
+
+//   const onDeleteItem = useCallback((id: string) => {
+//     handleDelete(id);
+//   }, [handleDelete]);
+
+//   const columns = useGetColumns({
+//     data,
+//     sortConfig,
+//     checkedItems: selectedRowKeys,
+//     onHeaderCellClick,
+//     onDeleteItem,
+//     onChecked: handleRowSelect,
+//     handleSelectAll,
+//   });
+
+//   const { visibleColumns, checkedColumns, setCheckedColumns } = useColumn(columns);
+
+//   return (
+//     <>
+//       <ControlledTable
+//         variant="modern"
+//         data={tableData}
+//         isLoading={isLoading}
+//         showLoadingText={true}
+//         // @ts-ignore
+//         columns={visibleColumns}
+//         paginatorOptions={{
+//           pageSize,
+//           setPageSize,
+//           total: totalItems,
+//           current: currentPage,
+//           onChange: (page: number) => handlePaginate(page),
+//         }}
+//         filterOptions={{
+//           searchTerm,
+//           onSearchClear: () => {
+//             handleSearch('');
+//           },
+//           onSearchChange: (event) => {
+//             handleSearch(event.target.value);
+//           },
+//           hasSearched: isFiltered,
+//           columns,
+//           checkedColumns,
+//           setCheckedColumns,
+//         }}
+//         tableFooter={
+//           <TableFooter
+//             checkedItems={selectedRowKeys}
+//             handleDelete={(ids: string[]) => {
+//               setSelectedRowKeys([]);
+//               handleDelete(ids);
+//             }}
+//           >
+//             {/* <Button size="sm" className="dark:bg-gray-300 dark:text-gray-800">
+//               Re-send {selectedRowKeys.length}{' '}
+//               {selectedRowKeys.length > 1 ? 'Invoices' : 'Invoice'}{' '}
+//             </Button> */}
+//           </TableFooter>
+//         }
+//         className="overflow-hidden rounded-md border border-gray-200 text-sm shadow-sm [&_.rc-table-placeholder_.rc-table-expanded-row-fixed>div]:h-60 [&_.rc-table-placeholder_.rc-table-expanded-row-fixed>div]:justify-center [&_.rc-table-row:last-child_td.rc-table-cell]:border-b-0 [&_thead.rc-table-thead]:border-t-0"
+//       />
+//     </>
+//   );
+// };
+
+// export default InvoiceTable;

@@ -146,6 +146,7 @@ const memoizedSession=useMemo(()=>session,[session])
   };
 
  const [isCalling, setIsCalling] = useState(false);
+
 const handleButtonClick = async () => {
   if (isCalling) return;
 
@@ -156,7 +157,7 @@ const handleButtonClick = async () => {
     return;
   }
 
-  // 👉 Only change: if it starts with 92, prepend +
+  // 🔹 Add '+' if the number starts with '92'
   if (phoneNumber.startsWith('92')) {
     phoneNumber = `+${phoneNumber}`;
   }
@@ -164,13 +165,14 @@ const handleButtonClick = async () => {
   setIsCalling(true);
   try {
     setPhone('Y');
-    const getCurrentTimestamp = () => Math.floor(new Date().getTime() / 1000).toString();
+    const getCurrentTimestamp = () =>
+      Math.floor(new Date().getTime() / 1000).toString();
     await apiService.put(`/lead-open/${id}`, {
       dt: getCurrentTimestamp(),
       email: memoizedSession?.user?.email,
     });
 
-    // Always lead to mobile calling app for any number
+    // Trigger phone call
     window.location.href = `tel:${phoneNumber}`;
   } catch (error) {
     console.error('Error while updating lead status:', error);
@@ -178,6 +180,7 @@ const handleButtonClick = async () => {
     setIsCalling(false);
   }
 };
+
 
   return (
     <div className="flex flex-col-reverse sm:flex-row justify-end relative">
