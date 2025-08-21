@@ -184,44 +184,71 @@ const userPermission = async (req, res) => {
 
   
   const TotalLead = async (req, res) => {
-    try {
-    const {email,company}=req.query;
-    const [userRows] = await mysqlConnection.promise().query('SELECT user_type, name, company_id FROM users WHERE email=?', [email]);
-    let {company_id } = userRows[0];
-      // Pass user_type as an array to replace the placeholder
-      let rows;
-      let rows1;
-      
-      if(company){
-        [rows]= await mysqlConnection.promise().query('SELECT count(*) as total FROM leads_main WHERE FIND_IN_SET(company_id, ?) > 0',[company]);
-        [rows1] = await mysqlConnection.promise().query('SELECT COUNT(*) as T_Unassigned FROM leads_main WHERE status = \'un_assigned\' AND FIND_IN_SET(company_id, ?) > 0',[company]);
-       }
-       else{
-         [rows]= await mysqlConnection.promise().query('SELECT count(*) as total FROM leads_main WHERE FIND_IN_SET(company_id, ?) > 0',[company_id]);
-         [rows1] = await mysqlConnection.promise().query('SELECT COUNT(*) as T_Unassigned FROM leads_main WHERE status = \'un_assigned\' AND FIND_IN_SET(company_id, ?) > 0',[company_id]);  
-       }
-      // Extract names from the result
+  try {
+    const email = String(req.query.email || '').trim();
+    const permissionNum = Number(req.query.permission) || 0;
 
-      const labelData = rows
-      // Respond with office data array
-      const totalUnassignedLeads = rows1[0].T_Unassigned;
-      const totalLeads = rows[0].total;
-  
-      res.status(200).json({
-        success: true,
-        message: 'All leads fetched successfully',
-        total: totalLeads,
-        total_unsigned: totalUnassignedLeads,
-      });
-    } catch (error) {
-      console.error('Error fetching all Leads:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error in fetching all Leads',
-        error: error.message,
-      });
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Missing email' });
     }
-  };
+
+    // Get user record
+    const [userRows] = await mysqlConnection
+      .promise()
+      .query(
+        'SELECT user_type, name FROM users WHERE email = ? LIMIT 1',
+        [email]
+      );
+
+    if (!userRows || userRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const { name } = userRows[0];
+    const UNASSIGNED = 'un_assigned';
+
+    let rows;
+
+    if (permissionNum >= 9) {
+      // Admin: all leads
+      [rows] = await mysqlConnection.promise().query(
+        `SELECT
+           COUNT(*) AS total,
+           SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS total_unsigned
+         FROM leads_main`,
+        [UNASSIGNED]
+      );
+    } else {
+      // Non-admin: only leads assigned to them (ignore unassigned completely)
+      [rows] = await mysqlConnection.promise().query(
+        `SELECT
+           COUNT(*) AS total,
+           0 AS total_unsigned
+         FROM leads_main
+         WHERE assigned_to = ?`,
+        [name]
+      );
+    }
+
+    const totalLeads = rows?.[0]?.total ?? 0;
+    const totalUnassignedLeads = rows?.[0]?.total_unsigned ?? 0;
+
+    return res.status(200).json({
+      success: true,
+      message: 'All leads fetched successfully',
+      total: totalLeads,
+      total_unsigned: totalUnassignedLeads,
+    });
+  } catch (error) {
+    console.error('Error fetching all Leads:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error in fetching all Leads',
+      error: error.message,
+    });
+  }
+};
+
 
 
 

@@ -32,6 +32,7 @@ export default function Vaultinformation() {
 
   // Memoize session to prevent unnecessary re-renders
   const memoizedSession = useMemo(() => session, [session]);
+  
 
   // Fetch all data in parallel using Promise.all
   const fetchAllData = useCallback(async () => {
@@ -44,7 +45,7 @@ export default function Vaultinformation() {
 
       const [labelsResponse, leadsResponse] = await Promise.all([
         apiService.get(`/lables/${memoizedSession.user.email}/?company=${memoizedSession.user.company_id}`),
-        apiService.get(`/leads/?email=${memoizedSession.user.email}&company=${memoizedSession.user.company_id}`)
+        apiService.get(`/leads/?email=${memoizedSession.user.email}&permission=${memoizedSession.user?.permission}`)
       ]);
 
       setAllLabel(labelsResponse.data.allLabels || []);
@@ -108,36 +109,83 @@ export default function Vaultinformation() {
         </div>
 
         {/* Admin-level labels */}
-        {hasAdminPermission && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4">
-            {sortedData
-              .filter(data => parseFloat(data?.permission?.toString()) >= 9)
-              .map(data => (
-                <Link key={data.id} href={routes.leads.show_label(data.id)} className="col-span-1">
-                  <div className="bg-white rounded border border-gray-300 w-full pb-10 mb-5 mt-4">
-                    <h3 
-                      className="text-black text-lg font-semibold p-4 mb-4" 
-                      style={{ backgroundColor: `#${data.bg.split(',')[0]}` }}
-                    >
-                      {data.label}
-                    </h3>
-                    <div className="flex flex-col items-center text-center">
-                      <div 
-                        className="text-theme text-7xl font-bold mb-2 text-gray-200" 
-                        style={{ color: `#${data.bg.split(',')[0]}` }}
-                      >
-                        {data.label === 'Un Assigned' ? leads?.total_unsigned : leads?.total}
-                      </div>
-                      <div className="text-2xl text-gray-200">Leads</div>
-                    </div>
-                    <div className="text-muted ml-3 mt-2">
-                      Closed: <strong>0</strong>
-                    </div>
-                  </div>
-                </Link>
-              ))}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-4">
+  {hasAdminPermission ? (
+  // --- Admin view: full per-label cards ---
+  sortedData
+    .filter((data) => parseFloat(data?.permission?.toString()) >= 9)
+    .map((data) => (
+      <Link
+        key={data.id}
+        href={routes.leads.show_label(data.id)}
+        className="col-span-1"
+      >
+        <div className="bg-white rounded border border-gray-300 w-full pb-10 mb-5 mt-4">
+          <h3
+            className="text-black text-lg font-semibold p-4 mb-4"
+            style={{ backgroundColor: `#${data.bg.split(',')[0]}` }}
+          >
+            {data.label}
+          </h3>
+          <div className="flex flex-col items-center text-center">
+            <div
+              className="text-theme text-7xl font-bold mb-2 text-gray-200"
+              style={{ color: `#${data.bg.split(',')[0]}` }}
+            >
+              {data.label === "Un Assigned"
+                ? leads?.total_unsigned
+                : leads?.total}
+            </div>
+            <div className="text-2xl bg-badc58 pb-4">Leads</div>
           </div>
-        )}
+          <div className="text-muted ml-3 mt-2">
+            Closed: <strong>0</strong>
+          </div>
+        </div>
+      </Link>
+    ))
+) : (
+  // --- Non-admin view: single card with same link style ---
+  sortedData
+    .filter((data) => data.label !== "Un Assigned") // hide unassigned for non-admin
+    .slice(0, 1) // only show their one category (first match)
+    .map((data) => (
+      <Link
+        key={data.id}
+        href={routes.leads.show_label(data.id)}
+        className="col-span-1 sm:col-span-2"
+      >
+        <div className="bg-white rounded border border-gray-300 w-full pb-10 mb-5 mt-4">
+          <h3
+            className="text-black text-lg font-semibold p-4 mb-4"
+            style={{ backgroundColor: `#4287f5` }}
+            // style={{ backgroundColor: `#${data.bg.split(',')[0]}` }}
+          >
+            My Leads
+          </h3>
+          <div className="flex flex-col items-center text-center">
+            <div
+              className="text-theme text-7xl font-bold mb-2 text-gray-200"
+              style={{ color: `#4287f5` }}
+              // style={{ color: `#${data.bg.split(',')[0]}` }}
+            >
+              {leads?.total}
+            </div>
+            <div className="text-2xl bg-badc58 pb-4">Leads</div>
+          </div>
+          <div className="text-muted ml-3 mt-2">
+            Closed: <strong>0</strong>
+          </div>
+        </div>
+      </Link>
+    ))
+)}
+
+</div>
+
+
+     
 
         {/* Regular user labels */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-3">

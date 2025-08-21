@@ -139,71 +139,74 @@ const EditLeadCustomer = async (req, res) => {
       });
     }
   };
-  const CreateLeadCustomer = async (req, res) => {
-    try {
-      // Extract fields from the request body
-      const { full_name, mobile, whatsapp, email, job_title, city, country, dt, company_id, user } = req.body;
-      const type = country === "92" ? "local" : "international";
-  
-      // Check if required fields are provided
-      if (!full_name || !mobile) {
-        return res.status(400).json({
-          success: false,
-          message: 'Please provide full_name and mobile for the new customer',
-        });
-      }
-  
-      const existingCustomer = await mysqlConnection.promise().query(
-        'SELECT * FROM leads_customers WHERE mobile = ?',
-        [mobile]
-      );
-  
-      if (existingCustomer[0].length > 0) {
-        // If email or mobile number already exists, return error response
-        return res.status(400).json({
-          success: false,
-          message: 'Mobile number already exists. Please try with another.',
-        });
-      }
-  
-      const sql = `
-        INSERT INTO leads_customers (full_name, mobile, whatsapp, email, job_title, city, type, country, dt, company_id, user) 
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
-        ON DUPLICATE KEY UPDATE 
-          company_id = CASE 
-            WHEN company_id IS NULL THEN VALUES(company_id)
-            ELSE CONCAT(company_id, ',', VALUES(company_id))
-          END
-      `;
-  
-      const values = [full_name, mobile, whatsapp, email, job_title, city, type, country, dt, company_id, user];
-  
-      // Execute the query
-      const [result] = await mysqlConnection.promise().query(sql, values);
-  
-      // Check if the customer was successfully inserted
-      if (result.affectedRows === 0) {
-        return res.status(500).json({
-          success: false,
-          message: 'Failed to create lead customer',
-        });
-      }
-  
-      // Return success response
-      res.status(201).json({
-        success: true,
-        message: 'Lead customer created successfully',
-        customer_id: result.insertId,
-      });
-    } catch (error) {
-      console.error('Error creating lead customer:', error);
-      res.status(500).json({
+ const CreateLeadCustomer = async (req, res) => {
+  try {
+    // Extract fields from the request body
+    const { full_name, mobile, whatsapp, email, job_title, city, country, dt, user } = req.body;
+    const type = country === "92" ? "local" : "international";
+
+    // Check if required fields are provided
+    if (!full_name || !mobile) {
+      return res.status(400).json({
         success: false,
-        message: 'Error in creating lead customer',
-        error: error.message,
+        message: 'Please provide full_name and mobile for the new customer',
       });
     }
-  };
+
+    const existingCustomer = await mysqlConnection.promise().query(
+      'SELECT * FROM leads_customers WHERE mobile = ?',
+      [mobile]
+    );
+
+    if (existingCustomer[0].length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Mobile number already exists. Please try with another.',
+      });
+    }
+
+    const sql = `
+      INSERT INTO leads_customers (full_name, mobile, whatsapp, email, job_title, city, type, country, dt, user) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) 
+      ON DUPLICATE KEY UPDATE 
+        full_name = VALUES(full_name),
+        whatsapp = VALUES(whatsapp),
+        email = VALUES(email),
+        job_title = VALUES(job_title),
+        city = VALUES(city),
+        type = VALUES(type),
+        country = VALUES(country),
+        dt = VALUES(dt),
+        user = VALUES(user)
+    `;
+
+    const values = [full_name, mobile, whatsapp, email, job_title, city, type, country, dt, user];
+
+    // Execute the query
+    const [result] = await mysqlConnection.promise().query(sql, values);
+
+    if (result.affectedRows === 0) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create lead customer',
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Lead customer created successfully',
+      customer_id: result.insertId,
+    });
+  } catch (error) {
+    console.error('Error creating lead customer:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error in creating lead customer',
+      error: error.message,
+    });
+  }
+};
+
   
   const GetCustomerById = async (req, res) => {
     try {

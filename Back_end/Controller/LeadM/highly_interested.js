@@ -600,24 +600,42 @@ const AllCustomers = async (req, res) => {
       });
     }
 
-    const customerIds = assignedCustomers.map(customer => customer.customer_id);
-    
-    const [customers] = await mysqlConnection.promise().query(
-      `SELECT 
-        id,
-        full_name AS customer_name,
-        mobile,
-        whatsapp,
-        email,
-        job_title,
-        city,
-        type,
-        country,
-        dt
-      FROM leads_customers 
-      WHERE id IN (?)`,
-      [customerIds]
-    );
+  let customerIds = assignedCustomers.map(c => c.customer_id);
+
+// (optional) dedupe + ensure numbers
+customerIds = Array.from(new Set(
+  customerIds.map(Number).filter(Number.isFinite)
+));
+
+let sql = `
+  SELECT
+    id,
+    full_name AS customer_name,
+    mobile,
+    whatsapp,
+    email,
+    job_title,
+    city,
+    type,
+    country,
+    dt,
+    user AS assigned_to
+  FROM leads_customers
+  WHERE `;
+
+let params = [];
+
+if (customerIds.length > 0) {
+  sql += `(id IN (?) OR user = ?)`;
+  params.push(customerIds, name);
+} else {
+  sql += `user = ?`;
+  params.push(name);
+}
+
+const [customers] = await mysqlConnection.promise().query(sql, params);
+
+
 
     return res.status(200).json({
       success: true,

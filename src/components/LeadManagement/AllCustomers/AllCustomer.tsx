@@ -43,6 +43,7 @@ export const useEmployeeData = (email:any) => {
       try {
         if (session) {
           const response = await apiService.get(`/all-customers/${email}`);
+          console.log("the customer that is assigned to:",response)
           const userData = response.data.leads;
           
           setValue(userData);

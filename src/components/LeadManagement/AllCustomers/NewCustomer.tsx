@@ -92,10 +92,11 @@ export default function NewLeadCustomer() {
   const onSubmit: SubmitHandler<customerInfoFormTypes> = async (data) => {
     setIsLoading(true); 
     try {
-      if(company?.user_data?.number<=1){
-        data.company_id=company?.user_data?.company_id;
+    //   if(company?.user_data?.number<=1){
+    //     data.company_id=company?.user_data?.company_id;
+    //     data.user=memoizedSession?.user?.username
+    //  }
         data.user=memoizedSession?.user?.username
-     }
        const result= await apiService.post(`/new-lead-customer`, {
             ...data})
             // console.log("the result is--->:",result)
