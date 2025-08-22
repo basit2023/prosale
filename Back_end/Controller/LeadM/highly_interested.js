@@ -219,159 +219,143 @@ const Highly_interested = async (req, res) => {
 
 const highly_interested_table = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { field, email, company } = req.query;
-    
-    let [perm] = await mysqlConnection.promise().query(`
-      SELECT ut.permission_level AS permission, u.name, u.company_id AS company_id
-      FROM users_types ut 
-      JOIN users u ON u.user_type = ut.type WHERE u.email = ?`,
-      [email]
-    );
-    
-    let company_id = perm[0].company_id;
-    if (company && (perm[0].permission > 9)) {
-      company_id = company;
+    const id = Number(req.params.id);
+    const { field, email } = req.query;
+
+    // Whitelist allowed fields to prevent SQL injection via `field`
+    const ALLOWED_FIELDS = new Set([
+      'leads_label',     // main.leads_label
+      'project',         // main.project
+      'interested_in',   // main.interested_in
+      'status',          // main.status
+      'user',            // main.user
+      'assigned_to',     // main.assigned_to
+    ]);
+
+    if (!ALLOWED_FIELDS.has(field)) {
+      return res.status(400).json({ success: false, message: 'Invalid field' });
     }
 
-    let leads;
-    if (parseFloat(perm[0].permission) >= 9) {
-      [leads] = await mysqlConnection.promise().query(`
-        SELECT
-          main.id,
-          customer.full_name AS customer_name,
-          customer.mobile AS mobile,
-          project.name AS project_name,
-          project.status AS project_status,
-          interested_in.unit AS interested_in,
-          main.status,
-          main.view_dt,
-          main.user,
-          main.assigned_on,
-          main.assigned_to,
-          label.label AS label,
-          label.bg AS bg_color,
-          main.last_updated,
-          main.lead_pass
-        FROM leads_main AS main
-        INNER JOIN leads_customers AS customer ON main.customer = customer.id
-        INNER JOIN lead_projects AS project ON main.project = project.id
-        INNER JOIN leads_labels AS label ON main.leads_label = label.id
-        INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
-        WHERE main.${field} = ?
-        ORDER BY main.last_updated DESC`,
-        [id]
+    // Get permission + user name
+    const [permRows] = await mysqlConnection
+      .promise()
+      .query(
+        `
+        SELECT ut.permission_level AS permission, u.name
+        FROM users_types ut
+        JOIN users u ON u.user_type = ut.type
+        WHERE u.email = ?
+        LIMIT 1
+        `,
+        [email]
       );
 
-      if (id == 12 && field === "leads_label") {
-        [leads] = await mysqlConnection.promise().query(`
-          SELECT
-            main.id,
-            customer.full_name AS customer_name,
-            customer.mobile AS mobile,
-            project.name AS project_name,
-            project.status AS project_status,
-            interested_in.unit AS interested_in,
-            main.status,
-            main.view_dt,
-            main.user,
-            main.assigned_on,
-            main.assigned_to,
-            label.label AS label,
-            label.bg AS bg_color,
-            main.last_updated,
-            main.lead_pass
-          FROM leads_main AS main
-          INNER JOIN leads_customers AS customer ON main.customer = customer.id
-          INNER JOIN lead_projects AS project ON main.project = project.id
-          INNER JOIN leads_labels AS label ON main.leads_label = label.id
-          INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
-          WHERE main.status = 'un_assigned'
-          ORDER BY main.last_updated DESC`
+    if (!permRows || permRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const permission = Number(permRows[0].permission) || 0;
+    const userName = permRows[0].name;
+
+    const baseSelect = `
+      SELECT
+        main.id,
+        customer.full_name AS customer_name,
+        customer.mobile AS mobile,
+        project.name AS project_name,
+        project.status AS project_status,
+        interested_in.unit AS interested_in,
+        main.status,
+        main.view_dt,
+        main.user,
+        main.assigned_on,
+        main.assigned_to,
+        label.label AS label,
+        label.bg AS bg_color,
+        main.last_updated,
+        main.lead_pass
+      FROM leads_main AS main
+      INNER JOIN leads_customers AS customer ON main.customer = customer.id
+      INNER JOIN lead_projects AS project ON main.project = project.id
+      INNER JOIN leads_labels AS label ON main.leads_label = label.id
+      INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
+    `;
+
+    let leads;
+
+    if (permission >= 9) {
+      // --- Admins: see all leads ---
+      if (field === 'leads_label' && id === 12) {
+        // "Unassigned" bucket
+        [leads] = await mysqlConnection.promise().query(
+          `${baseSelect}
+           WHERE main.status = 'un_assigned'
+           ORDER BY main.last_updated DESC`
         );
-      }
-      
-      if (id == 11 && field === "leads_label") {
-        [leads] = await mysqlConnection.promise().query(`
-          SELECT
-            main.id,
-            customer.full_name AS customer_name,
-            customer.mobile AS mobile,
-            project.name AS project_name,
-            project.status AS project_status,
-            interested_in.unit AS interested_in,
-            main.status,
-            main.view_dt,
-            main.user,
-            main.assigned_on,
-            main.assigned_to,
-            label.label AS label,
-            label.bg AS bg_color,
-            main.last_updated,
-            main.lead_pass
-          FROM leads_main AS main
-          INNER JOIN leads_customers AS customer ON main.customer = customer.id
-          INNER JOIN lead_projects AS project ON main.project = project.id
-          INNER JOIN leads_labels AS label ON main.leads_label = label.id
-          INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
-          ORDER BY main.last_updated DESC`
+      } else if (field === 'leads_label' && id === 11) {
+        // "All Leads" bucket (no WHERE)
+        [leads] = await mysqlConnection.promise().query(
+          `${baseSelect}
+           ORDER BY main.last_updated DESC`
+        );
+      } else {
+        // Regular filter on the allowed field
+        [leads] = await mysqlConnection.promise().query(
+          `${baseSelect}
+           WHERE main.${field} = ?
+           ORDER BY main.last_updated DESC`,
+          [id]
         );
       }
     } else {
-      [leads] = await mysqlConnection.promise().query(`
-        SELECT
-          main.id,
-          customer.full_name AS customer_name,
-          customer.mobile AS mobile,
-          project.name AS project_name,
-          project.status AS project_status,
-          interested_in.unit AS interested_in,
-          main.status,
-          main.view_dt,
-          main.assigned_on,
-          main.assigned_to,
-          main.user,
-          label.label AS label,
-          label.bg AS bg_color,
-          main.last_updated,
-          main.lead_pass
-        FROM leads_main AS main
-        INNER JOIN leads_customers AS customer ON main.customer = customer.id
-        INNER JOIN lead_projects AS project ON main.project = project.id
-        INNER JOIN leads_labels AS label ON main.leads_label = label.id
-        INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
-        WHERE main.assigned_to = ? AND main.${field} = ?
-        ORDER BY main.last_updated DESC`,
-        [perm[0].name, id]
-      );
+      // --- Non-admins: scoped to their own leads ---
+      if (field === 'leads_label' && id === 11) {
+        // "All Leads" for this user only
+        [leads] = await mysqlConnection.promise().query(
+          `${baseSelect}
+           WHERE main.assigned_to = ?
+           ORDER BY main.last_updated DESC`,
+          [userName]
+        );
+      } else if (field === 'leads_label' && id === 12) {
+        // Non-admins shouldn't see uncategorized; return empty
+        leads = [];
+      } else {
+        // Filter by the chosen field AND assigned_to = user
+        [leads] = await mysqlConnection.promise().query(
+          `${baseSelect}
+           WHERE main.assigned_to = ? AND main.${field} = ?
+           ORDER BY main.last_updated DESC`,
+          [userName, id]
+        );
+      }
     }
 
-    if (!leads.length) {
+    if (!leads || leads.length === 0) {
       return res.status(200).json({
         success: true,
         message: 'No leads found',
+        leads: [],
       });
     }
 
-    leads = leads.map(lead => ({
-      ...lead,
-      permission: perm[0].permission
-    }));
+    const withPerm = leads.map((lead) => ({ ...lead, permission }));
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: 'All matched labels information fetched successfully',
-      leads: leads,
+      leads: withPerm,
     });
   } catch (error) {
     console.error('Error fetching table leads labels information:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Error in fetching label leads information',
       error: error.message,
     });
   }
 };
+
 const SpecificTeamMemberLeads = async (req, res) => {
   try {
     const { id, id1 } = req.params;

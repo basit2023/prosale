@@ -74,52 +74,67 @@ const ClosedLeadController = async (req, res) => {
 };
 
 const ViewLead = async (req, res) => {
-    try {
-        const { id } = req.params;
-        let { dt, email } = req.body;
+  try {
+    const { id } = req.params;
+    let { dt, email } = req.body;
 
-        if (!id) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid user_id',
-            });
-        }
-
-        const [rows, fields] = await mysqlConnection.promise().query(
-            'SELECT view_dt,assigned_to FROM leads_main  WHERE id = ?',
-            [id] // Use id instead of leads_label
-        );
-        const [user, fields1] = await mysqlConnection.promise().query(
-            'SELECT name FROM users  WHERE email = ?',
-            [email] // Use id instead of leads_label
-        );
-
-        if (!rows || !rows.length) {
-            return res.status(404).json({
-                success: false,
-                message: 'Label not found',
-            });
-        }
-        
-     if(rows[0].assigned_to==user[0].name){
-        // Check if view_dt is 'new_lead'
-        if (rows[0].view_dt === 'new_lead') {
-            let sql = 'UPDATE leads_main SET view_dt = ? WHERE id = ?';
-            const values = [dt, id];
-
-            await mysqlConnection.promise().query(sql, values);
-
-            res.status(200).json({ success: true, message: 'view date updated successfully!' });
-        } else {
-            // Do nothing if view_dt is not 'new_lead'
-            res.status(200).json({ success: true, message: 'view date not updated as it is not new_lead' });
-        }
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user_id',
+      });
     }
-    } catch (error) {
-        console.error('Error while updating Label:', error);
-        res.status(500).json({ success: false, error: 'Error updating view date. Please try again.' });
+
+    const [rows] = await mysqlConnection
+      .promise()
+      .query('SELECT view_dt, assigned_to FROM leads_main WHERE id = ?', [id]);
+
+    const [user] = await mysqlConnection
+      .promise()
+      .query('SELECT name FROM users WHERE email = ?', [email]);
+
+    if (!rows || !rows.length) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lead not found',
+      });
     }
+
+    if (rows[0].assigned_to === user[0].name) {
+      if (rows[0].view_dt === 'new_lead') {
+        const sql = `
+          UPDATE leads_main 
+          SET view_dt = ?, last_updated = last_updated
+          WHERE id = ?
+        `;
+        const values = [dt, id];
+        await mysqlConnection.promise().query(sql, values);
+
+        return res.status(200).json({
+          success: true,
+          message: 'view date updated successfully!',
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: 'view date not updated as it is not new_lead',
+        });
+      }
+    }
+
+    return res.status(403).json({
+      success: false,
+      message: 'You are not allowed to update this lead',
+    });
+  } catch (error) {
+    console.error('Error while updating Label:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error updating view date. Please try again.',
+    });
+  }
 };
+
 
 
 module.exports = { ClosedLeadController,ViewLead };
