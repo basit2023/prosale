@@ -219,20 +219,26 @@ const Highly_interested = async (req, res) => {
 
 const highly_interested_table = async (req, res) => {
   try {
-    const id = Number(req.params.id);
+    // paging
+    const page = Math.max(1, parseInt(req.query.page || '1', 10));
+    const pageSizeRaw = parseInt(req.query.pageSize || '50', 10);
+    const pageSize = Math.min(200, Math.max(1, isNaN(pageSizeRaw) ? 50 : pageSizeRaw));
+    const offset = (page - 1) * pageSize;
+
+    const rawId = req.params.id; // don't force Number; may be string for some fields
     const { field, email } = req.query;
 
-    // Whitelist allowed fields to prevent SQL injection via `field`
-    const ALLOWED_FIELDS = new Set([
-      'leads_label',     // main.leads_label
-      'project',         // main.project
-      'interested_in',   // main.interested_in
-      'status',          // main.status
-      'user',            // main.user
-      'assigned_to',     // main.assigned_to
-    ]);
+    // Allowlist + explicit column map (prevents SQL injection & quoting issues)
+    const FIELD_MAP = {
+      leads_label: '`main`.`leads_label`',
+      project: '`main`.`project`',
+      interested_in: '`main`.`interested_in`',
+      status: '`main`.`status`',
+      user: '`main`.`user`',
+      assigned_to: '`main`.`assigned_to`',
+    };
 
-    if (!ALLOWED_FIELDS.has(field)) {
+    if (!FIELD_MAP[field]) {
       return res.status(400).json({ success: false, message: 'Invalid field' });
     }
 
@@ -253,98 +259,129 @@ const highly_interested_table = async (req, res) => {
     if (!permRows || permRows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-
     const permission = Number(permRows[0].permission) || 0;
     const userName = permRows[0].name;
 
-    const baseSelect = `
+    // Build WHERE safely + params
+    const where = [];
+    const params = [];
+
+    // Special buckets for leads_label
+    const isAllLeadsBucket = field === 'leads_label' && String(rawId) === '11';
+    const isUnassignedBucket = field === 'leads_label' && String(rawId) === '12';
+
+    // For fields that are strings in DB, keep the rawId as string; else use number
+    const stringFields = new Set(['status', 'user', 'assigned_to']);
+    const filterValue = stringFields.has(field) ? String(rawId) : Number(rawId);
+
+    if (permission >= 9) {
+      // Admins: see everything unless filtered
+      if (isAllLeadsBucket) {
+        // no extra filter
+      } else if (isUnassignedBucket) {
+        // Unify "unassigned": catch status OR missing/blank assignment
+        where.push(`( \`main\`.\`status\` = ? OR \`main\`.\`assigned_to\` IS NULL OR \`main\`.\`assigned_to\` = '' )`);
+        params.push('un_assigned');
+      } else {
+        where.push(`${FIELD_MAP[field]} = ?`);
+        params.push(filterValue);
+      }
+    } else {
+      // Non-admins: scoped to their own leads
+      if (isUnassignedBucket) {
+        // Business rule: hide unassigned for non-admins
+        return res.status(200).json({
+          success: true,
+          message: 'No leads found',
+          leads: [],
+          page,
+          pageSize,
+          total: 0,
+          hasMore: false,
+        });
+      }
+
+      // Always scope to assignee
+      where.push('`main`.`assigned_to` = ?');
+      params.push(userName);
+
+      if (!isAllLeadsBucket) {
+        where.push(`${FIELD_MAP[field]} = ?`);
+        params.push(filterValue);
+      }
+    }
+
+    // Base selects – LEFT JOIN to avoid losing rows (count/list mismatch)
+    const baseFrom = `
+      FROM leads_main AS main
+      LEFT JOIN leads_customers AS customer  ON main.customer      = customer.id
+      LEFT JOIN lead_projects   AS project   ON main.project       = project.id
+      LEFT JOIN leads_labels    AS label     ON main.leads_label   = label.id
+      LEFT JOIN inventory_type  AS interested_in ON main.interested_in = interested_in.id
+    `;
+
+    const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+
+    // COUNT(*) uses the SAME filters on main to keep numbers consistent
+    const [countRows] = await mysqlConnection.promise().query(
+      `SELECT COUNT(*) AS total
+       FROM leads_main AS main
+       ${whereSql.replaceAll('`main`.', 'main.')}
+      `,
+      params
+    );
+    const total = Number(countRows?.[0]?.total || 0);
+
+    if (total === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No leads found',
+        leads: [],
+        page,
+        pageSize,
+        total: 0,
+        hasMore: false,
+      });
+    }
+
+    // Main page query with LEFT JOINs and pagination
+    const [rows] = await mysqlConnection.promise().query(
+      `
       SELECT
         main.id,
-        customer.full_name AS customer_name,
-        customer.mobile AS mobile,
-        project.name AS project_name,
-        project.status AS project_status,
-        interested_in.unit AS interested_in,
+        customer.full_name      AS customer_name,
+        customer.mobile         AS mobile,
+        project.name            AS project_name,
+        project.status          AS project_status,
+        interested_in.unit      AS interested_in,
         main.status,
         main.view_dt,
         main.user,
         main.assigned_on,
         main.assigned_to,
-        label.label AS label,
-        label.bg AS bg_color,
+        label.label             AS label,
+        label.bg                AS bg_color,
         main.last_updated,
         main.lead_pass
-      FROM leads_main AS main
-      INNER JOIN leads_customers AS customer ON main.customer = customer.id
-      INNER JOIN lead_projects AS project ON main.project = project.id
-      INNER JOIN leads_labels AS label ON main.leads_label = label.id
-      INNER JOIN inventory_type AS interested_in ON main.interested_in = interested_in.id
-    `;
+      ${baseFrom}
+      ${whereSql}
+      ORDER BY main.last_updated DESC
+      LIMIT ? OFFSET ?
+      `,
+      [...params, pageSize, offset]
+    );
 
-    let leads;
-
-    if (permission >= 9) {
-      // --- Admins: see all leads ---
-      if (field === 'leads_label' && id === 12) {
-        // "Unassigned" bucket
-        [leads] = await mysqlConnection.promise().query(
-          `${baseSelect}
-           WHERE main.status = 'un_assigned'
-           ORDER BY main.last_updated DESC`
-        );
-      } else if (field === 'leads_label' && id === 11) {
-        // "All Leads" bucket (no WHERE)
-        [leads] = await mysqlConnection.promise().query(
-          `${baseSelect}
-           ORDER BY main.last_updated DESC`
-        );
-      } else {
-        // Regular filter on the allowed field
-        [leads] = await mysqlConnection.promise().query(
-          `${baseSelect}
-           WHERE main.${field} = ?
-           ORDER BY main.last_updated DESC`,
-          [id]
-        );
-      }
-    } else {
-      // --- Non-admins: scoped to their own leads ---
-      if (field === 'leads_label' && id === 11) {
-        // "All Leads" for this user only
-        [leads] = await mysqlConnection.promise().query(
-          `${baseSelect}
-           WHERE main.assigned_to = ?
-           ORDER BY main.last_updated DESC`,
-          [userName]
-        );
-      } else if (field === 'leads_label' && id === 12) {
-        // Non-admins shouldn't see uncategorized; return empty
-        leads = [];
-      } else {
-        // Filter by the chosen field AND assigned_to = user
-        [leads] = await mysqlConnection.promise().query(
-          `${baseSelect}
-           WHERE main.assigned_to = ? AND main.${field} = ?
-           ORDER BY main.last_updated DESC`,
-          [userName, id]
-        );
-      }
-    }
-
-    if (!leads || leads.length === 0) {
-      return res.status(200).json({
-        success: true,
-        message: 'No leads found',
-        leads: [],
-      });
-    }
-
-    const withPerm = leads.map((lead) => ({ ...lead, permission }));
+    // Attach permission once per record (frontend probably doesn’t need it per-row, but keeping your shape)
+    const leads = rows.map((lead) => ({ ...lead, permission }));
 
     return res.status(200).json({
       success: true,
       message: 'All matched labels information fetched successfully',
-      leads: withPerm,
+      leads,
+      page,
+      pageSize,
+      total,
+      hasMore: offset + leads.length < total,
     });
   } catch (error) {
     console.error('Error fetching table leads labels information:', error);
@@ -355,6 +392,7 @@ const highly_interested_table = async (req, res) => {
     });
   }
 };
+
 
 const SpecificTeamMemberLeads = async (req, res) => {
   try {
