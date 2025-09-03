@@ -44,6 +44,7 @@
     "crypto-js": "^4.2.0",
     "date-arithmetic": "^4.1.0",
     "date-fns": "^3.0.6",
+    "date-fns-tz": "^3.2.0",
     "dayjs": "^1.11.10",
     "eslint": "8.53.0",
     "eslint-config-next": "14.0.1",
