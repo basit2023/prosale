@@ -6,7 +6,7 @@
 import { routes } from '@/config/routes';
 import InvoiceTable from '@/components/LeadManagement/employee-data/Highly_Interested/table';
 import { useEmployeeData } from '@/components/LeadManagement/employee-data/Leads';
-
+import Spinner from '@/components/ui/spinner';
 import TableLayout from './table-layout';
 import { metaObject } from '@/config/site.config';
 import { Empty } from "rizzui";

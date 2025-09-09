@@ -323,14 +323,253 @@ const notifyUser = async (userId, message, leadId) => {
 
 
 
+// leads was assinged to manager
+// const CreateNewLead = async (req, res) => {
+//   const { csv } = req.query;
+//   const {user}=req.body;
+
+//   if (csv) {
+//     const leads = req.body;
+//     if (!Array.isArray(leads) || leads.length === 0) {
+//       return res.status(400).json({ success: false, message: 'No leads data found in request.' });
+//     }
+
+//     const dt = new Date();
+//     const results = [];
+
+//     // Map sources
+//     const [allSources] = await mysqlConnection.promise().query(
+//       'SELECT id, platform FROM leads_source'
+//     );
+//     const sourceMap = Object.fromEntries(
+//       allSources.map((src) => [src.platform.trim().toLowerCase(), src.id])
+//     );
+
+//     // Map projects
+//     const [allProjects] = await mysqlConnection.promise().query(
+//       'SELECT id, name FROM lead_projects'
+//     );
+//     const projectMap = Object.fromEntries(
+//       allProjects.map((p) => [p.name.trim().toLowerCase(), p.id])
+//     );
+
+//     for (const lead of leads) {
+    
+//       try {
+//         const {
+//           full_name = '',
+//           mobile = '',
+//           email = '',
+//           investment_budget = '',
+//           type = '',
+//           source = '',
+//           interested_in = '',
+//           project = '',
+//           company_id = '',
+//           user = '',
+//         } = lead;
+//         const normalizedMobile = normalizeMobile(mobile);
+
+//         if (!normalizedMobile) {
+//           results.push({ success: false, mobile, message: 'Mobile Number is required' });
+//           continue;
+//         }
+
+//         const sourceId = sourceMap[source.trim().toLowerCase()];
+//         console.log("the lead sorce is:",sourceId)
+//         if (!sourceId) {
+//           results.push({ success: false, mobile, message: `Invalid source: '${source}'` });
+//           continue;
+//         }
+
+//         const projectId = projectMap[project.trim().toLowerCase()];
+//         if (!projectId) {
+//           results.push({ success: false, mobile, message: `Invalid project: '${project}'` });
+//           continue;
+//         }
+
+//         // Check if customer exists
+//         const [customerCheck] = await mysqlConnection.promise().query(
+//           `SELECT id FROM leads_customers WHERE mobile = ?`,
+//           [normalizedMobile]
+//         );
+
+//         let customerId = customerCheck.length > 0 ? customerCheck[0].id : null;
+
+//         // Create customer if not exists
+//         if (!customerId) {
+//           const [insertCustomer] = await mysqlConnection.promise().query(
+//             `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type) 
+//              VALUES (?, ?, ?, ?, ?, ?)`,
+//             [full_name, mobile, email, company_id, dt, type]
+//           );
+//           customerId = insertCustomer.insertId;
+//         }
+
+//         // Check if the same project lead already exists
+//         const [projectLeadCheck] = await mysqlConnection.promise().query(
+//           `SELECT id, assigned_to FROM leads_main 
+//            WHERE customer = ? AND project = ?`,
+//           [customerId, projectId]
+//         );
+//         console.log(" project leads check:",projectLeadCheck)
+
+//         if (projectLeadCheck.length > 0) {
+//           results.push({
+//             success: false,
+//             mobile,
+//             message: `Same Project Lead already assigned to ${projectLeadCheck[0].assigned_to || 'unknown user'}`,
+//           });
+//           continue;
+//         }
+
+//         // Insert the new lead
+//         const [insertLeadResult] = await mysqlConnection.promise().query(
+//           `INSERT INTO leads_main 
+//            (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user, assigned_on) 
+//            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//           [
+//             customerId,
+//             sourceId,
+//             projectId,
+//             user,
+//             interested_in,
+//             investment_budget,
+//             dt,
+//             company_id,
+//             user,
+//             dt,
+//           ]
+//         );
+
+//         await sendNotificationToUser(user, {
+//           id: insertLeadResult.insertId,
+//           name: full_name || `Lead #${insertLeadResult.insertId}`,
+//         });
+ 
+//         ReassignedLead(insertLeadResult.insertId, projectId, user);
+//         console.log("the lead notification send to:",insertLeadResult)
+//         results.push({ success: true, mobile, message: 'Lead created successfully' });
+//       } catch (err) {
+//         console.error(`❌ Error processing lead with mobile ${lead.mobile}:`, err.stack);
+//         results.push({
+//           success: false,
+//           mobile: lead.mobile || 'N/A',
+//           message: `Internal error: ${err.message}`,
+//         });
+//       }
+//     }
+
+//     return res.status(200).json({ success: true, results });
+//   }
+
+//   // Single lead logic (unchanged)
+//   try {
+//     const {
+//       full_name,
+//       mobile,
+//       email,
+//       investment_budget,
+//       type,
+//       source,
+//       interested_in,
+//       company_id,
+//       project,
+//       remarks,
+//       dt,
+//       user,
+//     } = req.body;
+
+//     if (!mobile) {
+//       return res.status(400).json({ success: false, message: 'Mobile Number is required' });
+//     }
+
+//     // Check if customer exists
+//     const [customerCheck] = await mysqlConnection.promise().query(
+//       `SELECT id FROM leads_customers WHERE mobile = ?`,
+//       [mobile]
+//     );
+
+//     let customerId = customerCheck.length > 0 ? customerCheck[0].id : null;
+
+//     if (!customerId) {
+//       const [insertCustomer] = await mysqlConnection.promise().query(
+//         `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type) 
+//          VALUES (?, ?, ?, ?, ?, ?)`,
+//         [full_name, mobile, email, company_id, dt, type]
+//       );
+//       customerId = insertCustomer.insertId;
+//     }
+
+//     // Check if same project lead exists
+//     const [projectLeadCheck] = await mysqlConnection.promise().query(
+//       `SELECT id, assigned_to FROM leads_main 
+//        WHERE customer = ? AND project = ?`,
+//       [customerId, project]
+//     );
+
+//     if (projectLeadCheck.length > 0) {
+//       return res.status(400).json({
+//         success: false,
+//         message: `Same Project Lead already assigned to ${projectLeadCheck[0].assigned_to}`,
+//       });
+//     }
+
+//     const [insertLeadResult] = await mysqlConnection.promise().query(
+//       `INSERT INTO leads_main 
+//        (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user, assigned_on) 
+//        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+//       [
+//         customerId,
+//         source,
+//         project,
+//         user,
+//         interested_in,
+//         investment_budget,
+//         dt,
+//         company_id,
+//         user,
+//         dt,
+//       ]
+//     );
+
+//     await sendNotificationToUser(user, {
+//       id: insertLeadResult.insertId,
+//       name: full_name || `Lead #${insertLeadResult.insertId}`,
+//     });
+
+//     ReassignedLead(insertLeadResult.insertId, project, user);
+
+//     res.status(200).json({
+//       success: true,
+//       message: 'Lead created successfully',
+//       leadId: insertLeadResult.insertId,
+//       customerId,
+//     });
+//   } catch (error) {
+//     console.error('❌ Error creating lead:', error.stack);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Error in creating lead',
+//       error: error.message,
+//     });
+//   }
+// };
 
 const CreateNewLead = async (req, res) => {
-  const { csv } = req.query;
+  const { csv,user } = req.query;
+
+  // the user we want to assign leads to (required)
+  const assignedTo = user;
+  if (!assignedTo) {
+    return res.status(400).json({ success: false, message: "Assigned user (user) is required." });
+  }
 
   if (csv) {
+    // expecting an array of lead rows in the body
     const leads = req.body;
     if (!Array.isArray(leads) || leads.length === 0) {
-      return res.status(400).json({ success: false, message: 'No leads data found in request.' });
+      return res.status(400).json({ success: false, message: "No leads data found in request." });
     }
 
     const dt = new Date();
@@ -338,7 +577,7 @@ const CreateNewLead = async (req, res) => {
 
     // Map sources
     const [allSources] = await mysqlConnection.promise().query(
-      'SELECT id, platform FROM leads_source'
+      "SELECT id, platform FROM leads_source"
     );
     const sourceMap = Object.fromEntries(
       allSources.map((src) => [src.platform.trim().toLowerCase(), src.id])
@@ -346,36 +585,35 @@ const CreateNewLead = async (req, res) => {
 
     // Map projects
     const [allProjects] = await mysqlConnection.promise().query(
-      'SELECT id, name FROM lead_projects'
+      "SELECT id, name FROM lead_projects"
     );
     const projectMap = Object.fromEntries(
       allProjects.map((p) => [p.name.trim().toLowerCase(), p.id])
     );
 
     for (const lead of leads) {
-      console.log("The lead is:", lead);
       try {
+        // IMPORTANT: do NOT shadow the request-level 'assignedTo'
         const {
-          full_name = '',
-          mobile = '',
-          email = '',
-          investment_budget = '',
-          type = '',
-          source = '',
-          interested_in = '',
-          project = '',
-          company_id = '',
-          user = '',
+          full_name = "",
+          mobile = "",
+          email = "",
+          investment_budget = "",
+          type = "",
+          source = "",
+          interested_in = "",
+          project = "",
+          company_id = "",
+          // ignore any 'user' field on each CSV row; we always use assignedTo from req.body
         } = lead;
-        const normalizedMobile = normalizeMobile(mobile);
 
+        const normalizedMobile = normalizeMobile(mobile);
         if (!normalizedMobile) {
-          results.push({ success: false, mobile, message: 'Mobile Number is required' });
+          results.push({ success: false, mobile, message: "Mobile Number is required" });
           continue;
         }
 
         const sourceId = sourceMap[source.trim().toLowerCase()];
-        console.log("the lead sorce is:",sourceId)
         if (!sourceId) {
           results.push({ success: false, mobile, message: `Invalid source: '${source}'` });
           continue;
@@ -392,7 +630,6 @@ const CreateNewLead = async (req, res) => {
           `SELECT id FROM leads_customers WHERE mobile = ?`,
           [normalizedMobile]
         );
-
         let customerId = customerCheck.length > 0 ? customerCheck[0].id : null;
 
         // Create customer if not exists
@@ -411,18 +648,17 @@ const CreateNewLead = async (req, res) => {
            WHERE customer = ? AND project = ?`,
           [customerId, projectId]
         );
-        console.log(" project leads check:",projectLeadCheck)
 
         if (projectLeadCheck.length > 0) {
           results.push({
             success: false,
             mobile,
-            message: `Same Project Lead already assigned to ${projectLeadCheck[0].assigned_to || 'unknown user'}`,
+            message: `Same Project Lead already assigned to ${projectLeadCheck[0].assigned_to || "unknown user"}`,
           });
           continue;
         }
 
-        // Insert the new lead
+        // Insert the new lead - ALWAYS assign to assignedTo from request body
         const [insertLeadResult] = await mysqlConnection.promise().query(
           `INSERT INTO leads_main 
            (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user, assigned_on) 
@@ -431,29 +667,30 @@ const CreateNewLead = async (req, res) => {
             customerId,
             sourceId,
             projectId,
-            user,
+            assignedTo,               // <--- assign here
             interested_in,
             investment_budget,
             dt,
             company_id,
-            user,
+            assignedTo,               // keep 'user' column same as assigned user
             dt,
           ]
         );
 
-        await sendNotificationToUser(user, {
+        await sendNotificationToUser(assignedTo, {
           id: insertLeadResult.insertId,
           name: full_name || `Lead #${insertLeadResult.insertId}`,
         });
- 
-        ReassignedLead(insertLeadResult.insertId, projectId, user);
-        console.log("the lead notification send to:",insertLeadResult)
-        results.push({ success: true, mobile, message: 'Lead created successfully' });
+
+        // Disable manager-based reassignment
+        // ReassignedLead(insertLeadResult.insertId, projectId, assignedTo);
+
+        results.push({ success: true, mobile, message: "Lead created successfully" });
       } catch (err) {
         console.error(`❌ Error processing lead with mobile ${lead.mobile}:`, err.stack);
         results.push({
           success: false,
-          mobile: lead.mobile || 'N/A',
+          mobile: lead.mobile || "N/A",
           message: `Internal error: ${err.message}`,
         });
       }
@@ -462,7 +699,7 @@ const CreateNewLead = async (req, res) => {
     return res.status(200).json({ success: true, results });
   }
 
-  // Single lead logic (unchanged)
+  // Single lead logic
   try {
     const {
       full_name,
@@ -470,17 +707,17 @@ const CreateNewLead = async (req, res) => {
       email,
       investment_budget,
       type,
-      source,
+      source,          // for single lead you seem to pass an ID already; leaving as-is
       interested_in,
       company_id,
-      project,
-      remarks,
+      project,         // project id
+      remarks,         // (unused here but kept if needed elsewhere)
       dt,
-      user,
+      // user          // ignore any user here; we already have assignedTo
     } = req.body;
 
     if (!mobile) {
-      return res.status(400).json({ success: false, message: 'Mobile Number is required' });
+      return res.status(400).json({ success: false, message: "Mobile Number is required" });
     }
 
     // Check if customer exists
@@ -488,7 +725,6 @@ const CreateNewLead = async (req, res) => {
       `SELECT id FROM leads_customers WHERE mobile = ?`,
       [mobile]
     );
-
     let customerId = customerCheck.length > 0 ? customerCheck[0].id : null;
 
     if (!customerId) {
@@ -522,39 +758,40 @@ const CreateNewLead = async (req, res) => {
         customerId,
         source,
         project,
-        user,
+        assignedTo,          // <--- assign to request user
         interested_in,
         investment_budget,
         dt,
         company_id,
-        user,
+        assignedTo,          // keep 'user' column same as assigned user
         dt,
       ]
     );
 
-    await sendNotificationToUser(user, {
+    await sendNotificationToUser(assignedTo, {
       id: insertLeadResult.insertId,
       name: full_name || `Lead #${insertLeadResult.insertId}`,
     });
 
-    ReassignedLead(insertLeadResult.insertId, project, user);
+    // Disable manager-based reassignment
+    // ReassignedLead(insertLeadResult.insertId, project, assignedTo);
 
     res.status(200).json({
       success: true,
-      message: 'Lead created successfully',
+      message: "Lead created successfully",
       leadId: insertLeadResult.insertId,
       customerId,
+      assignedTo,
     });
   } catch (error) {
-    console.error('❌ Error creating lead:', error.stack);
+    console.error("❌ Error creating lead:", error.stack);
     res.status(500).json({
       success: false,
-      message: 'Error in creating lead',
+      message: "Error in creating lead",
       error: error.message,
     });
   }
 };
-
 
 
 

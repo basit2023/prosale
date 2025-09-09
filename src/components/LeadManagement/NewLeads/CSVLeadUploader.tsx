@@ -74,7 +74,7 @@ export default function CSVLeadUploader() {
         user,
       }));
 
-      const response = await apiService.post(`/create-new-lead/?csv=csv`, formattedData);
+      const response = await apiService.post(`/create-new-lead/?csv=csv&&user=${session?.user?.username}`, formattedData);
 
       if (response.data.success) {
         logsCreate({ user: session?.user?.name, desc: 'Bulk Lead Upload' });

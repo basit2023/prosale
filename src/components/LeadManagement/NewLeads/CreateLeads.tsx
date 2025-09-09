@@ -97,7 +97,7 @@ export default function CreateNewEmployee() {
       data.company_id = memoizedSession?.user?.company_id;
       data.user = memoizedSession?.user?.username;
       console.log("the data before submission:",data)
-      const result = await apiService.post(`/create-new-lead`, {
+      const result = await apiService.post(`/create-new-lead/?user=${session?.user?.username}`, {
         ...data,
       });
 
