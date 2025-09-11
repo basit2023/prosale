@@ -440,41 +440,98 @@ const GetSpecificZone = async (req, res) => {
         });
     }
 };
-  const GetTeamMemeber = async (req, res) => {
-    try {
-        // Use a connection pool to handle connections
-        const {email,table}=req.query;
-     
-        const [user] = await mysqlConnection.promise().query('SELECT company_id from users where email=?',[email])
-        let rows;
-        if(table=='footer'){
-         [rows, fields] = await mysqlConnection.promise().query(`SELECT id, CONCAT_WS(' ', TRIM(first_name), TRIM(last_name)) AS full_name 
-          FROM users 
-          WHERE del="N" AND lead_status="Y" AND FIND_IN_SET(company_id, ?) > 0`,[user[0].company_id]);
-        }else{
-         [rows, fields] = await mysqlConnection.promise().query(`SELECT id, CONCAT_WS(' ', TRIM(first_name), TRIM(last_name)) AS full_name 
-           FROM users 
-            WHERE COALESCE(assigned_team, '') = '' OR assigned_team IS NULL AND FIND_IN_SET(company_id, ?) > 0`,[user[0].company_id]);
-        }
-        const data = rows.map(row => ({
-          name: row.full_name,
-          value: row.id
-      }));
+const GetTeamMemeber = async (req, res) => {
+  try {
+    const { email, table } = req.query;
 
-        res.status(200).json({
-            success: true,
-            message: 'Data fetched successfully',
-            data: data,
-        });
-    } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error in fetching data',
-            error: error.message,
-        });
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Query param 'email' is required." });
     }
+
+    // Get the requesting user
+    const [userRows] = await mysqlConnection
+      .promise()
+      .query('SELECT id, user_type FROM users WHERE email = ?', [email]);
+
+    if (!userRows || userRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found for provided email.' });
+    }
+
+    const requester = userRows[0];
+    let rows = [];
+
+    if (table === 'footer') {
+      if (requester.user_type === 'admin') {
+        // 1) Admin: show all users with status Y
+        const [result] = await mysqlConnection
+          .promise()
+          .query(
+            `SELECT id, CONCAT_WS(' ', TRIM(first_name), TRIM(last_name)) AS full_name
+             FROM users
+             WHERE del = "N" AND lead_status = "Y"`
+          );
+        rows = result;
+      } else {
+        // 2) Not admin: find team where this user is the manager, then show users in that team
+        const [teamRows] = await mysqlConnection
+          .promise()
+          .query(
+            'SELECT id FROM users_teams WHERE manger_id = ?',
+            [requester.id] // note: column name kept as provided: "manger_id"
+          );
+
+        if (!teamRows || teamRows.length === 0) {
+          // No managed team found → empty list is reasonable
+          rows = [];
+        } else {
+          const teamId = teamRows[0].id;
+
+          const [result] = await mysqlConnection
+            .promise()
+            .query(
+              `SELECT id, CONCAT_WS(' ', TRIM(first_name), TRIM(last_name)) AS full_name
+               FROM users
+               WHERE del = "N"
+                 AND lead_status = "Y"
+                 AND assigned_team = ?`,
+              [teamId]
+            );
+          rows = result;
+        }
+      }
+    } else {
+      // 3) Non-footer path (company_id filter removed)
+      // Return users not assigned to any team
+      const [result] = await mysqlConnection
+        .promise()
+        .query(
+          `SELECT id, CONCAT_WS(' ', TRIM(first_name), TRIM(last_name)) AS full_name
+           FROM users
+           WHERE (assigned_team IS NULL OR TRIM(assigned_team) = '')`
+        );
+      rows = result;
+    }
+
+    const data = rows.map((row) => ({
+      name: row.full_name,
+      value: row.id,
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Data fetched successfully',
+      data,
+    });
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error in fetching data',
+      error: error.message,
+    });
+  }
 };
+
   
 
 
