@@ -318,7 +318,7 @@ const highly_interested_table = async (req, res) => {
         main.id,
         customer.full_name      AS customer_name,
         customer.mobile         AS mobile,
-         customer.city      AS city,
+        customer.city      AS city,
         project.name            AS project_name,
         project.status          AS project_status,
         interested_in.unit      AS interested_in,

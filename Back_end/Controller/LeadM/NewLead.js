@@ -604,6 +604,7 @@ const CreateNewLead = async (req, res) => {
           interested_in = "",
           project = "",
           company_id = "",
+          city,
           // ignore any 'user' field on each CSV row; we always use assignedTo from req.body
         } = lead;
 
@@ -635,8 +636,8 @@ const CreateNewLead = async (req, res) => {
         // Create customer if not exists
         if (!customerId) {
           const [insertCustomer] = await mysqlConnection.promise().query(
-            `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type) 
-             VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type, city) 
+             VALUES (?, ?, ?, ?, ?, ?,?)`,
             [full_name, mobile, email, company_id, dt, type]
           );
           customerId = insertCustomer.insertId;
@@ -713,6 +714,7 @@ const CreateNewLead = async (req, res) => {
       project,         // project id
       remarks,         // (unused here but kept if needed elsewhere)
       dt,
+      city,
       // user          // ignore any user here; we already have assignedTo
     } = req.body;
 
@@ -729,9 +731,9 @@ const CreateNewLead = async (req, res) => {
 
     if (!customerId) {
       const [insertCustomer] = await mysqlConnection.promise().query(
-        `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type) 
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [full_name, mobile, email, company_id, dt, type]
+        `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type,city) 
+         VALUES (?, ?, ?, ?, ?, ?,?)`,
+        [full_name, mobile, email, company_id, dt, type,city]
       );
       customerId = insertCustomer.insertId;
     }

@@ -70,8 +70,10 @@ export default function CSVLeadUploader() {
         source: item.source || '',
         interested_in: item.interested_in || '',
         project: item.project || '',
+        city:item.city || '',
         company_id,
         user,
+        
       }));
 
       const response = await apiService.post(`/create-new-lead/?csv=csv&&user=${session?.user?.username}`, formattedData);
