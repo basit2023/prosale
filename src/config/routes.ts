@@ -1,3 +1,18 @@
+
+// show_label: (id: string, query?: Query) => {
+//   const base = `/leads/labels/${encodeURIComponent(id)}`;
+//   if (!query) return base;
+
+//   const usp = new URLSearchParams();
+//   for (const [k, v] of Object.entries(query)) {
+//     if (v == null) continue;                // skip null/undefined
+//     Array.isArray(v) ? v.forEach(x => usp.append(k, String(x)))
+//                      : usp.set(k, String(v));
+//   }
+
+//   const qs = usp.toString();
+//   return qs ? `${base}?${qs}` : base;
+// },
 export const routes = {
   eCommerce: {
     dashboard: '/ecommerce',
@@ -48,7 +63,7 @@ export const routes = {
     // need_to_convince:'/leads/need_to_convince',
     team_member: (id: string) => `/leads/management/${id}`,
     edit: (id: string) => `/leads/${id}/edit`,
-    show_label: (id: string) => `/leads/labels/${id}`,
+    show_label: (id: string, query?: any) => `/leads/labels/${id}`,
     show_specific_label: (id: string, id1: string) => `/leads/labels/${id}/${id1}`,
 
     customers:'/leads/customers',

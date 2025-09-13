@@ -237,6 +237,28 @@ export const useGetColumns = ({
         </RowLink>
       ),
     },
+     {
+      title: (
+        <HeaderCell
+          title="City"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'city'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('city'),
+      dataIndex: 'city',
+      key: 'city',
+      width: 200,
+      render: (value: string | undefined, row: any) => (
+        <RowLink id={row.id}>
+          <Text className="font-medium text-gray-700 dark:text-gray-600">
+            {value || 'N/A'}
+          </Text>
+        </RowLink>
+      ),
+    },
 
     {
       title: (

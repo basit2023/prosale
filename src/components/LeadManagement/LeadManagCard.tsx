@@ -118,7 +118,7 @@ console.log("teh rorted data is:",sortedData)
       .map((data) => (
         <Link
           key={data.id}
-          href={routes.leads.show_label(data.id)}
+          href={routes.leads.show_label(data.id,{ view: "table", sort: "created" })}
           className="col-span-1"
         >
           <div className="bg-white rounded border border-gray-300 w-full pb-10 mb-5 mt-4">
@@ -153,7 +153,7 @@ console.log("teh rorted data is:",sortedData)
 
       return (
         <Link
-          href={routes.leads.show_label(labelIdForNonAdmin)}
+          href={routes.leads.show_label(labelIdForNonAdmin,{ view: "table", sort: "created" })}
           className="col-span-1 sm:col-span-2"
         >
           <div className="bg-white rounded border border-gray-300 w-full pb-10 mb-5 mt-4">
@@ -191,7 +191,7 @@ console.log("teh rorted data is:",sortedData)
           {sortedData
             .filter(data => parseFloat(data.permission) <= 8)
             .map(data => (
-              <Link key={data.id} href={routes.leads.show_label(data.id)} className="col-span-1">
+              <Link key={data.id} href={routes.leads.show_label(data.id,{ view: "table", sort: "created" })} className="col-span-1">
                 <div className="bg-white rounded border border-gray-300 w-full mb-5">
                   <h3 
                     className="text-black text-lg font-semibold p-4 mb-4" 

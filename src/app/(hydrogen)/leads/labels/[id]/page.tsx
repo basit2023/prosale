@@ -4,9 +4,10 @@ import Spinner from '@/components/ui/spinner';
 import TableLayout from './table-layout';
 import InvoiceTable from '@/components/LeadManagement/employee-data/Highly_Interested/table';
 import { useEmployeeData } from '@/components/LeadManagement/employee-data/Leads';
-
+import { useSearchParams } from "next/navigation";
 export default function EnhancedTablePage({ params }: { params: { id: string } }) {
-  const { data, loading, error } = useEmployeeData({ id: params.id });
+  const sp:any = useSearchParams();
+  const { data, loading, error } = useEmployeeData({ id: params.id,sp:sp });
 
   if (loading || data === null) {
     return (

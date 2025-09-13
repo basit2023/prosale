@@ -17,13 +17,16 @@ export type Invoice = {
   assigned_to?: string;
   lead_pass?: string | number | boolean;
   last_updated?: string | null;
+  city?:string | null;
+  sp?:any;
 };
 
 type Args = { id: string };
 type Result = { data: Invoice[] | null; loading: boolean; error: Error | null };
 
-export const useEmployeeData = ({ id }: Args): Result => {
+export const useEmployeeData = ({ id, sp }: Args): Result => {
   const { data: session, status } = useSession();
+
 
   // null = not loaded yet; [] = loaded but no rows
   const [data, setData] = useState<Invoice[] | null>(null);
@@ -49,7 +52,7 @@ export const useEmployeeData = ({ id }: Args): Result => {
     }
 
     // if unauthenticated or required fields missing, stop loading
-    if (status !== 'authenticated' || !email || !company || !id) {
+    if (status !== 'authenticated' || !email || !id) {
       setData([]);
       setLoading(false);
       setError(null);
@@ -71,6 +74,7 @@ export const useEmployeeData = ({ id }: Args): Result => {
           params: { field: 'leads_label', email, company },
           signal: controller.signal,
         });
+        console.log('the leads raw data is;',res)
 
         // accept both {leads} and {data:{leads}}
         const leadsRaw =
@@ -91,6 +95,7 @@ export const useEmployeeData = ({ id }: Args): Result => {
           company_title: user.company_title,
           assigned_to: user.assigned_to,
           lead_pass: user.lead_pass,
+          city:user.city,
           last_updated: user.last_updated
             ? String(user.last_updated).substring(0, 10)
             : null,
