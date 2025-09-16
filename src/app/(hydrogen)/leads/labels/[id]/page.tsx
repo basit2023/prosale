@@ -6,8 +6,11 @@ import InvoiceTable from '@/components/LeadManagement/employee-data/Highly_Inter
 import { useEmployeeData } from '@/components/LeadManagement/employee-data/Leads';
 import { useSearchParams } from "next/navigation";
 export default function EnhancedTablePage({ params }: { params: { id: string } }) {
-  const sp:any = useSearchParams();
-  const { data, loading, error } = useEmployeeData({ id: params.id,sp:sp });
+   const searchParams:any = useSearchParams();
+  
+  // Get 'total' query parameter from the URL
+  const total = searchParams.get('total');
+  const { data, loading, error } = useEmployeeData({ id: params.id, total });
 
   if (loading || data === null) {
     return (

@@ -104,7 +104,9 @@ const GetFollowup = async (req, res) => {
                        lc.status AS status,
                        CONCAT(u.first_name, ' ', u.last_name) AS fullName,
                        lc.followupdate,
-                       lc.followup
+                       lc.followup,
+                       lc.user,
+                       lc.nextfollowup
                 FROM leads_comments lc
                 JOIN users u ON lc.user = u.name 
                 WHERE lc.status = "N" AND u.del = "N"
@@ -120,7 +122,9 @@ const GetFollowup = async (req, res) => {
                        lc.status AS status,
                        CONCAT(u.first_name, ' ', u.last_name) AS fullName,
                        lc.followupdate,
-                       lc.followup
+                       lc.followup,
+                       lc.user,
+                       lc.nextfollowup
                 FROM leads_comments lc
                 JOIN users u ON lc.user = u.name
                 WHERE lc.status = "N" 
@@ -148,7 +152,9 @@ const GetFollowup = async (req, res) => {
                        lc.status AS status,
                        CONCAT(u.first_name, ' ', u.last_name) AS fullName,
                        lc.followupdate,
-                       lc.followup
+                       lc.followup,
+                       lc.user,
+                       lc.nextfollowup
                 FROM leads_comments lc
                 JOIN users u ON lc.user = u.name
                 WHERE lc.status = "N" 
@@ -175,7 +181,9 @@ const GetFollowup = async (req, res) => {
                        lc.status AS status,
                        CONCAT(u.first_name, ' ', u.last_name) AS fullName,
                        lc.followupdate,
-                       lc.followup
+                       lc.followup,
+                       lc.user,
+                       lc.nextfollowup
                 FROM leads_comments lc
                 JOIN users u ON lc.user = u.name 
                 WHERE lc.status = "N" 

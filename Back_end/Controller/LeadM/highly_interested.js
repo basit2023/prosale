@@ -222,9 +222,9 @@ const Highly_interested = async (req, res) => {
 const highly_interested_table = async (req, res) => {
   try {
     const rawId = req.params.id;
-    const { field, email } = req.query;
+    const { field, email, total: limitParam } = req.query; // 👈 include limit from query
 
-    // allowlist
+    // allowlist for fields
     const FIELD_MAP = {
       leads_label: '`main`.`leads_label`',
       project: '`main`.`project`',
@@ -237,7 +237,7 @@ const highly_interested_table = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid field' });
     }
 
-    // user / permission
+    // user permission
     const [permRows] = await mysqlConnection.promise().query(
       `
       SELECT ut.permission_level AS permission, u.name
@@ -248,9 +248,11 @@ const highly_interested_table = async (req, res) => {
       `,
       [email]
     );
+
     if (!permRows?.length) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
+
     const permission = Number(permRows[0].permission) || 0;
     const userName = permRows[0].name;
 
@@ -276,9 +278,7 @@ const highly_interested_table = async (req, res) => {
       }
     } else {
       if (isUnassignedBucket) {
-        return res.status(200).json({
-          success: true, message: 'No leads found', leads: [], total: 0
-        });
+        return res.status(200).json({ success: true, message: 'No leads found', leads: [], total: 0 });
       }
       where.push('`main`.`assigned_to` = ?');
       params.push(userName);
@@ -299,7 +299,7 @@ const highly_interested_table = async (req, res) => {
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const orderBy = 'ORDER BY main.last_updated DESC, main.id DESC';
 
-    // count query
+    // count total leads
     const [countRows] = await mysqlConnection.promise().query(
       `SELECT COUNT(*) AS total FROM leads_main AS main ${whereSql.replaceAll('`main`.', 'main.')}`,
       params
@@ -307,22 +307,23 @@ const highly_interested_table = async (req, res) => {
     const total = Number(countRows?.[0]?.total || 0);
 
     if (total === 0) {
-      return res.status(200).json({
-        success: true, message: 'No leads found', leads: [], total
-      });
+      return res.status(200).json({ success: true, message: 'No leads found', leads: [], total });
     }
 
-    // main data query (⚡️ no LIMIT applied)
+    // handle limit safely
+    const requestedLimit = Number(limitParam) || 300; // default 300
+    const fetchLimit = requestedLimit >= total ? total : requestedLimit;
+
+    // fetch leads with LIMIT
     const sql = `
       SELECT
         main.id,
         customer.full_name      AS customer_name,
         customer.mobile         AS mobile,
-        customer.city      AS city,
+        customer.city           AS city,
         project.name            AS project_name,
         project.status          AS project_status,
         interested_in.unit      AS interested_in,
-       
         main.status,
         main.view_dt,
         main.user,
@@ -335,6 +336,7 @@ const highly_interested_table = async (req, res) => {
       ${baseFrom}
       ${whereSql}
       ${orderBy}
+      LIMIT ${fetchLimit}
     `;
 
     const [rows] = await mysqlConnection.promise().query(sql, params);
@@ -346,6 +348,7 @@ const highly_interested_table = async (req, res) => {
       leads,
       total
     });
+
   } catch (error) {
     console.error('Error fetching table leads labels information:', error);
     return res.status(500).json({
@@ -357,6 +360,145 @@ const highly_interested_table = async (req, res) => {
 };
 
 
+// const highly_interested_table = async (req, res) => {
+//   try {
+//     const rawId = req.params.id;
+//     const { field, email, total: queryTotal } = req.query; // Rename total to queryTotal
+
+//     // allowlist
+//     const FIELD_MAP = {
+//       leads_label: '`main`.`leads_label`',
+//       project: '`main`.`project`',
+//       interested_in: '`main`.`interested_in`',
+//       status: '`main`.`status`',
+//       user: '`main`.`user`',
+//       assigned_to: '`main`.`assigned_to`',
+//     };
+//     if (!FIELD_MAP[field]) {
+//       return res.status(400).json({ success: false, message: 'Invalid field' });
+//     }
+
+//     // user / permission
+//     const [permRows] = await mysqlConnection.promise().query(
+//       `
+//       SELECT ut.permission_level AS permission, u.name
+//       FROM users_types ut
+//       JOIN users u ON u.user_type = ut.type
+//       WHERE u.email = ?
+//       LIMIT 1
+//       `,
+//       [email]
+//     );
+//     if (!permRows?.length) {
+//       return res.status(404).json({ success: false, message: 'User not found' });
+//     }
+//     const permission = Number(permRows[0].permission) || 0;
+//     const userName = permRows[0].name;
+
+//     // where conditions
+//     const where = [];
+//     const params = [];
+
+//     const isAllLeadsBucket = field === 'leads_label' && String(rawId) === '11';
+//     const isUnassignedBucket = field === 'leads_label' && String(rawId) === '12';
+
+//     const stringFields = new Set(['status', 'user', 'assigned_to']);
+//     const filterValue = stringFields.has(field) ? String(rawId) : Number(rawId);
+
+//     if (permission >= 9) {
+//       if (isAllLeadsBucket) {
+//         // no extra filter
+//       } else if (isUnassignedBucket) {
+//         where.push('(`main`.`status` = ? OR `main`.`assigned_to` IS NULL OR `main`.`assigned_to` = \'\')');
+//         params.push('un_assigned');
+//       } else {
+//         where.push(`${FIELD_MAP[field]} = ?`);
+//         params.push(filterValue);
+//       }
+//     } else {
+//       if (isUnassignedBucket) {
+//         return res.status(200).json({
+//           success: true, message: 'No leads found', leads: [], total: 0
+//         });
+//       }
+//       where.push('`main`.`assigned_to` = ?');
+//       params.push(userName);
+//       if (!isAllLeadsBucket) {
+//         where.push(`${FIELD_MAP[field]} = ?`);
+//         params.push(filterValue);
+//       }
+//     }
+
+//     // base query parts
+//     const baseFrom = `
+//       FROM leads_main AS main
+//       LEFT JOIN leads_customers AS customer  ON main.customer      = customer.id
+//       LEFT JOIN lead_projects   AS project   ON main.project       = project.id
+//       LEFT JOIN leads_labels    AS label     ON main.leads_label   = label.id
+//       LEFT JOIN inventory_type  AS interested_in ON main.interested_in = interested_in.id
+//     `;
+//     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
+//     const orderBy = 'ORDER BY main.last_updated DESC, main.id DESC';
+
+//     // count query
+//     const [countRows] = await mysqlConnection.promise().query(
+//       `SELECT COUNT(*) AS total FROM leads_main AS main ${whereSql.replaceAll('`main`.', 'main.')}`,
+//       params
+//     );
+//     const countTotal = Number(countRows?.[0]?.total || 0); // Rename to countTotal to avoid conflict
+
+//     if (countTotal === 0) {
+//       return res.status(200).json({
+//         success: true, message: 'No leads found', leads: [], total: countTotal
+//       });
+//     }
+
+//     // Apply limit based on queryTotal
+//     const limit = queryTotal > 0 ? Math.min(countTotal, parseInt(queryTotal || '100')) : 100;
+
+//     // main data query with LIMIT applied
+//     const sql = `
+//       SELECT
+//         main.id,
+//         customer.full_name      AS customer_name,
+//         customer.mobile         AS mobile,
+//         customer.city      AS city,
+//         project.name            AS project_name,
+//         project.status          AS project_status,
+//         interested_in.unit      AS interested_in,
+//         main.status,
+//         main.view_dt,
+//         main.user,
+//         main.assigned_on,
+//         main.assigned_to,
+//         label.label             AS label,
+//         label.bg                AS bg_color,
+//         main.last_updated,
+//         main.lead_pass
+//       ${baseFrom}
+//       ${whereSql}
+//       ${orderBy}
+//       LIMIT ${limit}
+//     `;
+
+//     const [rows] = await mysqlConnection.promise().query(sql, params);
+//     const leads = rows.map(r => ({ ...r, permission }));
+
+//     return res.status(200).json({
+//       success: true,
+//       message: 'All matched labels information fetched successfully',
+//       leads,
+//       total: countTotal
+//     });
+//   } catch (error) {
+//     console.error('Error fetching table leads labels information:', error);
+//     return res.status(500).json({
+//       success: false,
+//       message: 'Error in fetching label leads information',
+//       error: error.message,
+//     });
+//   }
+// };
 
 
 const SpecificTeamMemberLeads = async (req, res) => {

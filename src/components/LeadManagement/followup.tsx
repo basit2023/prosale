@@ -1,3 +1,9 @@
+
+
+
+
+
+
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Text } from '@/components/ui/text';
@@ -16,10 +22,13 @@ interface Comment {
   fullName: string;
   comments: string;
   followup: string;
-  followupdate: string; // should be ISO with timezone e.g. "2025-09-01T10:30:00+05:00"
+  followupdate: string;
+  nextfollowup: boolean; // Add this field
   date: string;
-  user_id?: string; // Add user_id field to match against session user
-  assigned_to?: string; // Alternative field name if your API uses this
+  user_id?: string;
+  assigned_to?: string;
+  created_by?: string;
+  owner_id?: string;
   [key: string]: any;
 }
 
@@ -29,7 +38,6 @@ interface ShowFollowupProps {
   update: boolean;
 }
 
-// Persistent storage key for notified IDs
 const STORAGE_KEY = 'followup_notified_ids';
 const STORAGE_EXPIRY_KEY = 'followup_notified_expiry';
 
@@ -41,61 +49,50 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [notifReady, setNotifReady] = useState(false);
-  
-  // Persistent storage for notified IDs
+  const [showMyFollowupsOnly, setShowMyFollowupsOnly] = useState(false);
+
   const notifiedIdsRef = useRef<Set<string>>(new Set());
 
-  // Load previously notified IDs from localStorage
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    
     try {
-      // Check if stored data has expired (clear daily)
       const expiryTime = localStorage.getItem(STORAGE_EXPIRY_KEY);
       const now = Date.now();
       const oneDayMs = 24 * 60 * 60 * 1000;
-      
+
       if (expiryTime && now - parseInt(expiryTime) > oneDayMs) {
-        // Clear expired data
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(STORAGE_EXPIRY_KEY);
       } else {
-        // Load existing notified IDs
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
-          const parsedIds = JSON.parse(stored);
-          notifiedIdsRef.current = new Set(parsedIds);
+          notifiedIdsRef.current = new Set(JSON.parse(stored));
         }
       }
-      
-      // Set expiry if not exists
+
       if (!expiryTime) {
-        localStorage.setItem(STORAGE_EXPIRY_KEY, now.toString());
+        localStorage.setItem(STORAGE_EXPIRY_KEY, String(now));
       }
-    } catch (error) {
-      console.warn('Failed to load notification state:', error);
+    } catch (e) {
+      console.warn('Failed to load notification state:', e);
     }
   }, []);
 
-  // Save notified IDs to localStorage
   const saveNotifiedIds = () => {
     if (typeof window === 'undefined') return;
     try {
-      const idsArray = Array.from(notifiedIdsRef.current);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(idsArray));
-    } catch (error) {
-      console.warn('Failed to save notification state:', error);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(notifiedIdsRef.current)));
+    } catch (e) {
+      console.warn('Failed to save notification state:', e);
     }
   };
 
-  // Initialize notification permission state
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!('Notification' in window)) return;
     setNotifReady(Notification.permission === 'granted');
   }, []);
 
-  // Ask permission via user gesture
   const requestNotifPermission = async () => {
     if (typeof window === 'undefined' || !('Notification' in window)) {
       toast.error('Notifications not supported in this browser.');
@@ -103,35 +100,27 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     }
     try {
       const perm = await Notification.requestPermission();
-      const ok = perm === 'granted';
-      setNotifReady(ok);
-      if (ok) {
-        toast.success('Notifications enabled.');
-      } else {
-        toast.error('Please allow notifications in your browser settings.');
-      }
+      const granted = perm === 'granted';
+      setNotifReady(granted);
+      granted ? toast.success('Notifications enabled.') : toast.error('Please allow notifications in your browser settings.');
     } catch {
       toast.error('Could not request notification permission.');
     }
   };
 
   const showNotification = (record: Comment) => {
-    console.log('Showing notification for:', record.fullName);
-    
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
 
     try {
       new Notification('Follow Up Due', {
         body: `Action required for: ${record.fullName || 'Contact'}`,
-        tag: `followup:${record.id}`, // avoid stacking duplicates
+        tag: `followup:${record.id}`,
         renotify: true,
-        icon: '/favicon.ico', // Add your app icon
-        requireInteraction: true, // Keep notification visible until user interacts
+        icon: '/favicon.ico',
+        requireInteraction: true,
       });
-    } catch (error) {
-      console.warn('Native notification failed:', error);
-      // Fallback toast if Notification constructor fails
+    } catch {
       toast((t) => (
         <div>
           <strong>Follow Up Due</strong>
@@ -141,86 +130,68 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     }
   };
 
-  // Check if the follow-up belongs to current user
   const belongsToCurrentUser = (comment: Comment): boolean => {
-    if (!memoizedSession?.user) return false;
+    const u = memoizedSession?.user as any;
+    if (!u) return false;
     
-    const currentUserId = memoizedSession.user.id;
-    const currentUsername = memoizedSession.user.username;
-    
-    // Check multiple possible fields for user assignment
     return (
-      comment.user_id === currentUserId ||
-      comment.assigned_to === currentUserId ||
-      comment.user_id === currentUsername ||
-      comment.assigned_to === currentUsername ||
-      // Add any other field names your API might use
-      comment.created_by === currentUserId ||
-      comment.owner_id === currentUserId
+      comment.user_id === u.id ||
+      comment.assigned_to === u.id ||
+      comment.created_by === u.id ||
+      comment.owner_id === u.id ||
+      comment.user_id === u.username ||
+      comment.assigned_to === u.username ||
+      (u.name && typeof u.name === 'string' && comment.fullName?.toLowerCase() === u.name.toLowerCase())
     );
   };
 
-  // Poll for due/overdue items; notify once per ID
   useEffect(() => {
     if (!notifReady || !memoizedSession?.user) return;
 
     const checkDueDates = () => {
       const now = Date.now();
-      let hasNewNotifications = false;
+      let mutated = false;
 
-      comments.forEach((comment) => {
-        if (!comment.followupdate) return;
-        
-        // Only check notifications for current user's follow-ups
-        if (!belongsToCurrentUser(comment)) return;
+      comments.forEach((c) => {
+        if (!c.followupdate) return;
 
-        // Parse the followup date
-        const followupTime = Date.parse(comment.followupdate);
-        if (Number.isNaN(followupTime)) return;
+        if (showMyFollowupsOnly && !belongsToCurrentUser(c)) return;
 
-        const isDueOrOverdue = followupTime <= now;
-        const alreadyNotified = notifiedIdsRef.current.has(comment.id);
+        const t = Date.parse(c.followupdate);
+        if (Number.isNaN(t)) return;
 
-        // Only notify when time has actually reached/passed and not notified before
+        const isDueOrOverdue = t <= now;
+        const alreadyNotified = notifiedIdsRef.current.has(c.id);
+
         if (isDueOrOverdue && !alreadyNotified) {
-          console.log(`Notifying for follow-up: ${comment.id}, User: ${comment.fullName}`);
-          showNotification(comment);
-          notifiedIdsRef.current.add(comment.id);
-          hasNewNotifications = true;
+          showNotification(c);
+          notifiedIdsRef.current.add(c.id);
+          mutated = true;
         }
       });
 
-      // Save to localStorage if there were new notifications
-      if (hasNewNotifications) {
-        saveNotifiedIds();
-      }
+      if (mutated) saveNotifiedIds();
     };
 
-    // Don't run immediately on mount - only when time actually matches
-    // Check every 30 seconds (reduce frequency to avoid performance issues)
     const interval = setInterval(checkDueDates, 30000);
-    
-    // Optional: Run once after a small delay to catch any immediate due items
-    const initialTimeout = setTimeout(checkDueDates, 2000);
-    
+    const initial = setTimeout(checkDueDates, 2000);
     return () => {
       clearInterval(interval);
-      clearTimeout(initialTimeout);
+      clearTimeout(initial);
     };
-  }, [comments, notifReady, memoizedSession]);
+  }, [comments, notifReady, memoizedSession, showMyFollowupsOnly]);
 
   const fetchComments = async () => {
     try {
-      if (memoizedSession) {
-        const response = await apiService.get(
-          `/follow-up/${memoizedSession.user?.username}/?permission=${memoizedSession.user?.permission}&&id=${memoizedSession.user?.id}`
-        );
-        const userData = Array.isArray(response?.data?.leads) ? response.data.leads : [];
-        const filtered = userData.filter((comment: Comment) => comment.followupdate);
-        setComments(filtered);
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
+      const u = memoizedSession?.user as any;
+      if (!u) return;
+
+      const resp = await apiService.get(`/follow-up/${u?.username}/?permission=${u?.permission}&&id=${u?.id}`);
+      const arr = Array.isArray(resp?.data?.leads) ? resp.data.leads : [];
+      const withDates = arr.filter((c: Comment) => c.followupdate);
+      setComments(withDates);
+    } catch (e) {
+      console.error('Error fetching comments:', e);
       setComments([]);
     } finally {
       setLoading(false);
@@ -228,9 +199,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   };
 
   useEffect(() => {
-    if (memoizedSession) {
-      fetchComments();
-    }
+    if (memoizedSession) fetchComments();
   }, [memoizedSession]);
 
   const handleDeleteComment = async (commentId: string, leadId: string) => {
@@ -238,41 +207,29 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       const response = await apiService.put(`/delete-comments/${commentId}`);
       if (response.status === 200) {
         toast.success('Comment deleted successfully.');
-        setComments((prev) => prev.filter((comment) => comment.id !== commentId));
-        
-        // Remove from notified list and update storage
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
         notifiedIdsRef.current.delete(commentId);
         saveNotifiedIds();
       } else {
         toast.error('Error Deleting comment. Please try again.');
       }
-    } catch (error) {
+    } catch {
       toast.error('Error Deleting comment. Please try again.');
     }
   };
 
-  // Clear all notifications (utility function for testing/debugging)
-  const clearNotificationHistory = () => {
-    notifiedIdsRef.current.clear();
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_EXPIRY_KEY);
-    }
-    toast.success('Notification history cleared');
-  };
-
   const getDateStatus = (followupdate: string) => {
-    if (!followupdate)
+    if (!followupdate) {
       return { status: 'N/A', colorClass: 'text-gray-700 dark:text-gray-600', sortOrder: 5 };
+    }
 
     const followupDate = new Date(followupdate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const compareDate = new Date(followupDate);
-    compareDate.setHours(0, 0, 0, 0);
+    const d = new Date(followupDate);
+    d.setHours(0, 0, 0, 0);
 
-    const timeDiff = compareDate.getTime() - today.getTime();
-    const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     if (daysDiff === 0) {
       return { status: 'Today', colorClass: 'text-green-600 dark:text-green-400', sortOrder: 0 };
@@ -288,48 +245,31 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   };
 
   const sortedComments = useMemo(() => {
-    return [...comments].sort((a, b) => {
+    const base = showMyFollowupsOnly
+      ? comments.filter(belongsToCurrentUser)
+      : comments.filter(c => c.nextfollowup);
+
+    return [...base].sort((a, b) => {
       const aStatus = getDateStatus(a.followupdate).sortOrder;
       const bStatus = getDateStatus(b.followupdate).sortOrder;
       return aStatus - bStatus;
     });
-  }, [comments]);
+  }, [comments, showMyFollowupsOnly]);
 
-  if (loading) {
-    return <Text>Loading...</Text>;
-  }
+  if (loading) return <Text>Loading...</Text>;
 
   return (
     <div className="space-y-3">
-      {/* Enable notifications CTA */}
-      {typeof window !== 'undefined' &&
-        'Notification' in window &&
-        Notification.permission !== 'granted' && (
-          <div className="flex items-center justify-between gap-3 rounded-md border p-3">
-            <div className="text-sm text-gray-700 dark:text-gray-400">
-              Enable notifications to get instant follow-up alerts for your assigned tasks.
-            </div>
-            <button
-              className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              onClick={requestNotifPermission}
-            >
-              Enable notifications
-            </button>
-          </div>
-        )}
-
-      {/* Debug/Admin controls - Remove in production */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="flex gap-2">
+      {memoizedSession?.user?.permission > 4 && (
+        <div className="flex items-center justify-between mb-2">
           <button
-            className="px-2 py-1 text-xs bg-red-100 text-red-700 rounded"
-            onClick={clearNotificationHistory}
+            className={`px-3 py-1.5 rounded text-white transition-colors ${
+              showMyFollowupsOnly ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'
+            }`}
+            onClick={() => setShowMyFollowupsOnly((v) => !v)}
           >
-            Clear Notification History (Debug)
+            {showMyFollowupsOnly ? 'Showing: My Follow-Ups' : 'My Follow-Up'}
           </button>
-          <span className="text-xs text-gray-500">
-            Notified IDs: {notifiedIdsRef.current.size}
-          </span>
         </div>
       )}
 
@@ -339,6 +279,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
         className={cn('pb-0 lg:pb-0 [&_.rc-table-row:last-child_td]:border-b-0')}
         data={sortedComments}
         getColumns={() => [
+          // Define your columns here as before, including an Action button
           {
             title: <span className="block whitespace-nowrap">Comment By</span>,
             dataIndex: 'fullName',
@@ -351,16 +292,18 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
                 </Text>
                 <div>
                   <span>
-                    <div style={{ display: 'inline-block' }}>{record?.date?.substring(0, 10)}</div>
+                    <div style={{ display: 'inline-block' }}>
+                      {record?.date?.substring(0, 10)}
+                    </div>
                   </span>
                 </div>
-                {/* Show indicator if this belongs to current user */}
                 {belongsToCurrentUser(record) && (
                   <div className="text-xs text-blue-600 font-medium">Your Task</div>
                 )}
               </>
             ),
           },
+          
           {
             title: <span className="block whitespace-nowrap">Comments</span>,
             dataIndex: 'comments',
@@ -390,7 +333,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             width: 300,
             render: (_: string, record: Comment) => {
               const { status, colorClass } = getDateStatus(record?.followupdate);
-              const formattedDate = record?.followupdate
+              const formatted = record?.followupdate
                 ? new Date(record.followupdate).toLocaleString('en-US', {
                     month: 'short',
                     day: 'numeric',
@@ -404,12 +347,11 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
                 <div className="flex flex-col">
                   <Text className={`font-medium ${colorClass}`}>
                     {status}
-                    {/* Show notification indicator */}
                     {notifiedIdsRef.current.has(record.id) && (
                       <span className="ml-2 text-xs text-gray-500">🔔</span>
                     )}
                   </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">{formattedDate}</Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">{formatted}</Text>
                 </div>
               );
             },
@@ -455,3 +397,23 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 };
 
 export default ShowFollowup;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

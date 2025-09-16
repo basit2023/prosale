@@ -17,107 +17,92 @@ export type Invoice = {
   assigned_to?: string;
   lead_pass?: string | number | boolean;
   last_updated?: string | null;
-  city?:string | null;
-  sp?:any;
+  city?: string | null;
+  sp?: any;
+  total?: string | number;
 };
 
-type Args = { id: string };
+type Args = { id: string; total: number };
 type Result = { data: Invoice[] | null; loading: boolean; error: Error | null };
 
-export const useEmployeeData = ({ id, sp }: Args): Result => {
+export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaultTotal?: number }) => {
   const { data: session, status } = useSession();
-
-
-  // null = not loaded yet; [] = loaded but no rows
-  const [data, setData] = useState<Invoice[] | null>(null);
+  const [data, setData] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [offset, setOffset] = useState(0);
+  const [totalLeads, setTotalLeads] = useState(0);
+
   const abortRef = useRef<AbortController | null>(null);
 
-  // tolerate different company id keys
   const email = session?.user?.email ?? null;
-  const company =
-    (session as any)?.user?.comanpy_id ??
-    (session as any)?.user?.company_id ??
-    (session as any)?.user?.companyId ??
-    null;
+  const company = (session as any)?.user?.company_id ?? null;
 
-  useEffect(() => {
-    // while NextAuth is resolving, stay in "loading"
-    if (status === 'loading') {
-      setLoading(true);
-      setData(null);
-      setError(null);
-      return;
-    }
+  const fetchLeads = async (limit: number, append = false) => {
+    if (status !== 'authenticated' || !email || !id) return;
 
-    // if unauthenticated or required fields missing, stop loading
-    if (status !== 'authenticated' || !email || !id) {
-      setData([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    // start fetch
-    setLoading(true);
+    setLoading(!append);
     setError(null);
-    setData(null);
 
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
-    (async () => {
-      try {
-        const res = await apiService.get(`/highly-interested-tabel/${id}`, {
-          params: { field: 'leads_label', email, company },
-          signal: controller.signal,
-        });
-        console.log('the leads raw data is;',res)
+    try {
+      const res = await apiService.get(`/highly-interested-tabel/${id}`, {
+        params: { field: 'leads_label', email, company, limit, offset },
+        signal: controller.signal,
+      });
 
-        // accept both {leads} and {data:{leads}}
-        const leadsRaw =
-          (res?.data?.leads as any[]) ??
-          (res?.data?.data?.leads as any[]) ??
-          [];
+      const leadsRaw = res?.data?.leads ?? [];
+      const mapped: Invoice[] = leadsRaw.map((user: any) => ({
+        id: String(user.id ?? ''),
+        name: user.customer_name ?? '',
+        permission: user.permission,
+        mobile: Number(user.mobile ?? 0),
+        project_name: user.project_name ?? '',
+        project_status: user.project_status ?? '',
+        interested_in: user.interested_in ?? '',
+        view_dt: user.view_dt ?? null,
+        status: user.status ?? '',
+        company_title: user.company_title,
+        assigned_to: user.assigned_to,
+        lead_pass: user.lead_pass,
+        city: user.city,
+        last_updated: user.last_updated ? String(user.last_updated).substring(0, 10) : null,
+      }));
 
-        const mapped: Invoice[] = (leadsRaw || []).map((user: any) => ({
-          id: String(user.id ?? ''),
-          name: user.customer_name ?? '',
-          permission: user.permission,
-          mobile: Number(user.mobile ?? 0),
-          project_name: user.project_name ?? '',
-          project_status: user.project_status ?? '',
-          interested_in: user.interested_in ?? '',
-          view_dt: user.view_dt ?? null,
-          status: user.status ?? '',
-          company_title: user.company_title,
-          assigned_to: user.assigned_to,
-          lead_pass: user.lead_pass,
-          city:user.city,
-          last_updated: user.last_updated
-            ? String(user.last_updated).substring(0, 10)
-            : null,
-        }));
+      setData(prev => (append ? [...prev, ...mapped] : mapped));
+      setOffset(prev => prev + mapped.length);
+      setTotalLeads(res?.data?.total ?? 0);
 
-        setData(mapped);
-      } catch (err: any) {
-        // ignore cancellations
-        if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
+    } catch (err: any) {
+      if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
+      console.error('Error fetching leads:', err);
+      setError(err instanceof Error ? err : new Error('Failed to fetch'));
+      toast.error('Error fetching leads. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        console.error('Error fetching label leads:', err);
-        setError(err instanceof Error ? err : new Error('Failed to fetch'));
-        setData([]);
-        toast.error('Error fetching label leads. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    })();
+  // initial load
+  useEffect(() => {
+    if (status === 'authenticated' && email && id) {
+      fetchLeads(defaultTotal);
+    } else {
+      setData([]);
+      setLoading(false);
+    }
+  }, [status, email, id]);
 
-    return () => controller.abort();
-  }, [status, email, company, id]);
+  const loadMore = () => {
+    if (data.length < totalLeads) {
+      fetchLeads(defaultTotal, true); // append next batch
+    }
+  };
 
-  // expose consistent flags
-  return { data, loading: loading || data === null, error };
+  return { data, loading, error, loadMore, totalLeads };
 };
+
+

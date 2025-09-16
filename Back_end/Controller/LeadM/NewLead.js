@@ -604,7 +604,7 @@ const CreateNewLead = async (req, res) => {
           interested_in = "",
           project = "",
           company_id = "",
-          city,
+          city="",
           // ignore any 'user' field on each CSV row; we always use assignedTo from req.body
         } = lead;
 
@@ -638,7 +638,7 @@ const CreateNewLead = async (req, res) => {
           const [insertCustomer] = await mysqlConnection.promise().query(
             `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type, city) 
              VALUES (?, ?, ?, ?, ?, ?,?)`,
-            [full_name, mobile, email, company_id, dt, type]
+            [full_name, mobile, email, company_id, dt, type,city]
           );
           customerId = insertCustomer.insertId;
         }
