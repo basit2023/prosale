@@ -289,13 +289,11 @@ const highly_interested_table = async (req, res) => {
     }
 
     // base query parts
-    const baseFrom = `
-      FROM leads_main AS main
+    const baseFrom = `FROM leads_main AS main
       LEFT JOIN leads_customers AS customer  ON main.customer      = customer.id
       LEFT JOIN lead_projects   AS project   ON main.project       = project.id
       LEFT JOIN leads_labels    AS label     ON main.leads_label   = label.id
-      LEFT JOIN inventory_type  AS interested_in ON main.interested_in = interested_in.id
-    `;
+      LEFT JOIN inventory_type  AS interested_in ON main.interested_in = interested_in.id`;
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const orderBy = 'ORDER BY main.last_updated DESC, main.id DESC';
 

@@ -260,7 +260,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
   return (
     <div className="space-y-3">
-      {memoizedSession?.user?.permission > 4 && (
+      {memoizedSession?.user?.permission >= 4 && (
         <div className="flex items-center justify-between mb-2">
           <button
             className={`px-3 py-1.5 rounded text-white transition-colors ${
