@@ -222,7 +222,14 @@ const Highly_interested = async (req, res) => {
 const highly_interested_table = async (req, res) => {
   try {
     const rawId = req.params.id;
-    const { field, email, total: limitParam } = req.query; // 👈 include limit from query
+
+    // accept field/email as before + fix query params: limit/offset
+    const {
+      field,
+      email,
+      limit: limitParam,       // ✅ now honoring `limit`
+      offset: offsetParam = 0, // ✅ new: pagination offset
+    } = req.query;
 
     // allowlist for fields
     const FIELD_MAP = {
@@ -294,10 +301,12 @@ const highly_interested_table = async (req, res) => {
       LEFT JOIN lead_projects   AS project   ON main.project       = project.id
       LEFT JOIN leads_labels    AS label     ON main.leads_label   = label.id
       LEFT JOIN inventory_type  AS interested_in ON main.interested_in = interested_in.id`;
+
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
     const orderBy = 'ORDER BY main.last_updated DESC, main.id DESC';
 
-    // count total leads
+    // total count
+    // (keep alias names simple in count query to avoid backtick replace issues)
     const [countRows] = await mysqlConnection.promise().query(
       `SELECT COUNT(*) AS total FROM leads_main AS main ${whereSql.replaceAll('`main`.', 'main.')}`,
       params
@@ -308,37 +317,97 @@ const highly_interested_table = async (req, res) => {
       return res.status(200).json({ success: true, message: 'No leads found', leads: [], total });
     }
 
-    // handle limit safely
-    const requestedLimit = Number(limitParam) || 300; // default 300
-    const fetchLimit = requestedLimit >= total ? total : requestedLimit;
+    // pagination
+    const requestedLimit = Number(limitParam) || 300;
+    const offset = Number(offsetParam) || 0;
+    const fetchLimit = Math.max(0, Math.min(requestedLimit, total - offset));
 
-    // fetch leads with LIMIT
+    if (fetchLimit <= 0) {
+      return res.status(200).json({ success: true, message: 'No more leads', leads: [], total });
+    }
+
+    // main page fetch (WITH customer id so we can attach history)
     const sql = `
       SELECT
         main.id,
-        customer.full_name      AS customer_name,
-        customer.mobile         AS mobile,
-        customer.city           AS city,
-        project.name            AS project_name,
-        project.status          AS project_status,
-        interested_in.unit      AS interested_in,
+        main.customer            AS customer_id,
+        customer.full_name       AS customer_name,
+        customer.mobile          AS mobile,
+        customer.city            AS city,
+        project.name             AS project_name,
+        project.status           AS project_status,
+        interested_in.unit       AS interested_in,
         main.status,
         main.view_dt,
         main.user,
         main.assigned_on,
         main.assigned_to,
-        label.label             AS label,
-        label.bg                AS bg_color,
+        label.label              AS label,
+        label.bg                 AS bg_color,
         main.last_updated,
         main.lead_pass
       ${baseFrom}
       ${whereSql}
       ${orderBy}
-      LIMIT ${fetchLimit}
+      LIMIT ? OFFSET ?
     `;
 
-    const [rows] = await mysqlConnection.promise().query(sql, params);
-    const leads = rows.map(r => ({ ...r, permission }));
+    const [rows] = await mysqlConnection.promise().query(sql, [...params, fetchLimit, offset]);
+
+    // ====== HISTORY: fetch all leads for the same customers and attach ======
+    const customerIds = [...new Set(rows.map(r => r.customer_id).filter(Boolean))];
+    let historyMap = new Map();
+
+    if (customerIds.length > 0) {
+      const placeholders = customerIds.map(() => '?').join(',');
+      const historySql = `
+        SELECT
+          h.id,
+          h.customer                              AS customer_id,
+          h.project                               AS project_id,
+          hp.name                                 AS project_name,
+          h.leads_label                           AS leads_label_id,
+          lb.label                                AS leads_label,
+          lb.bg                                   AS leads_label_bg,
+          h.status,
+          h.assigned_to,
+          h.user,
+          h.last_updated,
+          h.assigned_on
+        FROM leads_main h
+        LEFT JOIN lead_projects hp ON hp.id = h.project
+        LEFT JOIN leads_labels  lb ON lb.id = h.leads_label
+        WHERE h.customer IN (${placeholders})
+        ORDER BY h.last_updated DESC, h.id DESC
+      `;
+      const [historyRows] = await mysqlConnection.promise().query(historySql, customerIds);
+
+      historyMap = historyRows.reduce((acc, r) => {
+        const arr = acc.get(r.customer_id) || [];
+        arr.push({
+          id: r.id,
+          project_id: r.project_id,
+          project_name: r.project_name,
+          leads_label_id: r.leads_label_id,
+          leads_label: r.leads_label,
+          leads_label_bg: r.leads_label_bg,
+          status: r.status,
+          assigned_to: r.assigned_to,
+          user: r.user,
+          last_updated: r.last_updated,
+          assigned_on: r.assigned_on,
+        });
+        acc.set(r.customer_id, arr);
+        return acc;
+      }, new Map());
+    }
+
+    // attach history and permission
+    const leads = rows.map(r => ({
+      ...r,
+      permission,
+      history: historyMap.get(r.customer_id) || [],
+    }));
 
     return res.status(200).json({
       success: true,
@@ -356,6 +425,7 @@ const highly_interested_table = async (req, res) => {
     });
   }
 };
+
 
 
 // const highly_interested_table = async (req, res) => {

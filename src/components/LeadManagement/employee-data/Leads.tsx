@@ -1,7 +1,21 @@
 import { useSession } from 'next-auth/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import apiService from '@/utils/apiService';
+
+export type LeadHistoryItem = {
+  id: number | string;
+  project_id?: number | string | null;
+  project_name?: string | null;
+  leads_label_id?: number | string | null;
+  leads_label?: string | null;
+  leads_label_bg?: string | null;
+  status?: string | null;
+  assigned_to?: string | null;
+  user?: string | null;
+  last_updated?: string | null;  // ISO
+  assigned_on?: string | null;   // ISO
+};
 
 export type Invoice = {
   id: string;
@@ -12,7 +26,7 @@ export type Invoice = {
   interested_in: string;
   status: string;
   view_dt: any;
-  permission?: string;
+  permission?: string | number;
   company_title?: string;
   assigned_to?: string;
   lead_pass?: string | number | boolean;
@@ -20,9 +34,12 @@ export type Invoice = {
   city?: string | null;
   sp?: any;
   total?: string | number;
+
+  // NEW: history of “same” customer’s other leads
+  history?: LeadHistoryItem[];
+  customer_id?: number | string;
 };
 
-type Args = { id: string; total: number };
 type Result = { data: Invoice[] | null; loading: boolean; error: Error | null };
 
 export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaultTotal?: number }) => {
@@ -30,6 +47,7 @@ export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaul
   const [data, setData] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+
   const [offset, setOffset] = useState(0);
   const [totalLeads, setTotalLeads] = useState(0);
 
@@ -55,6 +73,7 @@ export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaul
       });
 
       const leadsRaw = res?.data?.leads ?? [];
+
       const mapped: Invoice[] = leadsRaw.map((user: any) => ({
         id: String(user.id ?? ''),
         name: user.customer_name ?? '',
@@ -70,12 +89,29 @@ export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaul
         lead_pass: user.lead_pass,
         city: user.city,
         last_updated: user.last_updated ? String(user.last_updated).substring(0, 10) : null,
+
+        // NEW
+        customer_id: user.customer_id,
+        history: Array.isArray(user.history)
+          ? user.history.map((h: any) => ({
+              id: h.id,
+              project_id: h.project_id ?? null,
+              project_name: h.project_name ?? null,
+              leads_label_id: h.leads_label_id ?? null,
+              leads_label: h.leads_label ?? null,
+              leads_label_bg: h.leads_label_bg ?? null,
+              status: h.status ?? null,
+              assigned_to: h.assigned_to ?? null,
+              user: h.user ?? null,
+              last_updated: h.last_updated ?? null,
+              assigned_on: h.assigned_on ?? null,
+            }))
+          : [],
       }));
 
       setData(prev => (append ? [...prev, ...mapped] : mapped));
       setOffset(prev => prev + mapped.length);
       setTotalLeads(res?.data?.total ?? 0);
-
     } catch (err: any) {
       if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
       console.error('Error fetching leads:', err);
@@ -86,23 +122,23 @@ export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaul
     }
   };
 
-  // initial load
+  // initial load (and when id/email change)
   useEffect(() => {
     if (status === 'authenticated' && email && id) {
-      fetchLeads(defaultTotal);
+      setOffset(0);         // reset pagination on id/email change
+      fetchLeads(defaultTotal, false);
     } else {
       setData([]);
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, email, id]);
 
   const loadMore = () => {
     if (data.length < totalLeads) {
-      fetchLeads(defaultTotal, true); // append next batch
+      fetchLeads(defaultTotal, true); // append next page
     }
   };
 
   return { data, loading, error, loadMore, totalLeads };
 };
-
-

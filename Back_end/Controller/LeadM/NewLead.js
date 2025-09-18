@@ -557,7 +557,7 @@ const notifyUser = async (userId, message, leadId) => {
 // };
 
 const CreateNewLead = async (req, res) => {
-  const { csv,user } = req.query;
+  const { csv, user } = req.query;
 
   // the user we want to assign leads to (required)
   const assignedTo = user;
@@ -604,8 +604,8 @@ const CreateNewLead = async (req, res) => {
           interested_in = "",
           project = "",
           company_id = "",
-          city="",
-          // ignore any 'user' field on each CSV row; we always use assignedTo from req.body
+          city = "",
+          // ignore any 'user' field on each CSV row; we always use assignedTo from req.query
         } = lead;
 
         const normalizedMobile = normalizeMobile(mobile);
@@ -614,31 +614,31 @@ const CreateNewLead = async (req, res) => {
           continue;
         }
 
-        const sourceId = sourceMap[source.trim().toLowerCase()];
+        const sourceId = sourceMap[(source || "").trim().toLowerCase()];
         if (!sourceId) {
           results.push({ success: false, mobile, message: `Invalid source: '${source}'` });
           continue;
         }
 
-        const projectId = projectMap[project.trim().toLowerCase()];
+        const projectId = projectMap[(project || "").trim().toLowerCase()];
         if (!projectId) {
           results.push({ success: false, mobile, message: `Invalid project: '${project}'` });
           continue;
         }
 
-        // Check if customer exists
+        // Check if customer exists (by normalized mobile)
         const [customerCheck] = await mysqlConnection.promise().query(
           `SELECT id FROM leads_customers WHERE mobile = ?`,
           [normalizedMobile]
         );
         let customerId = customerCheck.length > 0 ? customerCheck[0].id : null;
 
-        // Create customer if not exists
+        // Create customer ONLY if not exists
         if (!customerId) {
           const [insertCustomer] = await mysqlConnection.promise().query(
             `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type, city) 
-             VALUES (?, ?, ?, ?, ?, ?,?)`,
-            [full_name, mobile, email, company_id, dt, type,city]
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [full_name, normalizedMobile, email, company_id, dt, type, city]
           );
           customerId = insertCustomer.insertId;
         }
@@ -659,7 +659,7 @@ const CreateNewLead = async (req, res) => {
           continue;
         }
 
-        // Insert the new lead - ALWAYS assign to assignedTo from request body
+        // Insert the new lead - ALWAYS assign to assignedTo from request-level
         const [insertLeadResult] = await mysqlConnection.promise().query(
           `INSERT INTO leads_main 
            (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user, assigned_on) 
@@ -668,12 +668,12 @@ const CreateNewLead = async (req, res) => {
             customerId,
             sourceId,
             projectId,
-            assignedTo,               // <--- assign here
+            assignedTo, // assign here
             interested_in,
             investment_budget,
             dt,
             company_id,
-            assignedTo,               // keep 'user' column same as assigned user
+            assignedTo, // keep 'user' column same as assigned user
             dt,
           ]
         );
@@ -703,37 +703,43 @@ const CreateNewLead = async (req, res) => {
   // Single lead logic
   try {
     const {
-      full_name,
-      mobile,
-      email,
-      investment_budget,
-      type,
-      source,          // for single lead you seem to pass an ID already; leaving as-is
-      interested_in,
-      company_id,
-      project,         // project id
-      remarks,         // (unused here but kept if needed elsewhere)
+      full_name = "",
+      mobile = "",
+      email = "",
+      investment_budget = "",
+      type = "",
+      source, // for single lead you seem to pass an ID already; leaving as-is
+      interested_in = "",
+      company_id = "",
+      project, // project id
+      remarks, // unused here
       dt,
-      city,
-      // user          // ignore any user here; we already have assignedTo
-    } = req.body;
+      city = "",
+      // user // ignore any user here; we already have assignedTo
+    } = req.body || {};
 
     if (!mobile) {
       return res.status(400).json({ success: false, message: "Mobile Number is required" });
     }
 
-    // Check if customer exists
+    const normalizedMobile = normalizeMobile(mobile);
+    if (!normalizedMobile) {
+      return res.status(400).json({ success: false, message: "Invalid Mobile Number" });
+    }
+
+    // Check if customer exists (by normalized mobile)
     const [customerCheck] = await mysqlConnection.promise().query(
       `SELECT id FROM leads_customers WHERE mobile = ?`,
-      [mobile]
+      [normalizedMobile]
     );
     let customerId = customerCheck.length > 0 ? customerCheck[0].id : null;
 
+    // Create customer ONLY if not exists
     if (!customerId) {
       const [insertCustomer] = await mysqlConnection.promise().query(
-        `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type,city) 
-         VALUES (?, ?, ?, ?, ?, ?,?)`,
-        [full_name, mobile, email, company_id, dt, type,city]
+        `INSERT INTO leads_customers (full_name, mobile, email, company_id, dt, type, city) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [full_name, normalizedMobile, email, company_id, dt || new Date(), type, city]
       );
       customerId = insertCustomer.insertId;
     }
@@ -752,6 +758,7 @@ const CreateNewLead = async (req, res) => {
       });
     }
 
+    const assignedOn = dt || new Date();
     const [insertLeadResult] = await mysqlConnection.promise().query(
       `INSERT INTO leads_main 
        (customer, leads_source, project, assigned_to, interested_in, investment_budget, dt, company_id, user, assigned_on) 
@@ -760,13 +767,13 @@ const CreateNewLead = async (req, res) => {
         customerId,
         source,
         project,
-        assignedTo,          // <--- assign to request user
+        assignedTo,
         interested_in,
         investment_budget,
-        dt,
+        assignedOn,
         company_id,
-        assignedTo,          // keep 'user' column same as assigned user
-        dt,
+        assignedTo,
+        assignedOn,
       ]
     );
 
@@ -794,6 +801,7 @@ const CreateNewLead = async (req, res) => {
     });
   }
 };
+
 
 
 
