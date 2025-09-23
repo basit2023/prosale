@@ -108,7 +108,7 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
 
   // Determine if we're on the last page
   const isLastPage = currentPage * pageSize >= totalCount;
-  console.log("the total pages is:,", isLastPage,currentPage,pageSize,totalCount)
+
 
   return (
     <>

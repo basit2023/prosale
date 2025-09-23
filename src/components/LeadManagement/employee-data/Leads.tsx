@@ -40,9 +40,7 @@ export type Invoice = {
   customer_id?: number | string;
 };
 
-type Result = { data: Invoice[] | null; loading: boolean; error: Error | null };
-
-export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaultTotal?: number }) => {
+export const useEmployeeData = ({ id, pageSize = 50 }: { id: string; pageSize?: number }) => {
   const { data: session, status } = useSession();
   const [data, setData] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +54,15 @@ export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaul
   const email = session?.user?.email ?? null;
   const company = (session as any)?.user?.company_id ?? null;
 
-  const fetchLeads = async (limit: number, append = false) => {
+  const fetchLeads = async ({
+    limit,
+    offsetArg,
+    append,
+  }: {
+    limit: number;
+    offsetArg: number;
+    append: boolean;
+  }) => {
     if (status !== 'authenticated' || !email || !id) return;
 
     setLoading(!append);
@@ -68,7 +74,7 @@ export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaul
 
     try {
       const res = await apiService.get(`/highly-interested-tabel/${id}`, {
-        params: { field: 'leads_label', email, company, limit, offset },
+        params: { field: 'leads_label', email, company, limit, offset: offsetArg },
         signal: controller.signal,
       });
 
@@ -110,7 +116,7 @@ export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaul
       }));
 
       setData(prev => (append ? [...prev, ...mapped] : mapped));
-      setOffset(prev => prev + mapped.length);
+      setOffset(offsetArg + mapped.length); // advance by what we actually received
       setTotalLeads(res?.data?.total ?? 0);
     } catch (err: any) {
       if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
@@ -122,21 +128,21 @@ export const useEmployeeData = ({ id, defaultTotal = 300 }: { id: string; defaul
     }
   };
 
-  // initial load (and when id/email change)
+  // initial load (and when id/email/pageSize change)
   useEffect(() => {
     if (status === 'authenticated' && email && id) {
-      setOffset(0);         // reset pagination on id/email change
-      fetchLeads(defaultTotal, false);
+      setOffset(0); // reset pagination
+      fetchLeads({ limit: pageSize, offsetArg: 0, append: false });
     } else {
       setData([]);
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, email, id]);
+  }, [status, email, id, pageSize]);
 
   const loadMore = () => {
     if (data.length < totalLeads) {
-      fetchLeads(defaultTotal, true); // append next page
+      fetchLeads({ limit: pageSize, offsetArg: offset, append: true });
     }
   };
 

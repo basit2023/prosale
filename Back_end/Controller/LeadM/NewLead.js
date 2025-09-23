@@ -23,7 +23,7 @@ const GetSourceDepInterestLeadtype = async (req, res) => {
         const [sources] = await mysqlConnection.promise().query('SELECT id, platform FROM leads_source');
         const [units] = await mysqlConnection.promise().query('SELECT id, unit FROM inventory_type');
         const [projects] = await mysqlConnection.promise().query(
-            'SELECT id, name FROM lead_projects WHERE status = "N"'
+            'SELECT id, name FROM lead_projects WHERE status = "Y"'
         );
         
         const data = sources.map(row => ({ name: row.platform, value: String(row.id) }));
@@ -643,21 +643,21 @@ const CreateNewLead = async (req, res) => {
           customerId = insertCustomer.insertId;
         }
 
-        // Check if the same project lead already exists
-        const [projectLeadCheck] = await mysqlConnection.promise().query(
-          `SELECT id, assigned_to FROM leads_main 
-           WHERE customer = ? AND project = ?`,
-          [customerId, projectId]
-        );
+        // // Check if the same project lead already exists
+        // const [projectLeadCheck] = await mysqlConnection.promise().query(
+        //   `SELECT id, assigned_to FROM leads_main 
+        //    WHERE customer = ? AND project = ?`,
+        //   [customerId, projectId]
+        // );
 
-        if (projectLeadCheck.length > 0) {
-          results.push({
-            success: false,
-            mobile,
-            message: `Same Project Lead already assigned to ${projectLeadCheck[0].assigned_to || "unknown user"}`,
-          });
-          continue;
-        }
+        // if (projectLeadCheck.length > 0) {
+        //   results.push({
+        //     success: false,
+        //     mobile,
+        //     message: `Same Project Lead already assigned to ${projectLeadCheck[0].assigned_to || "unknown user"}`,
+        //   });
+        //   continue;
+        // }
 
         // Insert the new lead - ALWAYS assign to assignedTo from request-level
         const [insertLeadResult] = await mysqlConnection.promise().query(

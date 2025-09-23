@@ -86,137 +86,107 @@ const CreateComments = async (req, res) => {
 
 
 
+// Get followups, including the customer's `full_name` from leads_customers
 const GetFollowup = async (req, res) => {
-    const { user } = req.params;
-    const { permission, id } = req.query;
-    
-    try {
-        let query;
-        let queryParams = [];
+  const { user } = req.params;
+  const { permission, id } = req.query;
 
-        if (permission >= 9) {
-            // Admin (permission 9+) - get all followups
-            query = `
-                SELECT lc.dt AS date,
-                       lc.lead_id AS lead_id,
-                       lc.id AS id,
-                       lc.comments AS comments,
-                       lc.status AS status,
-                       CONCAT(u.first_name, ' ', u.last_name) AS fullName,
-                       lc.followupdate,
-                       lc.followup,
-                       lc.user,
-                       lc.nextfollowup
-                FROM leads_comments lc
-                JOIN users u ON lc.user = u.name 
-                WHERE lc.status = "N" AND u.del = "N"
-                ORDER BY lc.dt DESC`;
-        } 
-        else if (permission >= 5) {
-            // Zonal Manager (permission 5-8) - get followups for their zone plus their own
-            query = `
-                SELECT lc.dt AS date,
-                       lc.lead_id AS lead_id,
-                       lc.id AS id,
-                       lc.comments AS comments,
-                       lc.status AS status,
-                       CONCAT(u.first_name, ' ', u.last_name) AS fullName,
-                       lc.followupdate,
-                       lc.followup,
-                       lc.user,
-                       lc.nextfollowup
-                FROM leads_comments lc
-                JOIN users u ON lc.user = u.name
-                WHERE lc.status = "N" 
-                AND u.del = "N"
-                AND (
-                    u.id IN (
-                        SELECT u.id 
-                        FROM users_zones uz
-                        JOIN users_teams ut ON uz.id = ut.zone_id
-                        JOIN users u ON u.assigned_team = ut.id
-                        WHERE uz.zonal_manager = ?
-                    )
-                    OR lc.user = ?
-                )
-                ORDER BY lc.dt DESC`;
-            queryParams = [id, user];
-        } 
-        else if (permission == 4) {
-            // Team Manager (permission 4) - get followups for their team plus their own
-            query = `
-                SELECT lc.dt AS date,
-                       lc.lead_id AS lead_id,
-                       lc.id AS id,
-                       lc.comments AS comments,
-                       lc.status AS status,
-                       CONCAT(u.first_name, ' ', u.last_name) AS fullName,
-                       lc.followupdate,
-                       lc.followup,
-                       lc.user,
-                       lc.nextfollowup
-                FROM leads_comments lc
-                JOIN users u ON lc.user = u.name
-                WHERE lc.status = "N" 
-                AND u.del = "N"
-                AND (
-                    u.id IN (
-                        SELECT u.id 
-                        FROM users_teams ut
-                        JOIN users u ON u.assigned_team = ut.id
-                        WHERE ut.manager_id = ?
-                    )
-                    OR lc.user = ?
-                )
-                ORDER BY lc.dt DESC`;
-            queryParams = [id, user];
-        } 
-        else {
-            // Regular user - only their own followups
-            query = `
-                SELECT lc.dt AS date,
-                       lc.lead_id AS lead_id,
-                       lc.id AS id,
-                       lc.comments AS comments,
-                       lc.status AS status,
-                       CONCAT(u.first_name, ' ', u.last_name) AS fullName,
-                       lc.followupdate,
-                       lc.followup,
-                       lc.user,
-                       lc.nextfollowup
-                FROM leads_comments lc
-                JOIN users u ON lc.user = u.name 
-                WHERE lc.status = "N" 
-                AND u.del = "N"
-                AND lc.user = ?
-                ORDER BY lc.dt DESC`;
-            queryParams = [user];
-        }
+  // normalize types
+  const perm = Number(permission) || 0;   // permission level of requester
+  const managerId = Number(id) || 0;      // id used in zone/team subqueries
 
-        const [leads] = await mysqlConnection.promise().query(query, queryParams);
+  try {
+    let query = '';
+    let queryParams = [];
 
-        if (!leads.length) {
-            return res.status(200).json({
-                success: true,
-                message: 'No followups found',
-                leads: []
-            });
-        }
+    // Common SELECT + JOINs for all branches:
+    //  lc.user joins to users.name (as in your schema)
+    //  lc.lead_id -> leads_main.id -> leads_main.customer -> leads_customers.id
+    const BASE_SELECT = `
+      SELECT
+        lc.dt              AS date,
+        lc.lead_id         AS lead_id,
+        lc.id              AS id,
+        lc.comments        AS comments,
+        lc.status          AS status,
+        CONCAT(u.first_name, ' ', u.last_name) AS fullName,   -- commenter display name
+        lc.followupdate,
+        lc.followup,
+        lc.user,
+        lc.nextfollowup,
+        cust.full_name     AS full_name                        -- <-- customer's name from leads_customers
+      FROM leads_comments lc
+      JOIN users u            ON lc.user = u.name
+      LEFT JOIN leads_main lm ON lm.id = lc.lead_id
+      LEFT JOIN leads_customers cust ON cust.id = lm.customer
+      WHERE lc.status = "N" AND u.del = "N"
+    `;
 
-        res.status(200).json({
-            success: true,
-            message: 'Followups fetched successfully',
-            leads: leads,
-        });
-    } catch (error) {
-        console.error('Error fetching followups:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Error in fetching followups',
-            error: error.message,
-        });
+    const ORDER = ` ORDER BY lc.dt DESC`;
+
+    if (perm >= 9) {
+      // Admin: all followups
+      query = BASE_SELECT + ORDER;
+    } else if (perm >= 5) {
+      // Zonal Manager (5–8): users in their zone OR their own
+      query = BASE_SELECT + `
+        AND (
+          u.id IN (
+            SELECT uu.id
+            FROM users_zones uz
+            JOIN users_teams ut ON uz.id = ut.zone_id
+            JOIN users uu ON uu.assigned_team = ut.id
+            WHERE uz.zonal_manager = ?
+          )
+          OR lc.user = ?
+        )
+      ` + ORDER;
+      queryParams = [managerId, user];
+    } else if (perm === 4) {
+      // Team Manager (4): users in their team OR their own
+      query = BASE_SELECT + `
+        AND (
+          u.id IN (
+            SELECT uu.id
+            FROM users_teams ut
+            JOIN users uu ON uu.assigned_team = ut.id
+            WHERE ut.manager_id = ?
+          )
+          OR lc.user = ?
+        )
+      ` + ORDER;
+      queryParams = [managerId, user];
+    } else {
+      // Regular user: only their own followups
+      query = BASE_SELECT + ` AND lc.user = ?` + ORDER;
+      queryParams = [user];
     }
+
+    const [leads] = await mysqlConnection.promise().query(query, queryParams);
+
+    if (!leads.length) {
+      return res.status(200).json({
+        success: true,
+        message: 'No followups found',
+        leads: [],
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Followups fetched successfully',
+      leads,
+    });
+  } catch (error) {
+    console.error('Error fetching followups:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error in fetching followups',
+      error: error.message,
+    });
+  }
 };
+
 
 
 

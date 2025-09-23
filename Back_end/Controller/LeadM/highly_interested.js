@@ -227,10 +227,10 @@ const highly_interested_table = async (req, res) => {
     const {
       field,
       email,
-      limit: limitParam,       // ✅ now honoring `limit`
-      offset: offsetParam = 0, // ✅ new: pagination offset
+      limit: limitParam,      
+      offset: offsetParam = 0, 
     } = req.query;
-
+ 
     // allowlist for fields
     const FIELD_MAP = {
       leads_label: '`main`.`leads_label`',
@@ -408,6 +408,7 @@ const highly_interested_table = async (req, res) => {
       permission,
       history: historyMap.get(r.customer_id) || [],
     }));
+    console.log("the lead length is:",leads.length)
 
     return res.status(200).json({
       success: true,

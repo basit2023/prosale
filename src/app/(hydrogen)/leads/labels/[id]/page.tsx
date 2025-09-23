@@ -4,19 +4,21 @@ import Spinner from '@/components/ui/spinner';
 import TableLayout from './table-layout';
 import InvoiceTable from '@/components/LeadManagement/employee-data/Highly_Interested/table';
 import { useEmployeeData } from '@/components/LeadManagement/employee-data/Leads';
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from 'next/navigation';
+
 export default function EnhancedTablePage({ params }: { params: { id: string } }) {
-   const searchParams:any = useSearchParams();
-  
-  // Get 'total' query parameter from the URL
-  const total = searchParams.get('total');
-  const { data, loading, error } = useEmployeeData({ id: params.id, total });
+  const searchParams = useSearchParams();
+
+  // Treat ?total= as page size
+  const pageSizeParam = searchParams.get('total');
+  const pageSize = Number(pageSizeParam) > 0 ? Number(pageSizeParam) : 50;
+
+  const { data, loading, error } = useEmployeeData({ id: params.id, pageSize });
 
   if (loading || data === null) {
     return (
       <div className="flex h-[70vh] items-center justify-center gap-3">
         <Spinner size="xl" />
-   
       </div>
     );
   }

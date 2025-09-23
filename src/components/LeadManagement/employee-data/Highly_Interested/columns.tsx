@@ -187,7 +187,7 @@ export const useGetColumns = ({
       render: (value: any, row: any) => (
         <RowLink id={row.id}>
           <Text className="font-medium text-gray-700 dark:text-gray-600">
-            {row.view_dt === 'new_lead' ? 'Lead Not Opened' : value || 'N/A'}
+            {(row.view_dt === 'new_lead' && (memoizedSession?.user?.permission) < 8)? 'Lead Not Opened' : value || 'N/A'}
           </Text>
         </RowLink>
       ),
