@@ -4,6 +4,7 @@ import { useEmployeeData } from '@/components/employee-data/employeeList';
 import InvoiceTable from '@/components/employee-data/employee-list/table';
 import TableLayout from '../table-layout';
 import { Empty } from "rizzui";
+import Spinner from '@/components/ui/spinner';
 const pageHeader = {
   title: 'All Employees',
   breadcrumb: [
@@ -17,15 +18,31 @@ const pageHeader = {
 };
 
 export default function EnhancedTablePage() {
-  const invoiceData:any = useEmployeeData();
+   const { data, loading, error } = useEmployeeData();
 
-  
-  if (invoiceData.length === 0) {
+  // Initial load: show spinner
+  if (loading || data === null) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '24px' }}>
-        
-        
-        <Empty text="No Employee found" textClassName="mt-2" />;
+      <div className="flex h-[70vh] items-center justify-center gap-3">
+        <Spinner size="xl" />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center">
+        <Empty text="Failed to load employees. Please try again." textClassName="mt-2" />
+      </div>
+    );
+  }
+
+  // Empty state
+  if (data.length === 0) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center">
+        <Empty text="No Employee found" textClassName="mt-2" />
       </div>
     );
   }
@@ -35,11 +52,11 @@ export default function EnhancedTablePage() {
     <TableLayout
       title={pageHeader.title}
       breadcrumb={pageHeader.breadcrumb}
-      data={invoiceData}
+      data={data}
       fileName="invoice_data"
       header="ID,Name,Email,Mobile,CNIC,Designation,Department,Assigned Office,Status"
     >
-      <InvoiceTable data={invoiceData} />    
+      <InvoiceTable data={data} />    
        
     </TableLayout>
   );

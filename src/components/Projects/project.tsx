@@ -18,33 +18,48 @@ export type Invoice = {
 };
 
 export const ProjectData = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [value, setValue] = useState<any>([]);
 
+  const [raw, setRaw] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   // Memoize the fetch function using useCallback
   const fetchData = useCallback(async () => {
+    if (!session?.user?.email) return;
+    setLoading(true);
+    setError(null);
     try {
       if (session) {
         const response = await apiService.get(`/project-data/?email=${session?.user?.email}`);
         const userData = response.data.projects;
+        setRaw(userData?? []);
         setValue(userData);
       }
-    } catch (error) {
-      console.error('Error fetching Project information:', error);
-      toast.error('Error fetching Project information. Please try again.');
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Failed to fetch employees';
+      setError(msg);
+      toast.error(msg);
+      setRaw([]);
+    } finally {
+      setLoading(false);
     }
   }, [session]); // The function is recreated only if `session` changes
 
-  // Fetch data only once when session is available
   useEffect(() => {
-    if (session) {
-      fetchData();
+    if (status === 'loading') return;            // wait for session
+    if (status === 'unauthenticated') {
+      setRaw([]);
+      setLoading(false);
+      return;
     }
-  }, [session, fetchData]);
+    fetchData();
+  }, [status, fetchData]);
 
   // Memoize the productsData to prevent re-calculating it on every render
-  const productsData = useMemo(() => {
-    return (value || []).map((user: any) => ({
+  const data = useMemo<Invoice[] | null>(() => {
+      if (raw === null) return null;               // still not loaded
+      return raw.map((user: any) => ({
       id: user.id,
       name: user.name,
       status: user.status,
@@ -59,7 +74,7 @@ export const ProjectData = () => {
       slug: user.slug,
       del: user.del,
     }));
-  }, [value]); // The productsData will only be re-calculated if `value` changes
+  }, [raw]);
 
-  return productsData;
+  return { data, loading, error };
 };

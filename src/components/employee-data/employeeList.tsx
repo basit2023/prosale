@@ -18,28 +18,41 @@ export type Invoice = {
 };
 
 export const useEmployeeData = () => {
-  const { data: session } = useSession();
-  const [value, setValue] = useState<any>([]);
+ const { data: session, status } = useSession();
+  const [raw, setRaw] = useState<any[] | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
+    if (!session?.user?.email) return;
+    setLoading(true);
+    setError(null);
     try {
-      if (session) {
-        const response = await apiService.get(`/employees/?email=${session?.user?.email}`);
-        const userData = response.data.users;
-        setValue(userData);
-      }
-    } catch (error: any) {
-      console.error('Error fetching employee data:', error);
-      toast.error(error.response.data.message);
+      const res = await apiService.get(`/employees/?email=${session.user.email}`);
+      setRaw(res.data.users ?? []);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Failed to fetch employees';
+      setError(msg);
+      toast.error(msg);
+      setRaw([]);
+    } finally {
+      setLoading(false);
     }
-  }, [session]);
+  }, [session?.user?.email]);
 
   useEffect(() => {
+    if (status === 'loading') return;            // wait for session
+    if (status === 'unauthenticated') {
+      setRaw([]);
+      setLoading(false);
+      return;
+    }
     fetchData();
-  }, [fetchData]);
+  }, [status, fetchData]);
 
-  const productsData = useMemo(() => {
-    return (value || []).map((user: any) => ({
+  const data = useMemo<Invoice[] | null>(() => {
+    if (raw === null) return null;               // still not loaded
+    return raw.map((user: any) => ({
       id: user.id,
       name: user.name,
       first_name: user.first_name,
@@ -54,11 +67,14 @@ export const useEmployeeData = () => {
       del: user.del,
       office: user.office,
       company_title: user.company_title,
-    }));
-  }, [value]);
+     }));
+  }, [raw]);
 
-  return productsData;
+  return { data, loading, error };
 };
+
+
+
 
 
 
