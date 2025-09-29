@@ -20,6 +20,17 @@ interface DeliveryDetailsProps {
 }
 
 const getColumns = () => [
+    {
+    title: <span className="block whitespace-nowrap">Investment Budget</span>,
+    dataIndex: 'investment_budget',
+    key: 'investment_budget',
+    width: 300,
+    render: (value: string, record: any, index: number) => (
+      <Text className="font-medium text-gray-700 dark:text-gray-600">
+        {record?.investment_budget || 'N/A'}
+      </Text>
+    ),
+  },
   {
     title: <span className="block whitespace-nowrap z-0">Campaign Name</span>,
     dataIndex: 'campaign_name',
@@ -53,17 +64,7 @@ const getColumns = () => [
       </Text>
     ),
   },
-  {
-    title: <span className="block whitespace-nowrap">Investment Budget</span>,
-    dataIndex: 'investment_budget',
-    key: 'investment_budget',
-    width: 300,
-    render: (value: string, record: any, index: number) => (
-      <Text className="font-medium text-gray-700 dark:text-gray-600">
-        {record?.investment_budget || 'N/A'}
-      </Text>
-    ),
-  },
+
   {
     title: <span className="block whitespace-nowrap">Customer Name</span>,
     dataIndex: 'customer_name',

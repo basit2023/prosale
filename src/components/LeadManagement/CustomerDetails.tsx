@@ -108,10 +108,8 @@ export function InvoiceDetails({ id }: any) {
         if (session) {
           const response = await apiService.get(`/get-highlyinterest-by-id/${id}`);
           const userData = response.data.leads;
-         
-
           setValue(userData);
-          console.log("the result is:",userData)
+       
         }
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -122,11 +120,24 @@ export function InvoiceDetails({ id }: any) {
     fetchData();
   }, [session, id]);
 
-  const timestamp = value[0]?.assigned_on;
-  const date = new Date(timestamp * 1000);
+ const raw = value[0]?.assigned_on;
 
-  const formattedDate = `${('0' + date.getDate()).slice(-2)}/${('0' + (date.getMonth() + 1)).slice(-2)}/${date.getFullYear()}`;
+let date;
+if (!raw) {
+  date = new Date(); // fallback to now if missing
+} else if (!isNaN(raw)) {
+  // numeric epoch (seconds)
+  date = new Date(Number(raw) * 1000);
+} else {
+  // string timestamp
+  date = new Date(raw);
+}
 
+// format DD/MM/YYYY
+const formattedDate = `${('0' + date.getDate()).slice(-2)}/${
+  ('0' + (date.getMonth() + 1)).slice(-2)}/${
+  date.getFullYear()
+}`;
   return (
     <div className="rounded-xl border border-gray-300 p-4 w-full bg-transparent">
       <ul className="grid grid-cols-1 xs:grid-cols-2 gap-3"> 
@@ -166,7 +177,7 @@ export function InvoiceDetails({ id }: any) {
         <li className="flex items-center gap-3 justify-start sm:gap-3">
           <span className="font-semibold text-gray-900">Interested In:</span> 
           <span className="text-base font-semibold text-gray-900 sm:text-sm">
-            {value[0]?.category ? value[0]?.category : "N/A"} 
+            {value[0]?.interested_in ? value[0]?.interested_in : "N/A"} 
           </span>
         </li>
         <li className="flex items-center gap-3 justify-start sm:gap-3">
@@ -183,9 +194,9 @@ export function InvoiceDetails({ id }: any) {
         </li>
         {/* this part is add */}
         <li className="flex items-center gap-3 justify-start sm:gap-3">
-          <span className="font-semibold text-gray-900">Campaign Type:</span> 
+          <span className="font-semibold text-gray-900">City:</span> 
           <span className="text-base font-semibold text-gray-900 sm:text-sm">
-          {value[0]?.campaign_type ? value[0]?.campaign_type: "N/A"}
+          {value[0]?.city ? value[0]?.city: "N/A"}
           </span>
         </li>
       </ul>

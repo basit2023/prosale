@@ -67,7 +67,7 @@ export default function Vaultinformation() {
   const sortedData = useMemo(() => {
     return [...allLabel].sort((a, b) => parseFloat(a.sort) - parseFloat(b.sort));
   }, [allLabel]);
-console.log("teh rorted data is:",sortedData)
+
   // Memoize permission check for better performance
   const hasAdminPermission = useMemo(() => {
     return memoizedSession?.user?.permission >= 9;
@@ -80,7 +80,7 @@ console.log("teh rorted data is:",sortedData)
       </div>
     );
   }
-
+const allleads=false;
   return (
     <div className="content">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">

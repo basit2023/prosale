@@ -661,6 +661,7 @@ const SpecificTeamMemberLeads = async (req, res) => {
           customer.full_name AS customer_name,
           customer.email AS email,
           customer.mobile AS mobile,
+          customer.city AS city,
           project.name AS project_name,
           project.status AS project_status,
           project.category AS category,
@@ -688,7 +689,7 @@ const SpecificTeamMemberLeads = async (req, res) => {
         INNER JOIN
           leads_labels AS label ON main.leads_label = label.id
         LEFT JOIN
-          inventory_type AS interested_in ON main.interested_in = interested_in.id
+          inventory_type  AS interested_in ON main.interested_in = interested_in.id
         WHERE main.id = ?;
       `, [id]);
   
@@ -698,7 +699,7 @@ const SpecificTeamMemberLeads = async (req, res) => {
           message: 'No leads found',
         });
       }
-  
+    
       // Respond with all leads information
       res.status(200).json({
         success: true,
