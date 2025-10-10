@@ -38,7 +38,7 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
   const [initialData, setInitialData] = useState<any>(null);
 const memoizedSession=useMemo(()=>session,[session])
   // Memoize the decrypted user data to avoid unnecessary decryption
-  console.log("the user type is:",userData)
+
   const decryptedUserData = useMemo(() => {
     try {
       const encryptedData = localStorage.getItem('uData');

@@ -34,6 +34,8 @@ export const NewEmployeeInfoFormSchema = z.object({
   lead_status:z.string().optional(),
   assigned_team:z.string().optional(),
   company_id:z.string().optional(),
+  targetRevenue :z.number().optional(),
+  achievedRevenue :z.number().optional(),
 });
 
 // generate form types from zod validation schema
@@ -63,5 +65,7 @@ export const defaultValues = {
   del:"N",
   lead_status:"Y",
   company_id: undefined,
+  targetRevenue: 0.00,
+  achievedRevenue: 0.00,
   // portfolios: undefined,
 };

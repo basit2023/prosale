@@ -62,7 +62,9 @@ export default function FileDashboard() {
 
   return (
     <div className="mt-2 @container">
+
       <FileStats className="mb-5 2xl:mb-8" />
+  
       <div className="mb-6 grid grid-cols-1 gap-6 @4xl:grid-cols-12 2xl:mb-8 2xl:gap-8">
       <div className="@container @4xl:col-span-8 @[96.937rem]:col-span-9 flex flex-col">
         <StorageReport className="w-full flex-box" />
@@ -76,6 +78,7 @@ export default function FileDashboard() {
       <div className="grid grid-cols-1 gap-6 @container lg:grid-cols-12 2xl:gap-8 ">
         <div className="col-span-full flex flex-col gap-6 @6xl:col-span-8 2xl:gap-8 3xl:col-span-12">
           {/* <QuickAccess /> */}
+
           <RecentFiles />
           <ActivityReport />
           <FileListTable data={allFilesData} />

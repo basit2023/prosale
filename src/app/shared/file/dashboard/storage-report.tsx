@@ -1,8 +1,12 @@
-import React, { useEffect, useState } from 'react';
+'use client';
+
+import React, { useEffect, useMemo, useState } from 'react';
 import WidgetCard from '@/components/cards/widget-card';
 import { Title } from '@/components/ui/text';
 import { decryptData } from '@/components/encriptdycriptdata';
 import QuickAccess from '@/app/shared/file/dashboard/quick-access';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
   BarChart,
   Bar,
@@ -12,12 +16,15 @@ import {
   Tooltip,
   ResponsiveContainer,
   Legend,
+  PieChart as RPieChart,
+  Pie,
+  Cell,
 } from 'recharts';
 import { useMedia } from '@/hooks/use-media';
 import SimpleBar from '@/components/ui/simplebar';
 import apiService from '@/utils/apiService';
 
-// Define the type/interface for the fetched data
+// types
 interface LeadData {
   month: string;
   employee1?: { name: string; lead_count: number };
@@ -26,7 +33,26 @@ interface LeadData {
   employee4?: { name: string; lead_count: number };
 }
 
-// Initial data for development or default display
+interface Summary {
+  targetRevenue: number;
+  achievedRevenue: number;
+  // attach per-user rows for pie (admin/manager)
+  _usersArray?: Array<{
+    name?: string;
+    full_name?: string;
+    username?: string;
+    employee?: string;
+    email?: string;
+    achievedRevenue?: number | string;
+    targetRevenue?: number | string;
+    achieved_revenue?: number | string;
+    target_revenue?: number | string;
+    achieved?: number | string;
+    target?: number | string;
+    [k: string]: any;
+  }> | null;
+}
+
 const initialData: LeadData[] = [
   {
     month: 'Jan',
@@ -47,7 +73,6 @@ function CustomYAxisTick({ x, y, payload }: any) {
   );
 }
 
-// Custom Tooltip Component
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
@@ -61,58 +86,142 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       </div>
     );
   }
-
   return null;
 };
 
+// Helper to safely read a number from multiple possible keys
+const readNum = (obj: any, keys: string[]) => {
+  for (const k of keys) {
+    const v = obj?.[k] ?? obj?.data?.[k];
+    if (v !== undefined && v !== null) {
+      const n = Number.parseFloat(Array.isArray(v) ? v[0] : v);
+      if (Number.isFinite(n)) return n;
+    }
+  }
+  return 0;
+};
+
 export default function LeadReport({ className }: { className?: string }) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
   const isMobile = useMedia('(max-width: 768px)', false);
   const isDesktop = useMedia('(max-width: 1440px)', false);
   const is2xl = useMedia('(max-width: 1780px)', false);
 
   const [leadData, setLeadData] = useState<LeadData[]>(initialData);
-  const [projects, setProjects] = useState<LeadData[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
   const [userValue, setUserData] = useState<any>();
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const encryptedData = localStorage.getItem('uData');
-        if (encryptedData) {
-          const data: any = decryptData(encryptedData);
-          setUserData(data);
-        }
-      } catch (error: any) {
-        console.error('Error fetching user data:', error);
-      }
-    };
+  const [summary, setSummary] = useState<Summary>({
+    targetRevenue: 0,
+    achievedRevenue: 0,
+    _usersArray: null,
+  });
 
-    fetchUserData();
+  // redirect if not signed in
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/signin');
+    }
+  }, [status, router]);
+
+  // load local user data
+  useEffect(() => {
+    try {
+      const encryptedData = localStorage.getItem('uData');
+      if (encryptedData) {
+        const data: any = decryptData(encryptedData);
+        setUserData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
   }, []);
 
   useEffect(() => {
-    if (!userValue) return;
+    if (!userValue || status !== 'authenticated') return;
 
-    const fetchLeadData = async () => {
+    const fetchAll = async () => {
       try {
-        const response = await apiService.get(`/top-leads/?company_id=${userValue.user.company_id}`);
-        const transformedData = transformData(response.data);
-        setLeadData(transformedData);
+        // bar chart data
+        const resLeads = await apiService.get(
+          `/top-leads/?company_id=${userValue.user.company_id}`
+        );
+        setLeadData(transformData(resLeads.data));
       } catch (error) {
         console.error('Error fetching lead data:', error);
       }
 
       try {
-        const response = await apiService.get(`/projects/?company_id=${userValue.user.company_id}`);
-        
-        setProjects(response.data);
+        const resProjects = await apiService.get(
+          `/projects/?company_id=${userValue.user.company_id}`
+        );
+        setProjects(resProjects.data);
       } catch (error) {
         console.error('Error fetching project data:', error);
       }
+
+      try {
+        // summary data — admin gets all, others by email
+        let resSummary;
+        const perm = Number((session?.user as any)?.permission ?? 0);
+        const isAdmin = (session?.user as any)?.role === 'admin';
+
+        if (isAdmin || perm >= 9) {
+          resSummary = await apiService.get(`/employees-dashbord`);
+        } else {
+          const email = encodeURIComponent((session?.user as any)?.email || '');
+          // This endpoint should return:
+          // - simple user: a single object with their numbers
+          // - manager: { users: [ { ...managerRow }, { ...member1 }, ... ] }
+          resSummary = await apiService.get(`/employees-dashbord/?email=${email}`);
+        }
+
+        const raw = resSummary?.data;
+        const usersArray =
+          Array.isArray(raw) ? raw :
+          Array.isArray(raw?.users) ? raw.users :
+          null;
+
+        // totals for the header
+        let target = 0;
+        let achieved = 0;
+
+        if (usersArray) {
+          for (const u of usersArray) {
+            target += readNum(u, [
+              'targetRevenue', 'target_revenue', 'target', 'total_target', 'revenue_target',
+            ]);
+            achieved += readNum(u, [
+              'achievedRevenue', 'achieved_revenue', 'achieved', 'achive',
+              'achievedTotal', 'achieved_total', 'revenue_achieved',
+            ]);
+          }
+        } else {
+          // single user
+          target = readNum(raw, [
+            'targetRevenue', 'target_revenue', 'target', 'total_target', 'revenue_target',
+          ]);
+          achieved = readNum(raw, [
+            'achievedRevenue', 'achieved_revenue', 'achieved', 'achive',
+            'achievedTotal', 'achieved_total', 'revenue_achieved',
+          ]);
+        }
+
+        setSummary({
+          targetRevenue: target,
+          achievedRevenue: achieved,
+          _usersArray: usersArray ?? null, // keep per-user rows in state (admin/manager)
+        });
+      } catch (error) {
+        console.error('Error fetching targets summary:', error);
+        setSummary({ targetRevenue: 0, achievedRevenue: 0, _usersArray: null });
+      }
     };
 
-    fetchLeadData();
-  }, [userValue]);
+    fetchAll();
+  }, [userValue, status, session?.user]);
 
   const transformData = (data: any[]) => {
     const transformed: LeadData[] = [];
@@ -134,61 +243,232 @@ export default function LeadReport({ className }: { className?: string }) {
       }
     });
 
-    for (const key in groupedByMonth) {
-      transformed.push(groupedByMonth[key]);
-    }
-
+    for (const key in groupedByMonth) transformed.push(groupedByMonth[key]);
     return transformed;
   };
 
+  // =========================
+  // === Pie chart updates ===
+  // =========================
+
+  // Role helpers
+  const role = (session?.user as any)?.role;
+  const perm = Number((session?.user as any)?.permission ?? 0);
+  const isAdmin =  perm >= 9;
+  const isManager = perm >= 4 && !isAdmin;
+  const currentEmail = (session?.user as any)?.email || '';
+
+  const usersArray = summary._usersArray;
+
+  const toNum = (v: any) => {
+    const n = Number.parseFloat(v ?? '0');
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const perUser = useMemo(() => {
+    if (!usersArray) return null;
+    return usersArray.map((u: any, i: number) => {
+      const name =
+        u?.name || u?.full_name || u?.username || u?.employee || u?.email || `User ${i + 1}`;
+      const email = u?.email || '';
+      const achieved =
+        toNum(u?.achievedRevenue ?? u?.achieved ?? u?.achieved_revenue ?? u?.revenue_achieved);
+      const target =
+        toNum(u?.targetRevenue ?? u?.target ?? u?.target_revenue ?? u?.revenue_target);
+      return { name, email, achieved, target };
+    });
+  }, [usersArray]);
+
+  // Existing % header (kept)
+  const percentage = useMemo(() => {
+    const { targetRevenue, achievedRevenue } = summary;
+    if (!targetRevenue) return 0;
+    return Math.min(100, Math.max(0, (achievedRevenue / targetRevenue) * 100));
+  }, [summary]);
+
+  const palette = [
+    '#6366f1', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4', '#a855f7',
+    '#84cc16', '#eab308', '#fb7185', '#10b981', '#f97316', '#60a5fa'
+  ];
+  const remainingColor = '#e5e7eb';
+
+  // Simple user: Achieved vs Remaining
+  const pieDataUser = useMemo(() => {
+    const target = Math.max(0, summary.targetRevenue);
+    const achieved = Math.max(0, Math.min(summary.achievedRevenue, target));
+    const remaining = Math.max(0, target - achieved);
+
+    if (target === 0 && achieved === 0) {
+      return [{ name: 'No Data', value: 1, color: remainingColor }];
+    }
+
+    const pct = target ? (achieved / target) * 100 : 0;
+    const achievedColor = pct >= 100 ? '#16a34a' : pct >= 50 ? '#f59e0b' : '#ef4444';
+
+    return [
+      { name: 'Achieved', value: achieved, color: achievedColor },
+      { name: 'Remaining', value: remaining, color: remainingColor },
+    ];
+  }, [summary]);
+
+  // Manager: You vs Team (Others), by Achieved — requires backend to return users[] that includes manager too
+  const pieDataManager = useMemo(() => {
+    if (!perUser) return [{ name: 'No Data', value: 1, color: remainingColor }];
+
+    let mine = 0;
+    let teamOthers = 0;
+
+    for (const u of perUser) {
+      if (u.email && currentEmail && u.email.toLowerCase() === currentEmail.toLowerCase()) {
+        mine += u.achieved;
+      } else {
+        teamOthers += u.achieved;
+      }
+    }
+
+    if (mine === 0 && teamOthers === 0) {
+      return [{ name: 'No Data', value: 1, color: remainingColor }];
+    }
+
+    return [
+      { name: 'You (Manager)', value: mine, color: '#16a34a' },
+      { name: 'Team (Others)', value: teamOthers, color: '#60a5fa' },
+    ];
+  }, [perUser, currentEmail]);
+
+  // Admin: Achieved per user
+  const pieDataAdmin = useMemo(() => {
+    if (!perUser) return [{ name: 'No Data', value: 1, color: remainingColor }];
+
+    const data = perUser
+      .map((u, i) => ({
+        name: u.name,
+        value: Math.max(0, u.achieved),
+        color: palette[i % palette.length],
+      }))
+      .filter((d) => d.value > 0);
+
+    if (data.length === 0) {
+      return [{ name: 'No Data', value: 1, color: remainingColor }];
+    }
+
+    return data;
+  }, [perUser]);
+
+  const pieData = isAdmin ? pieDataAdmin : isManager ? pieDataManager : pieDataUser;
+
+  // === RENDER ===
+  if (status === 'loading') return null;
+
   return (
     <>
-    <WidgetCard
-      title={'Lead Report'}
-      titleClassName="font-normal text-gray-700 sm:text-base font-inter"
-      description={
-        <div className="flex items-center justify-start">
-          <Title as="h2" className="me-2 font-semibold">
-            Lead Count by Month
-          </Title>
-        </div>
-      }
-      descriptionClassName="text-gray-500 mt-1.5"
-      action={
-        <div className="hidden @2xl:block">
-          {/* Action buttons or elements */}
-        </div>
-      }
-      className={className}
-    >
-      <SimpleBar>
-        <div className="h-96 w-full pt-9">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={leadData}
-              barSize={isMobile ? 16 : isDesktop ? 28 : is2xl ? 32 : 46}
-              margin={{ left: 16 }}
-              className="[&_.recharts-tooltip-cursor]:fill-opacity-20 dark:[&_.recharts-tooltip-cursor]:fill-opacity-10 [&_.recharts-cartesian-axis-tick-value]:fill-gray-500 [&_.recharts-cartesian-axis.yAxis]:-translate-y-3 rtl:[&_.recharts-cartesian-axis.yAxis]:-translate-x-12 [&_.recharts-cartesian-grid-vertical]:opacity-0"
-            >
-              <CartesianGrid strokeDasharray="8 10" strokeOpacity={0.435} />
-              <XAxis dataKey="month" axisLine={false} tickLine={false} />
-              <YAxis
-                axisLine={false}
-                tickLine={false}
-                tick={<CustomYAxisTick />}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Bar dataKey="employee1.lead_count" name={'Top Employee'} fill="#8884d8" />
-              <Bar dataKey="employee2.lead_count" name={'2nd Employee'} fill="#82ca9d" />
-              <Bar dataKey="employee3.lead_count" name={'3rd Employee'} fill="#ffc658" />
-              <Bar dataKey="employee4.lead_count" name={'4th Employee'} fill="#ff8042" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </SimpleBar>
-    </WidgetCard>
-    <QuickAccess />
+      {/* Lead Report (Bar) */}
+      <WidgetCard
+        title={'Lead Report'}
+        titleClassName="font-normal text-gray-700 sm:text-base font-inter"
+        description={
+          <div className="flex items-center justify-start">
+            <Title as="h2" className="me-2 font-semibold">
+              Lead Count by Month
+            </Title>
+          </div>
+        }
+        descriptionClassName="text-gray-500 mt-1.5"
+        action={<div className="hidden @2xl:block" />}
+        className={className}
+      >
+        <SimpleBar>
+          <div className="h-96 w-full pt-9">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={leadData}
+                barSize={isMobile ? 16 : isDesktop ? 28 : is2xl ? 32 : 46}
+                margin={{ left: 16 }}
+                className="[&_.recharts-tooltip-cursor]:fill-opacity-20 dark:[&_.recharts-tooltip-cursor]:fill-opacity-10 [&_.recharts-cartesian-axis-tick-value]:fill-gray-500 [&_.recharts-cartesian-axis.yAxis]:-translate-y-3 rtl:[&_.recharts-cartesian-axis.yAxis]:-translate-x-12 [&_.recharts-cartesian-grid-vertical]:opacity-0"
+              >
+                <CartesianGrid strokeDasharray="8 10" strokeOpacity={0.435} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} tick={<CustomYAxisTick />} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Bar dataKey="employee1.lead_count" name="Top Employee" fill="#8884d8" />
+                <Bar dataKey="employee2.lead_count" name="2nd Employee" fill="#82ca9d" />
+                <Bar dataKey="employee3.lead_count" name="3rd Employee" fill="#ffc658" />
+                <Bar dataKey="employee4.lead_count" name="4th Employee" fill="#ff8042" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </SimpleBar>
+      </WidgetCard>
+
+      {/* Target vs Achieved (Pie) */}
+      <div className="flex mt-5">
+        <WidgetCard
+          title="Target vs Achieved"
+          titleClassName="font-normal text-gray-700 sm:text-base font-inter"
+          description={
+            <div className="flex items-center justify-start">
+              <Title as="h2" className="me-2 font-semibold">
+                {percentage.toFixed(1)}% Achieved
+              </Title>
+            </div>
+          }
+          descriptionClassName="text-gray-500 mt-1.5"
+          className={className}
+        >
+          <div className="grid gap-4">
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <div className="text-xs text-gray-500">Target</div>
+                <div className="font-semibold">
+                  {summary.targetRevenue.toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Achieved</div>
+                <div className="font-semibold">
+                  {summary.achievedRevenue.toLocaleString()}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs text-gray-500">Progress</div>
+                <div className="font-semibold">{percentage.toFixed(1)}%</div>
+              </div>
+            </div>
+
+            <div className="h-80 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <RPieChart>
+                  <Pie
+                    data={pieData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={70}
+                    outerRadius={100}
+                    paddingAngle={2}
+                  >
+                    {pieData.map((slice: any, idx: number) => (
+                      <Cell key={`cell-${idx}`} fill={slice.color} />
+                    ))}
+                  </Pie>
+
+                  <Tooltip
+                    formatter={(value: any, _name: any, entry: any) => {
+                      const v = Number(value) || 0;
+                      return [v.toLocaleString(), entry?.payload?.name || ''];
+                    }}
+                  />
+                  <Legend verticalAlign="bottom" height={24} />
+                </RPieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </WidgetCard>
+      </div>
+
+      <QuickAccess />
     </>
   );
 }

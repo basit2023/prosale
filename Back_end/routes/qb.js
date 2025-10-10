@@ -9,14 +9,14 @@ const { ForgetPassword, ResetPassword } = require("../Controller/ForgetPassword"
 const { getPersonalInfoHandler, updatePersonalInfoHandler, getPersonalInfoHandlerbyId } = require("../Controller/Personalinfo");
 const { UserDetails, createUserDetails,updateUserDetails} = require("../Controller/User_details/UserDetails");
 const { UserLogs,GetUserLogs } = require("../Controller/logs/UserLogs");
-const { AllEmployees } = require("../Controller/Employees/AllEmployees");
+const { AllEmployees, SpecificEmp } = require("../Controller/Employees/AllEmployees");
 const { EmpOffice } = require("../Controller/Employees/EmpOffice");
 const { getAllCompany, GetCompanies, GetSingleCompany } = require("../Controller/SupperAdmin/Getcompany");
 const { DeleteEmployee } = require("../Controller/Employees/DeleteEmployee");
 const { EmpgetPersonalInfo, EmpUpdatePersonalInfo } = require("../Controller/EditEmployInfo/PersonalInfoma");
 const { EmployeeDetails, UpdateEmployeeDetails, CreateEmployeeDetails } = require("../Controller/EditEmployInfo/EmployeeDetails");
 const { EmpOfficeDetails, AllDays, UpdateEmpOfficeandjobDetails, CreateEmpOfficeJobDetails, AllOffices } = require("../Controller/EditEmployInfo/EmployeeJobInfo");
-const { GetEmployeeContectInfo, GetContracts, UpdateEmpContectInfo, CreateEmpJobInfo } = require("../Controller/EditEmployInfo/EmployeeContect");
+const { GetEmployeeContectInfo, GetContracts, UpdateEmpContectInfo, CreateEmpJobInfo, CreateTargetRevenue } = require("../Controller/EditEmployInfo/EmployeeContect");
 const  { GetEmployeeSalaryInfo, GetRupeOrPer, UpdateEmpSalaryInfo, CreateEmpSalaryInfo }= require('../Controller/EditEmployInfo/EmpSalaryInfo');
 const { GetDessignation, GetDepartment, GetUserType, CreateUser } = require("../Controller/EditEmployInfo/AddNewEmployee");
 const { UpdateVaultInfo } = require("../Controller/EditEmployInfo/VaultInfo");
@@ -79,6 +79,7 @@ Router.post('/api/logs',UserLogs)
 Router.get('/api/logs/:email',GetUserLogs)
 //get all employees form the table.
 Router.get('/api/employees',AllEmployees)
+Router.get('/api/employees-dashbord',SpecificEmp)
 Router.get('/api/office/:email', EmpOffice);
 //delete the del i Mean change from N to Y
 Router.put('/api/del/:id', DeleteEmployee);
@@ -99,6 +100,7 @@ Router.post('/api/create-employee-office-job/:id', CreateEmpOfficeJobDetails);
 Router.get('/api/employee-contect-info/:id', GetEmployeeContectInfo);
 Router.put('/api/update_employee-contect-info/:id', UpdateEmpContectInfo);
 Router.post('/api/create-employee-contect-info/:id', CreateEmpJobInfo);
+Router.put('/api/update-target-revenue', CreateTargetRevenue);
 
 
 //Employee salary salary info UpdateEmpSalaryInfo

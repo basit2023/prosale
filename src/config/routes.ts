@@ -99,6 +99,15 @@ export const routes = {
     editpaymentplan:( id: string) => `/payment-plans/${id}/edit`,
     generatePaymentPlan:( id: string) => `/payment-plans/${id}/paymentplan`,
   },
+
+   RevenueTargets : {
+    RevenueTargets : '/revenue-targets',
+    NewTargets:'/revenue-targets/new-targets',
+    updateTarget :(id: string, name: string) => `/revenue-targets/${id}/update?name=${encodeURIComponent(name)}`,
+
+
+
+  },
   searchAndFilter: {
     realEstate: '/search/real-estate',
     nft: '/search/nft',

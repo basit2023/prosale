@@ -41,6 +41,8 @@ const EmpgetPersonalInfo = async (req, res) => {
         gender: user[0].gender,
         department: user[0].department,
         user_type: user[0].user_type,
+        targetRevenue: user[0].targetRevenue,
+        achievedRevenue: user[0].achievedRevenue,
         
         // Add other fields as needed
       },

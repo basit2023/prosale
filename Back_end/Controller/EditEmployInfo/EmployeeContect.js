@@ -209,6 +209,81 @@ const insertParams = [user_id, contract_type, contract_duration,
     res.status(500).json({ success: false, message: "Internal Server Error", error });
   }
 };
+
+ const CreateTargetRevenue = async (req, res) => {
+  try {
+    const { id } = req.query;  // Extract 'id' from the query
+    const { designation, targetRevenue, achievedRevenue } = req.body;
+
+    // If `id` is provided in the query, update only that user's target and achieved revenue
+    if (id) {
+      const [result] = await mysqlConnection
+        .promise()
+        .execute(
+          `
+          UPDATE users
+          SET targetRevenue = ?, achievedRevenue = ?
+          WHERE del = 'N' AND id = ?
+          `,
+          [targetRevenue, achievedRevenue, id]
+        );
+
+      // Check if any rows were affected and return a success message
+      if (result.affectedRows > 0) {
+        return res.status(200).json({
+          success: true,
+          message: `Updated targetRevenue and achievedRevenue for user with id ${id}.`,
+          affectedRows: result.affectedRows,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: `No user found with id ${id} or the user is marked as deleted.`,
+        });
+      }
+    }
+
+    // If `id` is not provided, update based on designation
+    // Basic validation for `designation`
+    if (!designation || typeof designation !== 'string') {
+      return res.status(400).json({ success: false, message: 'designation is required (string)' });
+    }
+
+    // Validate `targetRevenue`
+    const parsedRevenue = Number(targetRevenue);
+    if (!Number.isFinite(parsedRevenue)) {
+      return res.status(400).json({ success: false, message: 'targetRevenue must be a valid number' });
+    }
+
+    // Optional: clamp negative values to 0 (or remove if you allow negatives)
+    const valueToSet = parsedRevenue < 0 ? 0 : parsedRevenue;
+
+    // Update users table for a given designation
+    const [result] = await mysqlConnection
+      .promise()
+      .execute(
+        `
+        UPDATE users
+        SET targetRevenue = ?
+        WHERE del = 'N' AND designation = ?
+        `,
+        [valueToSet, designation]
+      );
+
+    return res.status(200).json({
+      success: true,
+      message:
+        result.affectedRows > 0
+          ? `Updated targetRevenue for ${result.affectedRows} user(s) with designation: ${designation}.`
+          : 'No users matched the given designation with del = N.',
+      affectedRows: result.affectedRows,
+    });
+  } catch (error) {
+    console.error('Error executing MySQL query:', error);
+    return res.status(500).json({ success: false, message: 'Internal Server Error', error });
+  }
+};
+
   
   
-module.exports = { GetEmployeeContectInfo,GetContracts, UpdateEmpContectInfo,CreateEmpJobInfo };
+module.exports = { GetEmployeeContectInfo,GetContracts, UpdateEmpContectInfo,CreateEmpJobInfo,CreateTargetRevenue };
