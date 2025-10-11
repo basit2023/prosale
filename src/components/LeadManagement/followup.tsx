@@ -15,6 +15,7 @@ interface Comment {
   id: string;
   lead_id: string;
   fullName: string;
+  full_name?: string; // <-- you’re using this in columns
   comments: string;
   followup: string;
   followupdate: string;
@@ -276,6 +277,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       ? base.filter((c) => {
           const hay = [
             c.fullName,
+            c.full_name,
             c.comments,
             c.followup,
             c.followupdate,
@@ -288,7 +290,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
         })
       : base;
 
-    // Sort by "urgency" (same logic you had)
+    // Sort by "urgency"
     return [...searched].sort((a, b) => {
       const aStatus = getDateStatus(a.followupdate).sortOrder;
       const bStatus = getDateStatus(b.followupdate).sortOrder;
@@ -306,6 +308,12 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
   const start = (page - 1) * pageSize;
   const pageData = filteredSorted.slice(start, start + pageSize);
+
+  // Ensure each row has a stable key
+  const pageDataWithKeys = useMemo(
+    () => pageData.map((r) => ({ ...r, key: r.id ?? `${r.lead_id}-${r.date}` })),
+    [pageData]
+  );
 
   if (loading) return <Spinner />;
 
@@ -345,9 +353,12 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
           />
           <select
             value={pageSize}
-            onChange={(e) => setPageSize(Number(e.target.value))}
+            onChange={(e) => {
+              const n = Number(e.target.value);
+              setPageSize(n);
+              setPage(1); // reset to first page when page size changes
+            }}
             className="px-0 py-1.5 rounded border border-gray-300 w-[30%] !focus:ring-black !focus:border-black dark:border-gray-700 bg-white/80 dark:bg-gray-900/60"
-            
             title="Rows per page"
           >
             {[10, 20, 50, 100].map((n) => (
@@ -360,9 +371,15 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       </div>
 
       <BasicTableWidget
+        /* Force clean rerender when paging changes (helps if the widget memoizes internally) */
+        key={`pg-${page}-ps-${pageSize}-q-${normalizedQuery}-mine-${showMyFollowupsOnly}`}
         title="All comments"
         className={cn('pb-0 lg:pb-0 [&_.rc-table-row:last-child_td]:border-b-0')}
-        data={pageData}
+        data={pageDataWithKeys}
+        /* 🔑 Make sure the inner table uses a stable row key */
+        rowKey="key"
+        /* 🧭 Turn off any built-in pagination so our manual paging shows */
+        pagination={false}
         getColumns={() => [
           {
             title: <span className="block whitespace-nowrap">Comment By</span>,
@@ -387,7 +404,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
               </>
             ),
           },
-           {
+          {
             title: <span className="block whitespace-nowrap">Customer</span>,
             dataIndex: 'full_name',
             key: 'full_name',
@@ -397,10 +414,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
                 <Text className="font-medium text-gray-700 dark:text-gray-600">
                   {record?.full_name || 'N/A'}
                 </Text>
-                <div>
-                 
-                </div>
-                
               </>
             ),
           },
