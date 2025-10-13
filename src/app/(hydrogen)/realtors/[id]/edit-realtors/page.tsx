@@ -27,7 +27,7 @@ type Props = {
 //     }
 //   }
   
-
+// updated for realtors
 const pageHeader = {
   title: 'Edit Realtors Details',
   breadcrumb: [
