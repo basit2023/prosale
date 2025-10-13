@@ -210,65 +210,104 @@ const insertParams = [user_id, contract_type, contract_duration,
   }
 };
 
- const CreateTargetRevenue = async (req, res) => {
+const CreateTargetRevenue = async (req, res) => {
   try {
-    const { id } = req.query;  // Extract 'id' from the query
-    const { designation, targetRevenue, achievedRevenue } = req.body;
+    const { id: rawId } = req.query;
+    const { designation, targetRevenue, achievedRevenue } = req.body ?? {};
+    console.log("the body is:",req.body);
 
-    // If `id` is provided in the query, update only that user's target and achieved revenue
-    if (id) {
-      const [result] = await mysqlConnection
-        .promise()
-        .execute(
-          `
-          UPDATE users
-          SET targetRevenue = ?, achievedRevenue = ?
-          WHERE del = 'N' AND id = ?
-          `,
-          [targetRevenue, achievedRevenue, id]
-        );
+    // If id is provided, update by id (supports partial updates)
+    if (rawId !== undefined) {
+      // Normalize id (guard arrays like ?id=1&id=2)
+      const id = Array.isArray(rawId) ? rawId[0] : rawId;
+      const numericId = Number(id);
+      if (!Number.isInteger(numericId) || numericId <= 0) {
+        return res.status(400).json({ success: false, message: 'Invalid id' });
+      }
 
-      // Check if any rows were affected and return a success message
-      if (result.affectedRows > 0) {
-        return res.status(200).json({
-          success: true,
-          message: `Updated targetRevenue and achievedRevenue for user with id ${id}.`,
-          affectedRows: result.affectedRows,
-        });
-      } else {
+      // Build dynamic SET clause for provided fields
+      const fields = [];
+      const values = [];
+
+      if (targetRevenue !== undefined) {
+        const tr = Number(targetRevenue);
+        if (!Number.isFinite(tr)) {
+          return res.status(400).json({ success: false, message: 'targetRevenue must be a valid number' });
+        }
+        fields.push('targetRevenue = ?');
+        values.push(tr < 0 ? 0 : tr);
+      }
+
+      if (achievedRevenue !== undefined) {
+        const ar = Number(achievedRevenue);
+        if (!Number.isFinite(ar)) {
+          return res.status(400).json({ success: false, message: 'achievedRevenue must be a valid number' });
+        }
+        fields.push('achievedRevenue = ?');
+        values.push(ar < 0 ? 0 : ar);
+      }
+
+      if (fields.length === 0) {
         return res.status(400).json({
           success: false,
-          message: `No user found with id ${id} or the user is marked as deleted.`,
+          message: 'Provide at least one of: targetRevenue, achievedRevenue'
         });
       }
+
+      values.push(numericId);
+
+      const [result] = await mysqlConnection.promise().execute(
+        `
+          UPDATE users
+          SET ${fields.join(', ')}
+          WHERE del = 'N' AND id = ?
+        `,
+        values
+      );
+
+      // result example: { affectedRows, changedRows, info: 'Rows matched: 1  Changed: 0  Warnings: 0', ... }
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: `No active (del='N') user found with id ${numericId}.`
+        });
+      }
+
+      const changed = result.changedRows ?? 0; // mysql2 sets this
+      return res.status(200).json({
+        success: true,
+        message:
+          changed > 0
+            ? `Updated ${changed} field(s) for user id ${numericId}.`
+            : `User id ${numericId} matched, but values were identical (no changes).`,
+        meta: {
+          affectedRows: result.affectedRows,
+          changedRows: changed,
+          info: result.info
+        }
+      });
     }
 
-    // If `id` is not provided, update based on designation
-    // Basic validation for `designation`
+    // ---- Fallback: update by designation (your original branch) ----
     if (!designation || typeof designation !== 'string') {
       return res.status(400).json({ success: false, message: 'designation is required (string)' });
     }
 
-    // Validate `targetRevenue`
     const parsedRevenue = Number(targetRevenue);
     if (!Number.isFinite(parsedRevenue)) {
       return res.status(400).json({ success: false, message: 'targetRevenue must be a valid number' });
     }
 
-    // Optional: clamp negative values to 0 (or remove if you allow negatives)
     const valueToSet = parsedRevenue < 0 ? 0 : parsedRevenue;
 
-    // Update users table for a given designation
-    const [result] = await mysqlConnection
-      .promise()
-      .execute(
-        `
+    const [result] = await mysqlConnection.promise().execute(
+      `
         UPDATE users
         SET targetRevenue = ?
         WHERE del = 'N' AND designation = ?
-        `,
-        [valueToSet, designation]
-      );
+      `,
+      [valueToSet, designation]
+    );
 
     return res.status(200).json({
       success: true,
@@ -276,7 +315,7 @@ const insertParams = [user_id, contract_type, contract_duration,
         result.affectedRows > 0
           ? `Updated targetRevenue for ${result.affectedRows} user(s) with designation: ${designation}.`
           : 'No users matched the given designation with del = N.',
-      affectedRows: result.affectedRows,
+      affectedRows: result.affectedRows
     });
   } catch (error) {
     console.error('Error executing MySQL query:', error);

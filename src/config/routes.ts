@@ -108,6 +108,13 @@ export const routes = {
 
 
   },
+  realtors: {
+    realtorslist:'/realtors',
+    // realtorslist:'/realtors/list',
+    newrealtors:'/realtors/new-realtors',
+    edit: (id: string) => `/realtors/${id}/edit-realtors`,
+    // details: (id: string) => `/realtors/${id}`,
+  },
   searchAndFilter: {
     realEstate: '/search/real-estate',
     nft: '/search/nft',

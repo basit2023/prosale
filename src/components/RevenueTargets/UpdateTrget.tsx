@@ -1,119 +1,97 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
-import { routes } from '@/config/routes';
 import { useSession } from 'next-auth/react';
-import { Controller, SubmitHandler, useForm } from 'react-hook-form';
+import { SubmitHandler, useForm } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import apiService from '@/utils/apiService';
 import {
-  NewEmployeeInfoFormSchema,
   NewEmployeeInfoFormTypes,
   defaultValues,
 } from '@/utils/validators/update-employee-schema';
 import { useRouter } from 'next/navigation';
 import { logsCreate } from '@/app/shared/account-settings/logs';
 
-const SelectBox = dynamic(() => import('@/components/ui/select'), {
-  ssr: false,
-  loading: () => (
-    <div className="grid h-10 place-content-center">
-      <Spinner />
-    </div>
-  ),
-});
-
-interface SelectOption {
-  label: string;
-  value: string;
-}
-
 export default function UpdateTarget({ id }: { id: string }) {
   const { data: session } = useSession();
-  const { back, push } = useRouter();
+  const { back } = useRouter();
 
-  const [designationOptions, setDesignationOptions] = useState<SelectOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [userData, setUserData] = useState<any>();
+  const [userData, setUserData] = useState<any>(null);
+  const [isFetching, setIsFetching] = useState(true);
 
+  // RHF setup
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    reset,
+  } = useForm<NewEmployeeInfoFormTypes>({
+    // initial safe defaults for first paint
+    defaultValues: {
+      ...defaultValues,
+      targetRevenue: 0,
+      achievedRevenue: 0,
+      designation: '',
+    },
+  });
+
+  // Fetch current user data
   useEffect(() => {
     if (!session) return;
 
     const fetchData = async () => {
       try {
+        setIsFetching(true);
         const userResponse = await apiService.get(`/emp-personalinfo/${id}`);
         setUserData(userResponse.data);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Error fetching data. Please try again.');
+      } finally {
+        setIsFetching(false);
       }
     };
 
     fetchData();
   }, [session, id]);
 
-  const fetchDesignation = useCallback(async () => {
-    try {
-      const res = await apiService.get('/alldesignation');
-      const opts =
-        res?.data?.data?.map((d: any) => ({
-          label: d?.name ?? d?.label ?? '',
-          value: String(d?.value ?? d?.id ?? ''),
-        })) ?? [];
-      setDesignationOptions(opts);
-    } catch (error) {
-      console.error('Error fetching designation data:', error);
-      toast.error('Error fetching designation data. Please try again.');
-    }
-  }, []);
-
+  // When userData arrives, push values into the form
   useEffect(() => {
-    if (session) fetchDesignation();
-  }, [session, fetchDesignation]);
+    if (!userData?.user) return;
+    reset({
+      targetRevenue: Number(userData.user.targetRevenue ?? 0),
+      achievedRevenue: Number(userData.user.achievedRevenue ?? 0),
+      // keep designation if you actually use it in your schema/UI; otherwise leave empty
+      designation: userData.user.designation ?? '',
+    });
+  }, [userData, reset]);
 
-  // Initialize form with user data if available
-  const {
-    register,
-    control,
-    handleSubmit,
-    formState: { errors },
-    setValue,
-  } = useForm<NewEmployeeInfoFormTypes>({
-
-    defaultValues: {
-      ...defaultValues,
-      targetRevenue: userData?.targetRevenue ?? 0,
-      achievedRevenue: userData?.achievedRevenue ?? 0,
-      designation: userData?.designation ?? '', // Assuming userData contains designation info
-    },
-  });
-
-  const onSubmit: SubmitHandler<NewEmployeeInfoFormTypes> = async (data, event) => {
+  const onSubmit: SubmitHandler<NewEmployeeInfoFormTypes> = async (data) => {
     setIsLoading(true);
     try {
-  
-
-      // Handle default values for number fields
-      if (Number.isNaN(data.targetRevenue)) data.targetRevenue = 0;
-
-      const payload = {
+      // Coerce NaNs (from empty fields) to 0
+      const payload: any = {
         ...data,
-        designation: data.designation, // map if needed
+        targetRevenue: Number.isFinite(data.targetRevenue) ? data.targetRevenue : 0,
+        achievedRevenue: Number.isFinite(data.achievedRevenue) ? data.achievedRevenue : 0,
       };
+
+      // If designation isn't used here, don't send empty string
+      if (!payload.designation) delete payload.designation;
+
+      console.log('Submitting payload:', payload);
 
       const result = await apiService.put(`/update-target-revenue/?id=${id}`, payload);
 
       toast.success(result?.data?.message || 'Saved');
       if (result?.data?.success) {
         logsCreate({ user: session?.user?.username, desc: 'Created Target' });
-        (event?.target as HTMLFormElement | undefined)?.reset?.();
-        push(routes.leads.management);
       }
     } catch (error: any) {
       console.error('Error saving target:', error);
@@ -123,14 +101,11 @@ export default function UpdateTarget({ id }: { id: string }) {
     }
   };
 
-  if (!userData) return <Spinner />; // Loading spinner while fetching user data
+  if (isFetching) return <Spinner />;
 
   return (
-    <Form<NewEmployeeInfoFormTypes>
-      onSubmit={handleSubmit(onSubmit)}
-      className="@container"
-    >
-      {({ register, control, formState: { errors } }) => (
+    <Form<NewEmployeeInfoFormTypes> onSubmit={handleSubmit(onSubmit)} className="@container">
+      {() => (
         <>
           <FormGroup
             title="Enter Targets"
@@ -149,7 +124,6 @@ export default function UpdateTarget({ id }: { id: string }) {
                 type="number"
                 step="0.01"
                 placeholder="0"
-                 defaultValue={userData.user.targetRevenue}
                 {...register('targetRevenue', { valueAsNumber: true })}
                 error={errors.targetRevenue?.message}
                 className="col-span-full"
@@ -166,41 +140,11 @@ export default function UpdateTarget({ id }: { id: string }) {
                 type="number"
                 step="0.01"
                 placeholder="0"
-                 defaultValue={userData.user.achievedRevenue}
-
                 {...register('achievedRevenue', { valueAsNumber: true })}
                 error={errors.achievedRevenue?.message}
                 className="col-span-full"
               />
             </FormGroup>
-
-            {/* Designation */}
-            {/* <FormGroup
-              title="Designation"
-              description="Select the designation this target applies to"
-              className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-            >
-              <Controller
-                control={control}
-                name="designation"
-                render={({ field: { value, onChange } }) => (
-                  <SelectBox
-                    placeholder="Select Designation"
-                    options={designationOptions}
-                    onChange={(opt: SelectOption | string) =>
-                      onChange(typeof opt === 'string' ? opt : opt?.value)
-                    }
-                    value={value}
-                    className="col-span-full"
-                    getOptionValue={(o: SelectOption) => o.value}
-                    displayValue={(selected: string) =>
-                      designationOptions.find((r) => r.value === selected)?.label ?? ''
-                    }
-                    error={errors?.designation?.message as string}
-                  />
-                )}
-              />
-            </FormGroup> */}
           </div>
 
           <FormFooter
