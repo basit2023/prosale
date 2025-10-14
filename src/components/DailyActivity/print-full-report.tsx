@@ -60,7 +60,7 @@ export default function PrintFullReport({ slug }: { slug: string }) {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
-    year: 'numeric'
+    year: 'numeric',
   });
 
   if (!isClient) {
@@ -101,65 +101,100 @@ export default function PrintFullReport({ slug }: { slug: string }) {
                 weekday: 'long',
                 day: '2-digit',
                 month: 'short',
-                year: 'numeric'
+                year: 'numeric',
               })}
             </h2>
 
             <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full table-fixed border border-gray-300 text-sm print:text-xs">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th style={{ width: '15%' }} className="px-2 py-1 border-b text-left">Employee</th>
-                    <th style={{ width: '10%' }} className="px-2 py-1 border-b text-center">Office Visits</th>
-                    <th style={{ width: '10%' }} className="px-2 py-1 border-b text-center">Clients Matured</th>
-                    <th style={{ width: '10%' }} className="px-2 py-1 border-b text-center">Leads Followups</th>
-                    <th style={{ width: '10%' }} className="px-2 py-1 border-b text-center">Leads Assigned</th>
-                    <th style={{ width: '10%' }} className="px-2 py-1 border-b text-center">Dealer Meetings</th>
-                    <th style={{ width: '10%' }} className="px-2 py-1 border-b text-center">Dealer Registered</th>
-                    <th style={{ width: '25%' }} className="px-2 py-1 border-b text-center">Other Activity</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {activities
-                    .filter(activity =>
-                      activity.daily_office_visits ||
-                      activity.client_matured ||
-                      activity.daily_lead_follow_up ||
-                      activity.lead_assigned ||
-                      activity.dealers_meeting ||
-                      activity.dealers_register ||
-                      activity.office_activity?.trim()
-                    )
-                    .map(activity => (
-                      <tr key={`${activity.user_id}-${date}`} className="break-inside-avoid">
-                        <td className="px-2 py-1 border print:border" style={{ whiteSpace: 'nowrap' }}>
-                          {activity.full_name}
-                        </td>
-                        <td className="px-2 py-1 text-center border print:border">
-                          {activity.daily_office_visits}
-                        </td>
-                        <td className="px-2 py-1 text-center border print:border">
-                          {activity.client_matured}
-                        </td>
-                        <td className="px-2 py-1 text-center border print:border">
-                          {activity.daily_lead_follow_up}
-                        </td>
-                        <td className="px-2 py-1 text-center border print:border">
-                          {activity.lead_assigned}
-                        </td>
-                        <td className="px-2 py-1 text-center border print:border">
-                          {activity.dealers_meeting}
-                        </td>
-                        <td className="px-2 py-1 text-center border print:border">
-                          {activity.dealers_register}
-                        </td>
-                        <td className="px-2 py-1 text-center border print:border">
-                          {activity.office_activity}
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
+              {/* SCROLL ON SCREEN, OPEN ON PRINT */}
+              <div className="max-h-[60vh] overflow-auto print:max-h-none print:overflow-visible">
+                <table className="w-full table-fixed border border-gray-300 text-sm print:text-xs">
+                  <thead>
+                    <tr>
+                      <th
+                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-left
+                                   print:static print:top-auto print:z-auto"
+                        style={{ width: '15%' }}
+                      >
+                        Employee
+                      </th>
+                      <th
+                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
+                                   print:static print:top-auto print:z-auto"
+                        style={{ width: '10%' }}
+                      >
+                        Office Visits
+                      </th>
+                      <th
+                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
+                                   print:static print:top-auto print:z-auto"
+                        style={{ width: '10%' }}
+                      >
+                        Clients Matured
+                      </th>
+                      <th
+                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
+                                   print:static print:top-auto print:z-auto"
+                        style={{ width: '10%' }}
+                      >
+                        Leads Followups
+                      </th>
+                      <th
+                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
+                                   print:static print:top-auto print:z-auto"
+                        style={{ width: '10%' }}
+                      >
+                        Leads Assigned
+                      </th>
+                      <th
+                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
+                                   print:static print:top-auto print:z-auto"
+                        style={{ width: '10%' }}
+                      >
+                        Dealer Meetings
+                      </th>
+                      <th
+                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
+                                   print:static print:top-auto print:z-auto"
+                        style={{ width: '10%' }}
+                      >
+                        Dealer Registered
+                      </th>
+                      <th
+                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
+                                   print:static print:top-auto print:z-auto"
+                        style={{ width: '25%' }}
+                      >
+                        Other Activity
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {activities
+                      .filter(a =>
+                        a.daily_office_visits ||
+                        a.client_matured ||
+                        a.daily_lead_follow_up ||
+                        a.lead_assigned ||
+                        a.dealers_meeting ||
+                        a.dealers_register ||
+                        a.office_activity?.trim()
+                      )
+                      .map(a => (
+                        <tr key={`${a.user_id}-${date}`} className="break-inside-avoid">
+                          <td className="px-2 py-1 border print:border whitespace-nowrap">{a.full_name}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.daily_office_visits}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.client_matured}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.daily_lead_follow_up}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.lead_assigned}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.dealers_meeting}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.dealers_register}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.office_activity}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         ))}
@@ -234,4 +269,3 @@ export default function PrintFullReport({ slug }: { slug: string }) {
     </div>
   );
 }
-//code updated aboce==

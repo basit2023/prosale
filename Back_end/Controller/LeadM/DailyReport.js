@@ -210,7 +210,7 @@ const fullReport = async (req, res) => {
                 name AS username,
                 CONCAT(first_name, ' ', last_name) AS full_name
             FROM users 
-            WHERE del = 'N'
+            WHERE del = 'N' AND user_type != 'admin'
             ORDER BY full_name
         `);
 

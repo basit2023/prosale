@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Text } from '@/components/ui/text';
 import { useRouter } from 'next/navigation';
 import BasicTableWidget from '@/components/controlled-table/basic-table-widget';
@@ -8,48 +8,53 @@ import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
 import { PiTrashFill } from 'react-icons/pi';
+
 interface DeliveryDetailsProps {
   className?: string;
-  id:any;
-  update:any;
+  id: any;
+  update: any;
 }
 
-const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
+const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }: any) => {
   const router = useRouter();
   const { data: session } = useSession();
-  const [comments, setComments] = useState<any>([]);
+  const [comments, setComments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchComments = async () => {
     try {
-      if (session) {
-        const response = await apiService.get(`/show-comments/${id}`);
-        const userData = response.data.leads;
-        if (userData?.length > comments?.length || userData?.length < comments?.length) {
-          
-          setComments(userData);
-        }
-      } 
+      if (!session) return;
+      const response = await apiService.get(`/show-comments/${id}`);
+      const userData = response?.data?.leads ?? [];
+      setComments(userData); // always set; server is source of truth
     } catch (error) {
       console.error('Error fetching comments:', error);
+      toast.error('Failed to load comments.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (session) {
-      fetchComments();
-    }
-  }, [session, id,comments,update]);
+    fetchComments();
+    // remove `comments` from deps to avoid infinite refetch
+  }, [session, id, update]);
 
-  const handleDeleteComment = async (commentId: any, leadId: any) => {
+  // Newest first (descending by date)
+  const sortedComments = useMemo(
+    () =>
+      [...comments].sort(
+        (a, b) => Date.parse(b?.date ?? 0) - Date.parse(a?.date ?? 0)
+      ),
+    [comments]
+  );
+
+  const handleDeleteComment = async (commentId: any) => {
     try {
       const response = await apiService.put(`/delete-comments/${commentId}`);
       if (response.status === 200) {
         toast.success('Comment deleted successfully.');
-        // Remove the deleted comment from state
-        setComments((prevComments:any) => prevComments.filter((comment: any) => comment.id !== commentId));
+        setComments(prev => prev.filter(c => c.id !== commentId));
       } else {
         console.error('Error Deleting comment:', response.statusText);
         toast.error('Error Deleting comment. Please try again.');
@@ -59,46 +64,42 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
       toast.error('Error Deleting comment. Please try again.');
     }
   };
-  const sortedComments = [...comments].sort((a, b) => {
-    return new Date(b.date).getTime() - new Date(a.date).getTime();
-  });
 
-  if (loading) {
-    return <Text>Loading...</Text>;
-  }
+  if (loading) return <Text>Loading...</Text>;
 
   return (
     <BasicTableWidget
-      key={sortedComments?.length} // Update the key whenever the comments change
+      key={sortedComments.length} // forces table to refresh layout when count changes
       title="All comments"
       className={cn('pb-0 lg:pb-0 [&_.rc-table-row:last-child_td]:border-b-0')}
-      data={comments}
+      data={sortedComments} // <-- use the sorted data
       getColumns={() => [
         {
           title: <span className="block whitespace-nowrap">Comment By</span>,
           dataIndex: 'fullName',
           key: 'fullName',
           width: 300,
-          render: (text: string, record: any, index: number) => (
+          render: (_: string, record: any) => (
             <>
               <Text className="font-medium text-gray-700 dark:text-gray-600">
                 {record?.fullName || 'N/A'}
               </Text>
               <div>
                 <span>
-                  <div style={{ display: 'inline-block'}}>{(record?.date).substring(0, 10)}</div>
+                  <div style={{ display: 'inline-block' }}>
+                    {(record?.date || '').slice(0, 10) || '—'}
+                  </div>
                 </span>
               </div>
             </>
           ),
         },
-        
         {
           title: <span className="block whitespace-nowrap">Comments</span>,
           dataIndex: 'comments',
           key: 'comments',
           width: 300,
-          render: (value: string, record: any, index: number) => (
+          render: (_: string, record: any) => (
             <Text className="font-medium text-gray-700 dark:text-gray-600">
               {record?.comments || 'N/A'}
             </Text>
@@ -109,7 +110,7 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
           dataIndex: 'followup',
           key: 'followup',
           width: 300,
-          render: (value: string, record: any, index: number) => (
+          render: (_: string, record: any) => (
             <Text className="font-medium text-gray-700 dark:text-gray-600">
               {record?.followup || 'N/A'}
             </Text>
@@ -120,27 +121,29 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
           dataIndex: 'followupdate',
           key: 'followupdate',
           width: 300,
-          render: (value: string, record: any, index: number) => (
+          render: (_: string, record: any) => (
             <Text className="font-medium text-gray-700 dark:text-gray-600">
               {record?.followupdate || 'N/A'}
             </Text>
           ),
         },
-        
         {
           title: (
-            <span className="block whitespace-nowrap" style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '40px' }}>
+            <span
+              className="block whitespace-nowrap"
+              style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '40px' }}
+            >
               Action
             </span>
           ),
           dataIndex: 'status',
           key: 'status',
           width: 300,
-          render: (value: string, record: any, index: number) => (
+          render: (_: string, record: any) => (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginRight: '40px' }}>
               <button
                 className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                onClick={() => handleDeleteComment(record.id, record.lead_id)}
+                onClick={() => handleDeleteComment(record.id)}
               >
                 <PiTrashFill className="me-1 h-[17px] w-[17px]" />
               </button>
@@ -150,9 +153,7 @@ const ShowComments: React.FC<DeliveryDetailsProps> = ({ id, update }:any) => {
       ]}
       noGutter
       enableSearch={false}
-      scroll={{
-        x: 900,
-      }}
+      scroll={{ x: 900 }}
     />
   );
 };

@@ -1,5 +1,4 @@
-// PersonalInfoView.js (Edit mode: load defaults from backend and update)
-
+// PersonalInfoView.js (Edit mode: load defaults from backend and update) — UPDATED
 'use client';
 import { logsCreate } from '@/app/shared/account-settings/logs';
 import dynamic from 'next/dynamic';
@@ -17,7 +16,7 @@ import apiService from '@/utils/apiService';
 import {
   businessProfileDefaultValues,
   BusinessProfileSchema,
-  BusinessProfileFromType, // assuming this is your exported type
+  BusinessProfileFromType,
 } from '@/utils/validators/business-profile.schema';
 import { useRouter } from 'next/navigation';
 import { decryptData } from '@/components/encriptdycriptdata';
@@ -43,8 +42,9 @@ export default function EditRealtorsForm({ id }: { id: string }) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [userData, setUserData] = useState<any>(null);
+  const [businessProfile, setBusinessProfile] = useState<any>(null);
 
-  // Static options
+  // --- Static options ---
   const relationOptions = useMemo(
     () => [
       { name: 'S/O', value: 'S/O' },
@@ -76,7 +76,7 @@ export default function EditRealtorsForm({ id }: { id: string }) {
     []
   );
 
-  // Load local user info (for logs)
+  // --- Load local user info (for logs) ---
   useEffect(() => {
     try {
       const encrypted = localStorage.getItem('uData');
@@ -87,55 +87,16 @@ export default function EditRealtorsForm({ id }: { id: string }) {
     }
   }, [session]);
 
-  // Fetch record by ID then reset the form with values
+  // --- Fetch record by ID then store it ---
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
         setInitialLoading(true);
         const res = await apiService.get(`/business-profiles/${id}`);
-        const rec = res?.data?.data ?? res?.data; // support either shape
-
-        // Normalize API → form fields (ensure every key exists)
-        const normalized: BusinessProfileFromType = {
-          full_name: rec?.full_name ?? '',
-          relation_type: rec?.relation_type ?? 'S/O',
-          guardian_name: rec?.guardian_name ?? '',
-          gender: rec?.gender ?? 'Male',
-          dob: rec?.dob ?? businessProfileDefaultValues.dob,
-          cnic: rec?.cnic ?? '',
-          mobile: rec?.mobile ?? '',
-          email: rec?.email ?? '',
-          address: rec?.address ?? '',
-          city: rec?.city ?? '',
-          nationality: rec?.nationality ?? 'Pakistani',
-          ntn: rec?.ntn ?? '',
-          filer_status: rec?.filer_status ?? 'Active Filer',
-          reference: rec?.reference ?? '',
-          authorized_partner: rec?.authorized_partner ?? '',
-          partner_cnic: rec?.partner_cnic ?? '',
-
-          office_name: rec?.office_name ?? '',
-          office_mobile: rec?.office_mobile ?? '',
-          office_landline: rec?.office_landline ?? '',
-          office_address: rec?.office_address ?? '',
-          office_city: rec?.office_city ?? '',
-
-          account_title: rec?.account_title ?? '',
-          account_number: rec?.account_number ?? '',
-          iban_number: rec?.iban_number ?? '',
-          branch_code: rec?.branch_code ?? '',
-          branch_name: rec?.branch_name ?? '',
-          bank_name: rec?.bank_name ?? '',
-
-          company_id: rec?.company_id ? String(rec.company_id) : '',
-          del: rec?.del ?? 'N',
-          dt: rec?.dt ?? businessProfileDefaultValues.dt,
-        };
-
-        // Reset the form with fetched values
-        // We get `reset` from the render props of <Form>
-        setFormSeed(normalized);
+        const rec = res?.data?.data ?? res?.data;
+        console.log('the fetched record is:', rec);
+        if (mounted) setBusinessProfile(rec);
       } catch (e: any) {
         console.error(e);
         toast.error(e?.response?.data?.message || 'Could not load profile.');
@@ -148,13 +109,48 @@ export default function EditRealtorsForm({ id }: { id: string }) {
     };
   }, [id]);
 
-  // We need a small state to push values into <Form>'s reset once render props are available
-  const [formSeed, setFormSeed] = useState<BusinessProfileFromType | null>(null);
+  // Build defaultValues from fetched record (fallback to schema defaults)
+  const formDefaults: BusinessProfileFromType = useMemo(() => {
+    const rec = businessProfile;
+    if (!rec) return businessProfileDefaultValues;
+
+    return {
+      full_name: rec.full_name ?? '',
+      relation_type: rec.relation_type ?? '',
+      guardian_name: rec.guardian_name ?? '',
+      gender: rec.gender ?? '',
+      dob: rec.dob ? String(rec.dob).slice(0, 10) : '', // YYYY-MM-DD
+      cnic: rec.cnic ?? '',
+      mobile: rec.mobile ?? '',
+      email: rec.email ?? '',
+      address: rec.address ?? '',
+      city: rec.city ?? '',
+      nationality: rec.nationality ?? '',
+      ntn: rec.ntn ?? '',
+      filer_status: rec.filer_status ?? '',
+      reference: rec.reference ?? '',
+      authorized_partner: rec.authorized_partner ?? '',
+      partner_cnic: rec.partner_cnic ?? '',
+      office_name: rec.office_name ?? '',
+      office_mobile: rec.office_mobile ?? '',
+      office_landline: rec.office_landline ?? '',
+      office_address: rec.office_address ?? '',
+      office_city: rec.office_city ?? '',
+      account_title: rec.account_title ?? '',
+      account_number: rec.account_number ?? '',
+      iban_number: rec.iban_number ?? '',
+      branch_code: rec.branch_code ?? '',
+      branch_name: rec.branch_name ?? '',
+      bank_name: rec.bank_name ?? '',
+    } as BusinessProfileFromType;
+  }, [businessProfile]);
+
+  // Re-mount the form when data arrives so RHF re-reads defaultValues once
+  const formKey = businessProfile ? `bp-${businessProfile.id ?? '1'}` : 'loading';
 
   const onSubmit: SubmitHandler<BusinessProfileFromType> = async (data) => {
     setIsSaving(true);
     try {
-      // PUT for update
       const res = await apiService.put(`/business-profiles/${id}`, {
         ...data,
         user: userData?.user?.name,
@@ -177,21 +173,21 @@ export default function EditRealtorsForm({ id }: { id: string }) {
 
   return (
     <Form<BusinessProfileFromType>
+      key={formKey}
       validationSchema={BusinessProfileSchema}
       onSubmit={onSubmit}
       className="@container"
       useFormProps={{
         mode: 'onChange',
-        defaultValues: businessProfileDefaultValues, // temporary; we'll reset when formSeed arrives
+        defaultValues: formDefaults || businessProfileDefaultValues, // <- RHF reads this on mount
       }}
     >
-      {({ register, control, setValue, reset, formState: { errors } }: any) => {
-        // When the fetched data (formSeed) arrives, reset once
-        // useEffect(() => {
-        //   if (formSeed) {
-        //     reset(formSeed);
-        //   }
-        // }, [formSeed, reset]);
+      {({ register, control, formState: { errors }, watch }) => {
+        const relationValue = watch('relation_type');
+        const genderValue = watch('gender');
+        const nationalityValue = watch('nationality');
+        const filerStatusValue = watch('filer_status');
+        const dobValue = watch('dob');
 
         return (
           <>
@@ -217,10 +213,12 @@ export default function EditRealtorsForm({ id }: { id: string }) {
                       placeholder="Select"
                       options={relationOptions}
                       onChange={onChange}
-                      value={value}
+                      value={value || relationValue || ''}
                       className="@3xl:col-span-3"
                       getOptionValue={(o: any) => o.value}
-                      displayValue={(selected: string) => relationOptions.find((r) => r.value === selected)?.name ?? ''}
+                      displayValue={(selected: string) =>
+                        relationOptions.find((r) => r.value === selected)?.name ?? ''
+                      }
                     />
                   )}
                 />
@@ -242,10 +240,12 @@ export default function EditRealtorsForm({ id }: { id: string }) {
                       placeholder="Select"
                       options={genderOptions}
                       onChange={onChange}
-                      value={value}
+                      value={value || genderValue || ''}
                       className="@3xl:col-span-2"
                       getOptionValue={(o: any) => o.value}
-                      displayValue={(selected: string) => genderOptions.find((r) => r.value === selected)?.name ?? ''}
+                      displayValue={(selected: string) =>
+                        genderOptions.find((r) => r.value === selected)?.name ?? ''
+                      }
                     />
                   )}
                 />
@@ -259,7 +259,7 @@ export default function EditRealtorsForm({ id }: { id: string }) {
                   render={({ field: { value, onChange } }) => (
                     <DatePicker
                       label="Date of Birth (Required)"
-                      selected={value ? new Date(value) : null}
+                      selected={value ? new Date(value) : dobValue ? new Date(dobValue) : null}
                       onChange={(date: Date | null) => {
                         const iso = date ? date.toISOString().substring(0, 10) : '';
                         onChange(iso);
@@ -325,10 +325,12 @@ export default function EditRealtorsForm({ id }: { id: string }) {
                       placeholder="Select nationality"
                       options={nationalityOptions}
                       onChange={onChange}
-                      value={value}
+                      value={value || nationalityValue || ''}
                       className="@3xl:col-span-3"
                       getOptionValue={(o: any) => o.value}
-                      displayValue={(selected: string) => nationalityOptions.find((r) => r.value === selected)?.name ?? ''}
+                      displayValue={(selected: string) =>
+                        nationalityOptions.find((r) => r.value === selected)?.name ?? ''
+                      }
                     />
                   )}
                 />
@@ -353,10 +355,12 @@ export default function EditRealtorsForm({ id }: { id: string }) {
                       placeholder="Select Filer Status"
                       options={filerStatusOptions}
                       onChange={onChange}
-                      value={value}
+                      value={value || filerStatusValue || ''}
                       className="@3xl:col-span-3"
                       getOptionValue={(o: any) => o.value}
-                      displayValue={(selected: string) => filerStatusOptions.find((r) => r.value === selected)?.name ?? ''}
+                      displayValue={(selected: string) =>
+                        filerStatusOptions.find((r) => r.value === selected)?.name ?? ''
+                      }
                     />
                   )}
                 />
