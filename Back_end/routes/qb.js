@@ -39,7 +39,7 @@ const { NewNotification, GetNotification, updateNotificationMark, saveSubscripti
 const { AddNewFloor, UpdateUnits, CreateNewUnits, UnitCounts, AddDuplicateFloor, DeleteProjectFloor, UpdateAllFloorRates, Getrequiredfloor, UpdateImage, GetImg, SaveMapUnits, GetMapUnits } = require("../Controller/Project/floor");
 const { createNewPaymentPlan, paymentData, GetSpecificPyammentplan, DeletePaymentplan, LinkProject, GetPaymentPlan, GetTemplates, GetTemplatesUnits, GetPaymentPlanid, UpdatePaymentPlan } = require("../Controller/Project/pamymentplain");
 const { DailyReport, fullReport } = require("../Controller/LeadM/DailyReport");
-const { createRealtorProfile, updateRealtorProfile, deleteRealtorProfile, getRealtorProfileById, getAllRealtorProfiles } = require("../Controller/Realtor/RealtorController");
+const { createRealtorProfile, updateRealtorProfile, deleteRealtorProfile, getRealtorProfileById, getAllRealtorProfiles, getRealtorProfileByUser } = require("../Controller/Realtor/RealtorController");
 
 
 
@@ -277,7 +277,8 @@ Router.put('/api/business-profiles/:id', updateRealtorProfile);
 Router.delete('/api/business-profiles/:id', deleteRealtorProfile);
 
 // Get single
-Router.get('/api/business-profiles/:id', getRealtorProfileById);
+Router.get('/api/business-profiles/:user', getRealtorProfileByUser);
+Router.get('/api/business-profiles-id/:id', getRealtorProfileById);
 
 // Get all (with optional ?q&limit&offset)
 Router.get('/api/business-profiles', getAllRealtorProfiles);

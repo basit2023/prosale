@@ -36,7 +36,7 @@ const pageHeader = {
     if (error) {
       return (
         <div className="flex h-[70vh] items-center justify-center">
-          <Empty text="Failed to load projects. Please try again." textClassName="mt-2" />
+          <Empty text="Failed to load Realtor. Please try again." textClassName="mt-2" />
         </div>
       );
     }
@@ -44,9 +44,17 @@ const pageHeader = {
     // Empty state
     if (data.length === 0) {
       return (
+        <TableLayout
+      title={pageHeader.title}
+      breadcrumb={pageHeader.breadcrumb}
+      data={data}
+      fileName="invoice_data"
+      header="ID,Name,Email,Mobile,CNIC,Designation,Department,Assigned Office,Status"
+    >
         <div className="flex h-[70vh] items-center justify-center">
-          <Empty text="No Project found" textClassName="mt-2" />
+          <Empty text="No Realtor found" textClassName="mt-2" />
         </div>
+    </TableLayout>
       );
     }
 

@@ -234,6 +234,8 @@ export const routes = {
     detailPlained:(slug: string) => `/tamplets/detailed-planed/${slug}`,
     DailyActivityReport:(slug: string) => `/tamplets/Daily-Activity-Report/${slug}`,
     FullReport:(slug: string) => `/tamplets/generate-full-report/${slug}`,
+    PrintRealtorReport:(id: string) => `/tamplets/realtor-form/${id}`,
+    PrintRealtorCert:(id: string) => `/tamplets/realtor-certificate/${id}`,
   },
   booking:{
     bookingform:'/bookingform'

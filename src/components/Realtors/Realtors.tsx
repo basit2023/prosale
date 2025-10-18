@@ -18,7 +18,8 @@ export type BusinessProfile = {
   company_id?: string;
   del: 'N' | 'Y';
   created_at?: string;
-  updated_at?: string;
+  status?: string;
+  user?: string;
 };
 
 export const Realtors = () => {
@@ -34,7 +35,12 @@ export const Realtors = () => {
     setError(null);
     try {
       // Your API should return profiles for the user/company
-      const response = await apiService.get(`/business-profiles/?email=${session.user.email}`);
+      let response;
+      if (session?.user?.permission>=9) {
+        response = await apiService.get(`/business-profiles/?email=${session.user.email}`);
+      } else {
+          response = await apiService.get(`/business-profiles/${session.user.username}`);
+      }
       // Prefer `data`, but keep a fallback to `projects` if your backend still returns that key
       const list = response?.data?.data ?? response?.data?.projects ?? [];
       setRaw(Array.isArray(list) ? list : []);
@@ -75,6 +81,8 @@ export const Realtors = () => {
       del: (r.del as 'N' | 'Y') ?? 'N',
       created_at: r.created_at,
       updated_at: r.updated_at,
+      user: r.user,
+      status: r.status,
     }));
   }, [raw]);
 

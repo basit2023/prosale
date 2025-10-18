@@ -27,7 +27,7 @@ const createRealtorProfile = async (req, res) => {
     const b = req.body || {};
 
     // Minimal required validation (tighten with your Zod schema if available)
-    const required = ['full_name', 'dob', 'cnic', 'mobile', 'nationality', 'filer_status', 'dt'];
+    const required = ['full_name',  'cnic', 'mobile'];
     for (const k of required) {
       if (!b[k]) {
         return res.status(400).json({ success: false, message: `Field "${k}" is required` });
@@ -40,8 +40,8 @@ const createRealtorProfile = async (req, res) => {
         address, city, nationality, ntn, filer_status, reference, authorized_partner, partner_cnic,
         office_name, office_mobile, office_landline, office_address, office_city,
         account_title, account_number, iban_number, branch_code, branch_name, bank_name,
-        company_id, del, dt, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, NOW(), NOW())
+        company_id,user, status, del, dt, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, NOW(), NOW())
     `;
 
     const params = [
@@ -77,6 +77,8 @@ const createRealtorProfile = async (req, res) => {
       b.bank_name ?? null,
 
       b.company_id ?? null,
+      b.user ?? null,
+      b.status ?? 'N',
       b.del ?? 'N',
       b.dt ?? Math.floor(Date.now() / 1000).toString(),
     ];
@@ -96,6 +98,7 @@ const createRealtorProfile = async (req, res) => {
 const updateRealtorProfile = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log("Updating ID:", id);
     if (!id) return res.status(400).json({ success: false, message: 'id (param) is required' });
 
     const allowed = [
@@ -103,7 +106,7 @@ const updateRealtorProfile = async (req, res) => {
       'address', 'city', 'nationality', 'ntn', 'filer_status', 'reference', 'authorized_partner', 'partner_cnic',
       'office_name', 'office_mobile', 'office_landline', 'office_address', 'office_city',
       'account_title', 'account_number', 'iban_number', 'branch_code', 'branch_name', 'bank_name',
-      'company_id', 'del', 'dt'
+      'company_id','status', 'del', 'dt'
     ];
 
     const body = req.body || {};
@@ -159,18 +162,41 @@ const deleteRealtorProfile = async (req, res) => {
 /**
  * GET /business-profiles/:id
  */
+
 const getRealtorProfileById = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log("Requested ID:", id);
     if (!id) return res.status(400).json({ success: false, message: 'id (param) is required' });
 
     const sql = `SELECT * FROM business_profiles WHERE id = ? LIMIT 1`;
     const rows = await dbQuery(sql, [id]);
-
+    console.log("Query Result:", rows);
     if (!rows.length) {
       return res.status(404).json({ success: false, message: 'Profile not found' });
     }
     return res.status(200).json({ success: true, message: 'Profile fetched', data: rows[0] });
+  } catch (error) {
+    console.error('getRealtorProfileById error:', error);
+    return res.status(500).json({ success: false, message: 'Internal Server Error', error: error.message });
+  }
+};
+
+/**get by username
+ * GET /business-profiles/:user
+ */
+const getRealtorProfileByUser = async (req, res) => {
+  try {
+    const { user } = req.params;
+    if (!user) return res.status(400).json({ success: false, message: 'user (param) is required' });
+
+    const sql = `SELECT * FROM business_profiles WHERE user = ? LIMIT 1`;
+    const rows = await dbQuery(sql, [user]);
+
+    if (!rows.length) {
+      return res.status(404).json({ success: false, message: 'Profile not  found for user' });
+    }
+    return res.status(200).json({ success: true, message: 'Profile fetched', data: rows });
   } catch (error) {
     console.error('getRealtorProfileById error:', error);
     return res.status(500).json({ success: false, message: 'Internal Server Error', error: error.message });
@@ -256,4 +282,5 @@ module.exports = {
   getRealtorProfileById,
   getAllRealtorProfiles,
   getRealtorProfilesByCompany,
+  getRealtorProfileByUser
 };

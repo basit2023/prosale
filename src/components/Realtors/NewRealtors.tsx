@@ -107,19 +107,17 @@ export default function NewRealtorsForm() {
   const onSubmit: SubmitHandler<BusinessProfileFromType> = async (data) => {
     setIsLoading(true);
     try {
-      // attach company id if applicable
-      if (company?.user_data?.number <= 1) {
-        data.company_id = company?.user_data?.company_id || '';
-      }
+    
+     
 
       const res = await apiService.post(`/business-profiles`, {
         ...data,
-        user: value?.user?.name,
+        user: session?.user?.username,
       });
 
       toast.success(res.data?.message || 'Saved');
       if (res.data?.success) {
-        logsCreate({ user: value?.user?.name, desc: 'Business profile updated' });
+        logsCreate({ user: session?.user?.username, desc: 'Business profile updated' });
         back();
       }
     } catch (error: any) {
@@ -210,10 +208,11 @@ export default function NewRealtorsForm() {
             <FormGroup className="pt-7 @2xl:pt-9 @3xl:grid-cols-12">
               <Controller
                 name="dob"
+                label="Date of Birth (Required)"
                 control={control}
                 render={({ field: { value } }) => (
                   <DatePicker
-                    label="Date of Birth (Required)"
+                    placeholderText="Date of Birth (Required)"
                     selected={startDate || (value ? new Date(value) : null)}
                     onChange={(date: Date | null) => {
                       setStartDate(date);
@@ -222,9 +221,9 @@ export default function NewRealtorsForm() {
                       });
                     }}
                     dateFormat="MM/dd/yyyy"
-                    placeholderText="Select Date"
+                    
                     popperPlacement="bottom-end"
-                    className="@3xl:col-span-3"
+                    className="@3xl:col-span-1"
                   />
                 )}
               />
@@ -234,7 +233,7 @@ export default function NewRealtorsForm() {
                 placeholder="XXXXX-XXXXXXX-X"
                 {...register('cnic')}
                 error={errors.cnic?.message}
-                className="@3xl:col-span-3"
+                className="@3xl:col-span-1"
               />
 
               <Input
@@ -242,7 +241,7 @@ export default function NewRealtorsForm() {
                 placeholder="e.g. 0334-5822707"
                 {...register('mobile')}
                 error={errors.mobile?.message}
-                className="@3xl:col-span-3"
+                className="@3xl:col-span-1"
               />
 
               <Input
@@ -251,7 +250,7 @@ export default function NewRealtorsForm() {
                 type="email"
                 {...register('email')}
                 error={errors.email?.message}
-                className="@3xl:col-span-3"
+                className="@3xl:col-span-1"
               />
             </FormGroup>
 
@@ -300,7 +299,7 @@ export default function NewRealtorsForm() {
                 placeholder="Enter NTN Number"
                 {...register('ntn')}
                 error={errors.ntn?.message}
-                className="@3xl:col-span-3"
+                className="@3xl:col-span-1"
               />
 
               <Controller
@@ -313,7 +312,7 @@ export default function NewRealtorsForm() {
                     options={filerStatusOptions}
                     onChange={onChange}
                     value={value}
-                    className="@3xl:col-span-3"
+                    className="@3xl:col-span-1"
                     getOptionValue={(o: any) => o.value}
                     displayValue={(selected: string) =>
                       filerStatusOptions.find((r) => r.value === selected)?.name ?? ''
@@ -359,7 +358,7 @@ export default function NewRealtorsForm() {
                 placeholder="Enter office name"
                 {...register('office_name')}
                 error={errors.office_name?.message}
-                className="@3xl:col-span-4"
+                className="@3xl:col-span-1"
               />
 
               <Input
@@ -367,7 +366,7 @@ export default function NewRealtorsForm() {
                 placeholder="e.g. 0334-5822707"
                 {...register('office_mobile')}
                 error={errors.office_mobile?.message}
-                className="@3xl:col-span-4"
+                className="@3xl:col-span-1"
               />
 
               <Input
@@ -375,26 +374,28 @@ export default function NewRealtorsForm() {
                 placeholder="e.g. 051-1234567"
                 {...register('office_landline')}
                 error={errors.office_landline?.message}
-                className="@3xl:col-span-4"
+                className="@3xl:col-span-1"
               />
-            </FormGroup>
-
-            <FormGroup className="pt-7 @2xl:pt-9 @3xl:grid-cols-12">
-              <Input
-                label="Office Address"
-                placeholder="Enter office address"
-                {...register('office_address')}
-                error={errors.office_address?.message}
-                className="@3xl:col-span-9"
-              />
-
               <Input
                 label="City"
                 placeholder="Islamabad"
                 {...register('office_city')}
                 error={errors.office_city?.message}
-                className="@3xl:col-span-3"
+                className="@3xl:col-span-1"
               />
+              <Input
+                label="Office Address"
+                placeholder="Enter office address"
+                {...register('office_address')}
+                error={errors.office_address?.message}
+                className="@3xl:col-span-4"
+              />
+
+              
+            </FormGroup>
+
+            <FormGroup className="pt-7 @2xl:pt-9 @3xl:grid-cols-12">
+              
             </FormGroup>
 
             {/* BANK DETAILS */}
@@ -409,7 +410,7 @@ export default function NewRealtorsForm() {
                 placeholder="Enter account title"
                 {...register('account_title')}
                 error={errors.account_title?.message}
-                className="@3xl:col-span-4"
+                className="@3xl:col-span-1"
               />
 
               <Input
@@ -417,7 +418,7 @@ export default function NewRealtorsForm() {
                 placeholder="Enter account number"
                 {...register('account_number')}
                 error={errors.account_number?.message}
-                className="@3xl:col-span-4"
+                className="@3xl:col-span-2"
               />
 
               <Input
@@ -425,19 +426,22 @@ export default function NewRealtorsForm() {
                 placeholder="e.g. PK20ALFH5697005001279743"
                 {...register('iban_number')}
                 error={errors.iban_number?.message}
-                className="@3xl:col-span-4"
+                className="@3xl:col-span-2"
               />
-            </FormGroup>
-
-            <FormGroup className="pt-7 @2xl:pt-9 @3xl:grid-cols-12">
-              <Input
+               <Input
                 label="Branch Code"
                 placeholder="e.g. 5697"
                 {...register('branch_code')}
                 error={errors.branch_code?.message}
-                className="@3xl:col-span-4"
+                className="@3xl:col-span-2"
               />
-
+               <Input
+                label="Bank Name"
+                placeholder="Alfalah"
+                {...register('bank_name')}
+                error={errors.bank_name?.message}
+                className="@3xl:col-span-2"
+              />
               <Input
                 label="Branch Name"
                 placeholder="Gulberg Greens Islamabad"
@@ -446,54 +450,14 @@ export default function NewRealtorsForm() {
                 className="@3xl:col-span-4"
               />
 
-              <Input
-                label="Bank Name"
-                placeholder="Alfalah"
-                {...register('bank_name')}
-                error={errors.bank_name?.message}
-                className="@3xl:col-span-4"
-              />
+              
             </FormGroup>
 
-            {/* Assign Company (if multiple) */}
-            {company?.user_data?.number > 1 && (
-              <FormGroup
-                title="Assign Company"
-                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-              >
-                <Controller
-                  control={control}
-                  name="company_id"
-                  render={({ field: { value, onChange } }) => {
-                    const opts =
-                      company?.company_data?.map((it: any) => ({
-                        label: it.name,
-                        value: String(it.value),
-                      })) || [];
-                    const selected =
-                      opts.find((it: any) => it.value === String(value)) || null;
+            {/* <FormGroup className="pt-7 @2xl:pt-9 @3xl:grid-cols-12">
+             
+            </FormGroup> */}
 
-                    return (
-                      <SelectBox
-                        label="Company"
-                        value={selected}
-                        placeholder="Select Company"
-                        options={opts}
-                        onChange={(opt: SelectOption | null) =>
-                          onChange(opt ? opt.value : '')
-                        }
-                        className="col-span-full"
-                        error={errors?.company_id?.message}
-                        getOptionValue={(o: any) => o.value}
-                        displayValue={(v: string) =>
-                          opts.find((r: any) => r.value === v)?.label ?? ''
-                        }
-                      />
-                    );
-                  }}
-                />
-              </FormGroup>
-            )}
+          
           </div>
 
           <FormFooter
