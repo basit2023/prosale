@@ -94,7 +94,7 @@ export default function RealtorCert({ id }: { id: string }) {
         />
 
         {/* Text overlay (name + office) */}
-        <div className="overlay mt-3 font-boowie">
+        <div className="overlay mt-2 font-boowie">
           <div className="name">
             {fullName}
             {officeName !== '—' && <span className="office">{officeName}</span>}
@@ -135,7 +135,7 @@ export default function RealtorCert({ id }: { id: string }) {
         .cert-wrap {
           position: relative;
           width: 100%;
-          height: min(calc(100vw * 0.62), 85vh); /* ~A4 landscape ratio on screen */
+          height: min(calc(100vw * 0.65), 100vh); /* ~A4 landscape ratio on screen */
           max-width: 1400px;
           margin: 0 auto;
           background: #fff;
@@ -154,7 +154,7 @@ export default function RealtorCert({ id }: { id: string }) {
           top: 58%;
           left: 50%;
           transform: translate(-50%, -50%);
-          width: 90%;
+          width: 100%;
           text-align: center;
           font-size:3rem
           pointer-events: none;
@@ -166,7 +166,7 @@ export default function RealtorCert({ id }: { id: string }) {
         .name {
           color: #ffffff;
           font-weight: 600;
-          font-size: clamp(2rem, 6vw, 4rem);
+          font-size: clamp(1rem, 3vw, 2rem);
           line-height: 1.1;
           letter-spacing: 0.02em;
           text-shadow: rgba(0, 0, 0, 0.12) 0 1px 2px;
@@ -178,11 +178,11 @@ export default function RealtorCert({ id }: { id: string }) {
         /* Office chip under the name */
         .office {
           display: block;
-          margin: 6px auto 0;
+          margin: 0px auto 0;
           width: max-content;
           background: #ffffff;
           color: #cc1c24;
-          padding: 6px 20px 4px;
+          padding: 4px 20px 2px;
           border-radius: 6px;
           font-size: clamp(1rem, 3vw, 2rem);
           font-weight: 700;
@@ -198,10 +198,12 @@ export default function RealtorCert({ id }: { id: string }) {
           }
           /* Slightly bigger on print */
           .name {
-            font-size: 4rem;
+            font-size: 2.3rem;
           }
           .office {
-            font-size: 2rem;
+            font-size: 1.3rem;
+            line-height: 1;
+        
           }
         }
       `}</style>
