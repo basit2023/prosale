@@ -178,6 +178,26 @@ export const getColumns = ({
         </Text>
       ),
     },
+    {
+      title: (
+        <HeaderCell
+          title="Fresh Leads"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'fresh_lead_count'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('fresh_lead_count'),
+      dataIndex: 'fresh_lead_count',
+      key: 'fresh_lead_count',
+      width: 100,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value || 'N/A'}
+        </Text>
+      ),
+    },
 
 
    

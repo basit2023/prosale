@@ -44,98 +44,142 @@ const ZoneData = async (req, res) => {
       });
     }
   };
-  const Getteamates = async (req, res) => {
-    try {
-      const { id } = req.params;
-      const {email}=req.query;
-
-      const [userRows] = await mysqlConnection.promise().query('SELECT user_type, name,company_id FROM users WHERE email = ?', [email]);
-    
-      
-  
-      
-      const { company_id } = userRows[0];
 
 
-      const [team] = await mysqlConnection.promise().query(
-        `SELECT 
-          CONCAT(u.first_name, ' ', u.last_name) AS full_name,
-          u.id AS id,
-          u.company_id,
-          u.mobile AS number,
-          u.email AS email,
-          u.designation AS designation,
-          u.name,
-          ut.title,
-          ut.zone_id,
-          ut.manager_id,
-          CONCAT(manager.first_name, ' ', manager.last_name) AS manager_full_name
-        FROM 
-          users_teams ut
-        JOIN 
-          users u ON ut.id = u.assigned_team
-        INNER JOIN
-          users manager ON ut.manager_id = manager.id
-        WHERE 
-        FIND_IN_SET(ut.manager_id , ?) > 0 AND u.del="N"`, [id]
-      );
-  
-      if (!team.length) {
-        return res.status(404).json({
-          success: false,
-          message: 'No team members found for the provided ID',
-        });
-      }
-  
-      // Query to count total leads for each team member
-      const totalLeadsPromises = team.map(async (member) => {
-        const [totalLeads] = await mysqlConnection.promise().query(
-          `SELECT COUNT(*) AS total_lead_count 
-          FROM leads_main 
-          WHERE assigned_to = ? AND FIND_IN_SET(company_id, ?) > 0`,
-          [member.name,company_id]
-        );
-        return { ...member, total_lead_count: totalLeads[0].total_lead_count };
-      });
-  
-      // Query to count unread leads for each team member
-      const unreadLeadsPromises = team.map(async (member) => {
-        const [unreadLeads] = await mysqlConnection.promise().query(
-          `SELECT COUNT(*) AS unread_lead_count
-          FROM leads_main 
-          WHERE view_dt = "new_lead" AND assigned_to = ? AND FIND_IN_SET(company_id, ?) > 0`,
-          [member.name, company_id]
-        );
-        return { ...member, unread_lead_count: unreadLeads[0].unread_lead_count };
-      });
-  
-      // Execute all promises concurrently
-      const totalLeadsCounts = await Promise.all(totalLeadsPromises);
-      const unreadLeadsCounts = await Promise.all(unreadLeadsPromises);
-  
-      // Combine the results of both sets of queries
-      const teamWithCounts = team.map((member) => {
-        const totalLeadCount = totalLeadsCounts.find((count) => count.id === member.id)?.total_lead_count ?? 0;
-        const unreadLeadCount = unreadLeadsCounts.find((count) => count.id === member.id)?.unread_lead_count ?? 0;
-        return { ...member, total_lead_count: totalLeadCount, unread_lead_count: unreadLeadCount };
-      });
-  
-      // Respond with user information including lead count
-      res.status(200).json({
-        success: true,
-        message: 'Team members data fetched successfully',
-        team: teamWithCounts,
-      });
-    } catch (error) {
-      console.error('Error fetching Team Members info:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Error in fetching Team Members info',
-        error: error.message,
-      });
+
+ const Getteamates = async (req, res) => {
+  try {
+    const { id } = req.params;            // may be a comma list of manager ids
+    const { email, dt } = req.query;      // optional: dt = 'YYYY-MM-DD'
+
+    // sanity: user exists (you only need this if you rely on the email for auth)
+    const [userRows] = await mysqlConnection.promise().query(
+      'SELECT user_type, name FROM users WHERE email = ? LIMIT 1',
+      [email]
+    );
+    if (!userRows?.length) {
+      return res.status(404).json({ success: false, message: 'User not found for email' });
     }
-  };
-  
+
+    // fresh date (default = today in server TZ)
+    const freshDate = (dt && /^\d{4}-\d{2}-\d{2}$/.test(dt)) ? dt : new Date().toISOString().slice(0, 10);
+    const freshStart = `${freshDate} 00:00:00`;
+    const freshEnd   = `${freshDate} 23:59:59`;
+
+    // resolve THE manager's name (for manager_lead_count)
+    const firstManagerId = String(id).split(',')[0];
+    const [mgrRows] = await mysqlConnection.promise().query(
+      'SELECT name FROM users WHERE id = ? LIMIT 1',
+      [firstManagerId]
+    );
+    const managerAssigneeName = mgrRows?.[0]?.name ?? null;
+
+    // team list: filter by the manager ids provided
+    const [team] = await mysqlConnection.promise().query(
+        `SELECT 
+        CONCAT(u.first_name, ' ', u.last_name) AS full_name,
+        u.id AS id,
+        u.mobile AS number,
+        u.email AS email,
+        u.designation AS designation,
+        u.name,
+        ut.title,
+        ut.zone_id,
+        ut.manager_id,
+        CONCAT(manager.first_name, ' ', manager.last_name) AS manager_full_name
+        FROM 
+            users_teams ut
+        JOIN 
+            users u ON ut.id = u.assigned_team || u.id=?
+        INNER JOIN
+            users manager ON ut.manager_id = manager.id
+        WHERE 
+            ut.manager_id = ? ` , [id,id]
+      );
+
+    if (!team.length) {
+      return res.status(404).json({ success: false, message: 'No team members found for the provided ID' });
+    }
+
+    // total leads per teammate (no company filter)
+    const totalLeadsPromises = team.map(async (member) => {
+      const [rows] = await mysqlConnection.promise().query(
+        `SELECT COUNT(*) AS total_lead_count
+           FROM leads_main
+          WHERE assigned_to = ?`,
+        [member.name]
+      );
+      return { id: member.id, total_lead_count: rows[0].total_lead_count };
+    });
+
+    // unread leads per teammate
+    const unreadLeadsPromises = team.map(async (member) => {
+      const [rows] = await mysqlConnection.promise().query(
+        `SELECT COUNT(*) AS unread_lead_count
+           FROM leads_main
+          WHERE view_dt = "new_lead"
+            AND assigned_to = ?`,
+        [member.name]
+      );
+      return { id: member.id, unread_lead_count: rows[0].unread_lead_count };
+    });
+
+    // fresh (today or ?dt) leads per teammate — use range for index
+    const freshLeadsPromises = team.map(async (member) => {
+      const [rows] = await mysqlConnection.promise().query(
+        `SELECT COUNT(*) AS fresh_lead_count
+           FROM leads_main
+          WHERE assigned_to = ?
+            AND dt >= ? AND dt <= ?`,
+        [member.name, freshStart, freshEnd]
+      );
+      return { id: member.id, fresh_lead_count: rows[0].fresh_lead_count };
+    });
+
+    // manager_lead_count — same number for all teammates
+    let managerLeadCount = 0;
+    if (managerAssigneeName) {
+      const [rows] = await mysqlConnection.promise().query(
+        `SELECT COUNT(*) AS manager_lead_count
+           FROM leads_main
+          WHERE assigned_to = ?`,
+        [managerAssigneeName]
+      );
+      managerLeadCount = rows[0].manager_lead_count;
+    }
+
+    const [totalLeadsCounts, unreadLeadsCounts, freshLeadsCounts] = await Promise.all([
+      Promise.all(totalLeadsPromises),
+      Promise.all(unreadLeadsPromises),
+      Promise.all(freshLeadsPromises),
+    ]);
+
+    const teamWithCounts = team.map((member) => {
+      const totalLeadCount  = totalLeadsCounts.find(x => x.id === member.id)?.total_lead_count ?? 0;
+      const unreadLeadCount = unreadLeadsCounts.find(x => x.id === member.id)?.unread_lead_count ?? 0;
+      const freshLeadCount  = freshLeadsCounts.find(x => x.id === member.id)?.fresh_lead_count ?? 0;
+
+      return {
+        ...member,
+        total_lead_count: totalLeadCount,
+        unread_lead_count: unreadLeadCount,
+        fresh_lead_count: freshLeadCount,
+        manager_lead_count: managerLeadCount,
+        fresh_date: freshDate,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Team members data fetched successfully',
+      team: teamWithCounts,
+    });
+  } catch (error) {
+    console.error('Error fetching Team Members info:', error);
+    res.status(500).json({ success: false, message: 'Error in fetching Team Members info', error: error.message });
+  }
+};
+
 
 
 
@@ -158,11 +202,11 @@ const ZoneData = async (req, res) => {
         FROM 
             users_teams ut
         JOIN 
-            users u ON ut.id = u.assigned_team
+            users u ON ut.id = u.assigned_team 
         INNER JOIN
             users manager ON ut.manager_id = manager.id
         WHERE 
-            ut.manager_id = ?`, [id]
+            ut.manager_id = ? || u.id=?` , [id,id]
       );
   
       if (!team.length) {

@@ -28,6 +28,7 @@ export default function ManagerInfo({ id }: any) {
       if (sessionEmail) {
         const response = await apiService.get(`/teamates/${id}/?email=${sessionEmail}`);
         const userData = response.data.team[0];
+        console.log('Fetched team member data:', userData);
         setValue(userData);
       }
     } catch (error: any) {
