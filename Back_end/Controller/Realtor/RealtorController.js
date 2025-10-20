@@ -118,7 +118,8 @@ const updateRealtorProfile = async (req, res) => {
         fields.push(`${key} = ?`);
         values.push(body[key] ?? null);
       }
-    }
+    } 
+    // issue fixed
 
     if (!fields.length) {
       return res.status(400).json({ success: false, message: 'No valid fields provided to update' });
