@@ -19,6 +19,7 @@ import {
 } from '@/utils/validators/update-employee-schema';
 import { useRouter } from 'next/navigation';
 import { logsCreate } from '@/app/shared/account-settings/logs';
+import ReactDatePicker from '../ui/Timedatepicker';
 
 const SelectBox = dynamic(() => import('@/components/ui/select'), {
   ssr: false,
@@ -40,6 +41,11 @@ export default function NewTargets() {
 
   const [designationOptions, setDesignationOptions] = useState<SelectOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+   const currentDate = new Date();
+    const currentDateString = currentDate.toISOString().split('T')[0];
+    
+    const [date, setDate] = useState<Date | null>(currentDate);
+
 
   const fetchDesignation = useCallback(async () => {
     try {
@@ -112,7 +118,7 @@ export default function NewTargets() {
         },
       }}
     >
-      {({ register, control, formState: { errors } }) => (
+      {({ register, control,setValue, formState: { errors } }) => (
         <>
           <FormGroup
             title="Enter Targets"
@@ -121,6 +127,25 @@ export default function NewTargets() {
           />
 
           <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
+
+            <FormGroup
+                            title="Select Month"
+                            className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+                          >
+                            <ReactDatePicker
+                              selected={date}
+                              onChange={(date: Date | null) => {
+                                setDate(date);
+                                setValue('date', date ? date.toISOString().split('T')[0] : currentDateString);
+                              }}
+                              dateFormat="MMMM d, yyyy"
+                              placeholderText="Select Date"
+                              showTimeSelect={false}
+                            />
+                            {errors.from && (
+                              <p className="mt-1 text-sm text-red-500">{errors.from.message}</p>
+                            )}
+                          </FormGroup>
             {/* Target Revenue */}
             <FormGroup
               title="Target Revenue"

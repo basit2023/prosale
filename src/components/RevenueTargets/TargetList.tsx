@@ -25,9 +25,10 @@ export const useTargetRevenue = () => {
   const fetchData = useCallback(async () => {
     try {
       if (memoizedSession) {
-        const response = await apiService.get(`/employees-dashbord`)
+        const response = await apiService.get(`/revenue-targets`)
+        console.log("the response is:",response)
 
-        const userData = response?.data?.users || [];
+        const userData = response?.data?.data || [];
         console.log("the data from thebacke end:",userData)
         setValue(userData);
       }
@@ -40,21 +41,16 @@ export const useTargetRevenue = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-  console.log("the set value data at the daily repiortis:",value)
 
   const productsData = useMemo(() => {
   return (value || []).map((user: any) => ({
     id: user.id,
-    full_name: `${user.first_name} ${user.last_name}`,
+    full_name: user.full_name,
     achievedRevenue: user.achievedRevenue, 
     targetRevenue: user.targetRevenue,    
-    daily_office_visits: user.daily_office_visits,
-    client_matured: user.client_matured,
-    daily_lead_follow_up: user.daily_lead_follow_up,
-    lead_assigned: user.lead_assigned,
-    dealers_meeting: user.dealers_meeting,
-    dealers_register: user.dealers_register,
-    office_activity: user.office_activity,
+    designation: user.designation,
+    period_month: user.period_month,
+    period_year: user.period_year,
     user: user.user,
     del: user.del,
     dt: user.dt

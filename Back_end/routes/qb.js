@@ -16,14 +16,14 @@ const { DeleteEmployee } = require("../Controller/Employees/DeleteEmployee");
 const { EmpgetPersonalInfo, EmpUpdatePersonalInfo } = require("../Controller/EditEmployInfo/PersonalInfoma");
 const { EmployeeDetails, UpdateEmployeeDetails, CreateEmployeeDetails } = require("../Controller/EditEmployInfo/EmployeeDetails");
 const { EmpOfficeDetails, AllDays, UpdateEmpOfficeandjobDetails, CreateEmpOfficeJobDetails, AllOffices } = require("../Controller/EditEmployInfo/EmployeeJobInfo");
-const { GetEmployeeContectInfo, GetContracts, UpdateEmpContectInfo, CreateEmpJobInfo, CreateTargetRevenue } = require("../Controller/EditEmployInfo/EmployeeContect");
+const { GetEmployeeContectInfo, GetContracts, UpdateEmpContectInfo, CreateEmpJobInfo } = require("../Controller/EditEmployInfo/EmployeeContect");
 const  { GetEmployeeSalaryInfo, GetRupeOrPer, UpdateEmpSalaryInfo, CreateEmpSalaryInfo }= require('../Controller/EditEmployInfo/EmpSalaryInfo');
 const { GetDessignation, GetDepartment, GetUserType, CreateUser } = require("../Controller/EditEmployInfo/AddNewEmployee");
 const { UpdateVaultInfo } = require("../Controller/EditEmployInfo/VaultInfo");
 const { GetEmpStatus, UpdateStatusInfo } = require("../Controller/EditEmployInfo/Sms_LeadStatus");
 const { All_lables, userPermission, TotalLead, UnaginedLead, All_labels, All_labelsForMember } = require("../Controller/LeadM/Card-leadsLable");
 const { Highly_interested, highly_interested_table, GetLeadFromId, AllCustomers, HeaderLabel, SpecificTeamMemberLeads } = require("../Controller/LeadM/highly_interested");
-const { CreateComments, GetComments, DeleteComments, AllLabels, SelectForBox, UpdateLabel, SaveTime, GetFollowup, CreateActivityReport } = require("../Controller/LeadM/Comments");
+const { CreateComments, GetComments, DeleteComments, AllLabels, SelectForBox, UpdateLabel, SaveTime, GetFollowup, CreateActivityReport, DoneFollowUps } = require("../Controller/LeadM/Comments");
 const { ClosedLeadController, ViewLead } = require("../Controller/LeadM/closeLeads");
 const { EditLeadCustomer, UpdateLeadCustomer, GetCountrycode, CreateLeadCustomer, GetCustomerById } = require("../Controller/LeadM/EditLeadCustomer");
 const { ZoneData, GetTeamMemeber, UpdateZoneTeam, TeamData, GetzoneMemeber, ZoneTeamData, CreateZoneTeam, GetSpecificZone } = require("../Controller/Team&Zones/zones");
@@ -40,6 +40,7 @@ const { AddNewFloor, UpdateUnits, CreateNewUnits, UnitCounts, AddDuplicateFloor,
 const { createNewPaymentPlan, paymentData, GetSpecificPyammentplan, DeletePaymentplan, LinkProject, GetPaymentPlan, GetTemplates, GetTemplatesUnits, GetPaymentPlanid, UpdatePaymentPlan } = require("../Controller/Project/pamymentplain");
 const { DailyReport, fullReport } = require("../Controller/LeadM/DailyReport");
 const { createRealtorProfile, updateRealtorProfile, deleteRealtorProfile, getRealtorProfileById, getAllRealtorProfiles, getRealtorProfileByUser } = require("../Controller/Realtor/RealtorController");
+const { getMonthlyTargetById, listMonthlyTargets, CreateTargetRevenue, MonthlyTargets } = require("../Controller/LeadM/RevenueTargets");
 
 
 
@@ -101,7 +102,7 @@ Router.post('/api/create-employee-office-job/:id', CreateEmpOfficeJobDetails);
 Router.get('/api/employee-contect-info/:id', GetEmployeeContectInfo);
 Router.put('/api/update_employee-contect-info/:id', UpdateEmpContectInfo);
 Router.post('/api/create-employee-contect-info/:id', CreateEmpJobInfo);
-Router.put('/api/update-target-revenue', CreateTargetRevenue);
+
 
 
 //Employee salary salary info UpdateEmpSalaryInfo
@@ -151,6 +152,7 @@ Router.post('/api/activity-reports', CreateActivityReport);
 Router.get('/api/show-comments/:id', GetComments);
 Router.get('/api/follow-up/:user', GetFollowup);
 Router.put('/api/delete-comments/:id', DeleteComments);
+Router.put('/api/update-followup/:id', DoneFollowUps);
 Router.get('/api/label/:id', SelectForBox);
 Router.put('/api/lead-label/:id',UpdateLabel)
 Router.post('/api/close-lead/:id', ClosedLeadController);
@@ -265,6 +267,12 @@ Router.get('/api/emp-team/', TeamForEmployee);
 //Daily Activity Report
 Router.get('/api/daily-activity-report/:user',DailyReport)
 Router.get('/api/full-daily-activity-report',fullReport)
+
+// revenue targets
+Router.get('/api/revenue-targets/:id', getMonthlyTargetById);
+Router.get('/api/revenue-targets', listMonthlyTargets);
+Router.put('/api/update-target-revenue', CreateTargetRevenue);
+Router.get('/api/revenue-targets-dashbrod', MonthlyTargets);
 
 
 // dealor register

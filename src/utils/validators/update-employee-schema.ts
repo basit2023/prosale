@@ -4,12 +4,14 @@ import {
   validateEmail,
   validatePassword
 } from '@/utils/validators/common-rules';
+import { date } from 'date-arithmetic';
 // form zod validation schema
 
 export const NewEmployeeInfoFormSchema = z.object({
   designation: z.string().optional(),
   targetRevenue :z.number().optional(),
   achievedRevenue :z.number().optional(),
+  date: z.string().optional(),
 });
 
 // generate form types from zod validation schema
@@ -19,5 +21,6 @@ export const defaultValues = {
   designation: undefined,
   targetRevenue: 0.00,
   achievedRevenue: 0.00,
+  date: ''
 
 };

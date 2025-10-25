@@ -90,7 +90,7 @@ const memoizedSession=useMemo(()=>session,[session])
 
     async function stopTimer() {
       const endTime = new Date();
-      const duration = (endTime - startTime) / 1000; // duration in seconds
+      const duration = (endTime - startTime) / 1000;
       if (value1?.user?.name) {
         try {
           await apiService.post('/page-time', {

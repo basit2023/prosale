@@ -139,24 +139,63 @@ export const getColumns = ({
       </Text>
     ),
   },
-     
-    {
+    //   {
+    //   title: (
+    //     <HeaderCell
+    //       title="Date"
+    //       sortable
+    //       ascending={
+    //         sortConfig?.direction === 'asc' && sortConfig?.key === 'dt'
+    //       }
+    //     />
+    //   ),
+    //   onHeaderCell: () => onHeaderCellClick('dt'),
+    //   dataIndex: 'dt',
+    //   key: 'dt',
+    //   width: 150,
+    //   render: (value: string | undefined) => (
+    //     <Text className="font-medium text-gray-700 dark:text-gray-600">
+    //       {value?.split('T')[0] || 'N/A'}
+    //     </Text>
+    //   ),
+    // }, 
+     {
       title: (
         <HeaderCell
-          title="Date"
+          title="Month"
           sortable
           ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'dt'
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'period_month'
           }
         />
       ),
-      onHeaderCell: () => onHeaderCellClick('st'),
-      dataIndex: 'dt',
-      key: 'dt',
+      onHeaderCell: () => onHeaderCellClick('period_month'),
+      dataIndex: 'period_month',
+      key: 'period_month',
       width: 150,
       render: (value: string | undefined) => (
         <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value?.split('T')[0] || 'N/A'}
+          {value || 'N/A'}
+        </Text>
+      ),
+    }, 
+    {
+      title: (
+        <HeaderCell
+          title="Year"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'period_year'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('period_year'),
+      dataIndex: 'period_year',
+      key: 'period_year',
+      width: 150,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value || 'N/A'}
         </Text>
       ),
     }, 
@@ -167,10 +206,10 @@ export const getColumns = ({
   width: 50,
   render: (_: string, row: any) => {
     // Extract the id and full_name from the row
-    const { id, full_name } = row;
+    const { user, full_name } = row;
 
     // Construct the URL with id as a path parameter and full_name as a query parameter
-    const url = routes.RevenueTargets.updateTarget(id, full_name);
+    const url = routes.RevenueTargets.updateTarget(user, full_name);
 
     return (
       <div className="flex items-center justify-start gap-3 pe-3">

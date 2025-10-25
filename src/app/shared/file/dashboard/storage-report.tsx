@@ -36,7 +36,6 @@ interface LeadData {
 interface Summary {
   targetRevenue: number;
   achievedRevenue: number;
-  // attach per-user rows for pie (admin/manager)
   _usersArray?: Array<{
     name?: string;
     full_name?: string;
@@ -89,17 +88,21 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-// Helper to safely read a number from multiple possible keys
+// Safely parse numbers from varied keys / formats
 const readNum = (obj: any, keys: string[]) => {
   for (const k of keys) {
     const v = obj?.[k] ?? obj?.data?.[k];
     if (v !== undefined && v !== null) {
-      const n = Number.parseFloat(Array.isArray(v) ? v[0] : v);
+      const raw = Array.isArray(v) ? v[0] : v;
+      const n = Number.parseFloat(typeof raw === 'string' ? raw.replace(/,/g, '') : raw);
       if (Number.isFinite(n)) return n;
     }
   }
   return 0;
 };
+
+// NEW: unwrap axios responses that look like { success, data }
+const unwrap = (resp: any) => resp?.data?.data ?? resp?.data ?? resp;
 
 export default function LeadReport({ className }: { className?: string }) {
   const { data: session, status } = useSession();
@@ -163,56 +166,67 @@ export default function LeadReport({ className }: { className?: string }) {
       }
 
       try {
-        // summary data — admin gets all, others by email
-        let resSummary;
+        // Role / permission
         const perm = Number((session?.user as any)?.permission ?? 0);
-        const isAdmin = (session?.user as any)?.role === 'admin';
+        const roleRaw =
+          (session?.user as any)?.role ||
+          (session?.user as any)?.user_type ||
+          '';
+        const role = String(roleRaw).toLowerCase();
+        const id = encodeURIComponent((session?.user as any)?.id || '');
 
-        if (isAdmin || perm >= 9) {
-          resSummary = await apiService.get(`/employees-dashbord`);
+        let resSummary;
+        if (perm >= 9) {
+          // Admin: Fetch all users' data
+          resSummary = await apiService.get(`/revenue-targets-dashbrod/?permission=${perm}`);
+        } else if (perm >= 4 || role === 'manager') {
+          // Manager: Fetch team members' data (includes self on backend as per your API)
+          resSummary = await apiService.get(
+            `/revenue-targets-dashbrod/?id=${id}&permission=${perm}&role=${role}`
+          );
         } else {
-          const email = encodeURIComponent((session?.user as any)?.email || '');
-          // This endpoint should return:
-          // - simple user: a single object with their numbers
-          // - manager: { users: [ { ...managerRow }, { ...member1 }, ... ] }
-          resSummary = await apiService.get(`/employees-dashbord/?email=${email}`);
+          // Simple user: Fetch only their own data
+          resSummary = await apiService.get(
+            `/revenue-targets-dashbrod/?id=${id}&permission=${perm}&role=${role}`
+          );
         }
 
-        const raw = resSummary?.data;
+        // >>> FIX: correctly unwrap payload for admin/manager/user
+        const payload = unwrap(resSummary);
+
+        // Accept either an array, {users: [...]}, or a single object
         const usersArray =
-          Array.isArray(raw) ? raw :
-          Array.isArray(raw?.users) ? raw.users :
+          Array.isArray(payload) ? payload :
+          Array.isArray(payload?.users) ? payload.users :
           null;
 
-        // totals for the header
         let target = 0;
         let achieved = 0;
 
         if (usersArray) {
+          // Admin/Manager arrays
           for (const u of usersArray) {
             target += readNum(u, [
-              'targetRevenue', 'target_revenue', 'target', 'total_target', 'revenue_target',
+              'targetRevenue', 'target_revenue', 'total_target', 'revenue_target', 'target',
             ]);
             achieved += readNum(u, [
-              'achievedRevenue', 'achieved_revenue', 'achieved', 'achive',
-              'achievedTotal', 'achieved_total', 'revenue_achieved',
+              'achievedRevenue', 'achieved_revenue', 'achieved_total', 'revenue_achieved', 'achieved',
             ]);
           }
         } else {
-          // single user
-          target = readNum(raw, [
-            'targetRevenue', 'target_revenue', 'target', 'total_target', 'revenue_target',
+          // Single-user object
+          target = readNum(payload, [
+            'targetRevenue', 'target_revenue', 'total_target', 'revenue_target', 'target',
           ]);
-          achieved = readNum(raw, [
-            'achievedRevenue', 'achieved_revenue', 'achieved', 'achive',
-            'achievedTotal', 'achieved_total', 'revenue_achieved',
+          achieved = readNum(payload, [
+            'achievedRevenue', 'achieved_revenue', 'achieved_total', 'revenue_achieved', 'achieved',
           ]);
         }
 
         setSummary({
           targetRevenue: target,
           achievedRevenue: achieved,
-          _usersArray: usersArray ?? null, // keep per-user rows in state (admin/manager)
+          _usersArray: usersArray ?? null,
         });
       } catch (error) {
         console.error('Error fetching targets summary:', error);
@@ -251,17 +265,23 @@ export default function LeadReport({ className }: { className?: string }) {
   // === Pie chart updates ===
   // =========================
 
-  // Role helpers
-  const role = (session?.user as any)?.role;
   const perm = Number((session?.user as any)?.permission ?? 0);
-  const isAdmin =  perm >= 9;
-  const isManager = perm >= 4 && !isAdmin;
+  const roleRaw =
+    (session?.user as any)?.role ||
+    (session?.user as any)?.user_type ||
+    '';
+  const role = String(roleRaw).toLowerCase();
+
+  const isAdmin = perm >= 9;
+  const isManager = (perm >= 4 || role === 'manager') && !isAdmin;
   const currentEmail = (session?.user as any)?.email || '';
 
   const usersArray = summary._usersArray;
 
   const toNum = (v: any) => {
-    const n = Number.parseFloat(v ?? '0');
+    const n = Number.parseFloat(
+      typeof v === 'string' ? v.replace(/,/g, '') : v ?? '0'
+    );
     return Number.isFinite(n) ? n : 0;
   };
 
@@ -279,7 +299,6 @@ export default function LeadReport({ className }: { className?: string }) {
     });
   }, [usersArray]);
 
-  // Existing % header (kept)
   const percentage = useMemo(() => {
     const { targetRevenue, achievedRevenue } = summary;
     if (!targetRevenue) return 0;
@@ -292,7 +311,6 @@ export default function LeadReport({ className }: { className?: string }) {
   ];
   const remainingColor = '#e5e7eb';
 
-  // Simple user: Achieved vs Remaining
   const pieDataUser = useMemo(() => {
     const target = Math.max(0, summary.targetRevenue);
     const achieved = Math.max(0, Math.min(summary.achievedRevenue, target));
@@ -311,32 +329,34 @@ export default function LeadReport({ className }: { className?: string }) {
     ];
   }, [summary]);
 
-  // Manager: You vs Team (Others), by Achieved — requires backend to return users[] that includes manager too
   const pieDataManager = useMemo(() => {
     if (!perUser) return [{ name: 'No Data', value: 1, color: remainingColor }];
 
     let mine = 0;
-    let teamOthers = 0;
+    const teamData = [];
 
     for (const u of perUser) {
       if (u.email && currentEmail && u.email.toLowerCase() === currentEmail.toLowerCase()) {
         mine += u.achieved;
       } else {
-        teamOthers += u.achieved;
+        teamData.push({
+          name: u.name,
+          value: u.achieved,
+          color: palette[teamData.length % palette.length], // Assign colors dynamically
+        });
       }
     }
 
-    if (mine === 0 && teamOthers === 0) {
+    if (mine === 0 && teamData.length === 0) {
       return [{ name: 'No Data', value: 1, color: remainingColor }];
     }
 
     return [
       { name: 'You (Manager)', value: mine, color: '#16a34a' },
-      { name: 'Team (Others)', value: teamOthers, color: '#60a5fa' },
+      ...teamData, // Add individual team members' data
     ];
   }, [perUser, currentEmail]);
 
-  // Admin: Achieved per user
   const pieDataAdmin = useMemo(() => {
     if (!perUser) return [{ name: 'No Data', value: 1, color: remainingColor }];
 
@@ -357,52 +377,25 @@ export default function LeadReport({ className }: { className?: string }) {
 
   const pieData = isAdmin ? pieDataAdmin : isManager ? pieDataManager : pieDataUser;
 
-  // === RENDER ===
   if (status === 'loading') return null;
+
+  const displayName =
+    userValue?.user ? `${userValue.user.first_name} ${userValue.user.last_name}` : 'User';
+
+  const handleEditProfileClick = () => {
+    if (perm >= 9) {
+      console.log('Admin view');
+    } else if (isManager) {
+      console.log('Manager view');
+    } else {
+      console.log('User view');
+    }
+  };
 
   return (
     <>
-      {/* Lead Report (Bar) */}
-      <WidgetCard
-        title={'Lead Report'}
-        titleClassName="font-normal text-gray-700 sm:text-base font-inter"
-        description={
-          <div className="flex items-center justify-start">
-            <Title as="h2" className="me-2 font-semibold">
-              Lead Count by Month
-            </Title>
-          </div>
-        }
-        descriptionClassName="text-gray-500 mt-1.5"
-        action={<div className="hidden @2xl:block" />}
-        className={className}
-      >
-        <SimpleBar>
-          <div className="h-96 w-full pt-9">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={leadData}
-                barSize={isMobile ? 16 : isDesktop ? 28 : is2xl ? 32 : 46}
-                margin={{ left: 16 }}
-                className="[&_.recharts-tooltip-cursor]:fill-opacity-20 dark:[&_.recharts-tooltip-cursor]:fill-opacity-10 [&_.recharts-cartesian-axis-tick-value]:fill-gray-500 [&_.recharts-cartesian-axis.yAxis]:-translate-y-3 rtl:[&_.recharts-cartesian-axis.yAxis]:-translate-x-12 [&_.recharts-cartesian-grid-vertical]:opacity-0"
-              >
-                <CartesianGrid strokeDasharray="8 10" strokeOpacity={0.435} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} tick={<CustomYAxisTick />} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="employee1.lead_count" name="Top Employee" fill="#8884d8" />
-                <Bar dataKey="employee2.lead_count" name="2nd Employee" fill="#82ca9d" />
-                <Bar dataKey="employee3.lead_count" name="3rd Employee" fill="#ffc658" />
-                <Bar dataKey="employee4.lead_count" name="4th Employee" fill="#ff8042" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </SimpleBar>
-      </WidgetCard>
-
-      {/* Target vs Achieved (Pie) */}
-      <div className="flex mt-5">
+     
+      <div className="flex">
         <WidgetCard
           title="Target vs Achieved"
           titleClassName="font-normal text-gray-700 sm:text-base font-inter"
@@ -467,7 +460,47 @@ export default function LeadReport({ className }: { className?: string }) {
           </div>
         </WidgetCard>
       </div>
-
+       {/* Lead Report (Bar) */}
+       <div className='flex mt-5'>
+      <WidgetCard
+        title={'Lead Report'}
+        titleClassName="font-normal text-gray-700 sm:text-base font-inter"
+        description={
+          <div className="flex items-center justify-start">
+            <Title as="h2" className="me-2 font-semibold">
+              Lead Count by Month
+            </Title>
+          </div>
+        }
+        descriptionClassName="text-gray-500 mt-1.5"
+        action={<div className="hidden @2xl:block" />}
+        className={className}
+      >
+        <SimpleBar>
+          <div className="h-96 w-full pt-9">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={leadData}
+                barSize={isMobile ? 16 : isDesktop ? 28 : is2xl ? 32 : 46}
+                margin={{ left: 16 }}
+                className="[&_.recharts-tooltip-cursor]:fill-opacity-20 dark:[&_.recharts-tooltip-cursor]:fill-opacity-10 [&_.recharts-cartesian-axis-tick-value]:fill-gray-500 [&_.recharts-cartesian-axis.yAxis]:-translate-y-3 rtl:[&_.recharts-cartesian-axis.yAxis]:-translate-x-12 [&_.recharts-cartesian-grid-vertical]:opacity-0"
+              >
+                <CartesianGrid strokeDasharray="8 10" strokeOpacity={0.435} />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                <YAxis axisLine={false} tickLine={false} tick={<CustomYAxisTick />} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Bar dataKey="employee1.lead_count" name="Top Employee" fill="#8884d8" />
+                <Bar dataKey="employee2.lead_count" name="2nd Employee" fill="#82ca9d" />
+                <Bar dataKey="employee3.lead_count" name="3rd Employee" fill="#ffc658" />
+                <Bar dataKey="employee4.lead_count" name="4th Employee" fill="#ff8042" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </SimpleBar>
+      </WidgetCard>
+       </div>
+      {/* Target vs Achieved (Pie) */}
       <QuickAccess />
     </>
   );

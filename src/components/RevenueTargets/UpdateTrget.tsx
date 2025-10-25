@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import apiService from '@/utils/apiService';
 import {
   NewEmployeeInfoFormTypes,
@@ -16,82 +16,116 @@ import {
 } from '@/utils/validators/update-employee-schema';
 import { useRouter } from 'next/navigation';
 import { logsCreate } from '@/app/shared/account-settings/logs';
+import ReactDatePicker from '../ui/Timedatepicker';
+
+type MonthlyTarget = {
+  id?: number;
+  user: number;
+  name: string | null;
+  designation: string | null;
+  period_year: number;
+  period_month: number;
+  targetRevenue: number;
+  achievedRevenue: number;
+  exists: boolean;
+};
 
 export default function UpdateTarget({ id }: { id: string }) {
   const { data: session } = useSession();
   const { back } = useRouter();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
   const [isFetching, setIsFetching] = useState(true);
+  const [record, setRecord] = useState<MonthlyTarget | null>(null);
 
-  // RHF setup
+  const currentDate = new Date();
+  const [date, setDate] = useState<Date | null>(currentDate);
+
+  // helper to YYYY-MM-DD
+  const toYmd = (d: Date | null) => (d ? d.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+
+  // RHF
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    setValue,
   } = useForm<NewEmployeeInfoFormTypes>({
-    // initial safe defaults for first paint
     defaultValues: {
       ...defaultValues,
       targetRevenue: 0,
       achievedRevenue: 0,
       designation: '',
+      date: toYmd(currentDate),
     },
   });
 
-  // Fetch current user data
+  const fetchRecord = useCallback(async () => {
+    if (!session || !id) return;
+    try {
+      setIsFetching(true);
+      const d = toYmd(date);
+      // set hidden date field for submit
+      setValue('date', d, { shouldDirty: true, shouldValidate: false });
+
+      const resp = await apiService.get(`/revenue-targets/${id}?date=${encodeURIComponent(d)}`);
+      const payload = resp?.data?.data;
+      setRecord(payload ?? null);
+
+      reset({
+        targetRevenue: Number(payload?.targetRevenue ?? 0),
+        achievedRevenue: Number(payload?.achievedRevenue ?? 0),
+        // optional: show designation in UI if you need it
+        designation: payload?.designation ?? '',
+        date: d,
+      });
+    } catch (e) {
+      console.error('Error fetching record:', e);
+      toast.error('Error fetching monthly target');
+    } finally {
+      setIsFetching(false);
+    }
+  }, [session, id, date, reset, setValue]);
+
+  // Initial + when date changes
   useEffect(() => {
-    if (!session) return;
+    fetchRecord();
+  }, [fetchRecord]);
 
-    const fetchData = async () => {
-      try {
-        setIsFetching(true);
-        const userResponse = await apiService.get(`/emp-personalinfo/${id}`);
-        setUserData(userResponse.data);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Error fetching data. Please try again.');
-      } finally {
-        setIsFetching(false);
-      }
-    };
-
-    fetchData();
-  }, [session, id]);
-
-  // When userData arrives, push values into the form
-  useEffect(() => {
-    if (!userData?.user) return;
-    reset({
-      targetRevenue: Number(userData.user.targetRevenue ?? 0),
-      achievedRevenue: Number(userData.user.achievedRevenue ?? 0),
-      // keep designation if you actually use it in your schema/UI; otherwise leave empty
-      designation: userData.user.designation ?? '',
-    });
-  }, [userData, reset]);
-
-  const onSubmit: SubmitHandler<NewEmployeeInfoFormTypes> = async (data) => {
+  const onSubmit: SubmitHandler<NewEmployeeInfoFormTypes> = async (form) => {
     setIsLoading(true);
     try {
-      // Coerce NaNs (from empty fields) to 0
+      const d = toYmd(date);
+
+      // You said: incoming "user" string becomes the stored "name".
+      // We'll use session?.user?.username (or email) as that "user" string.
+      const incomingUserString =
+        (session as any)?.user?.username ||
+        (session as any)?.user?.name ||
+        (session as any)?.user?.email ||
+        'unknown';
+
       const payload: any = {
-        ...data,
-        targetRevenue: Number.isFinite(data.targetRevenue) ? data.targetRevenue : 0,
-        achievedRevenue: Number.isFinite(data.achievedRevenue) ? data.achievedRevenue : 0,
+        // backend expects: date to get (year, month)
+        date: d,
+        // store FE "user" into name:
+        user: incomingUserString, // so controller reads as "name"
+        name: incomingUserString, // keep both in case you allow `name` too
+        targetRevenue: Number.isFinite(form.targetRevenue) ? form.targetRevenue : 0,
+        achievedRevenue: Number.isFinite(form.achievedRevenue) ? form.achievedRevenue : 0,
       };
 
-      // If designation isn't used here, don't send empty string
-      if (!payload.designation) delete payload.designation;
-
-      console.log('Submitting payload:', payload);
+      // Optional: if you actually edit designation in this screen, pass it; else remove:
+      if (form.designation) payload.designation = form.designation;
 
       const result = await apiService.put(`/update-target-revenue/?id=${id}`, payload);
-
       toast.success(result?.data?.message || 'Saved');
+
       if (result?.data?.success) {
-        logsCreate({ user: session?.user?.username, desc: 'Created Target' });
+        logsCreate({ user: (session as any)?.user?.username, desc: 'Updated Monthly Target' });
+        // refetch to reflect latest
+        await fetchRecord();
       }
     } catch (error: any) {
       console.error('Error saving target:', error);
@@ -108,16 +142,39 @@ export default function UpdateTarget({ id }: { id: string }) {
       {() => (
         <>
           <FormGroup
-            title="Enter Targets"
-            description="Add targets for each designation"
+            title="Enter Monthly Targets"
+            description="Add targets for a specific month"
             className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
           />
 
           <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
+
+            {/* Month picker */}
+            <FormGroup title="Select Month" className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11">
+              <ReactDatePicker
+                selected={date}
+                onChange={(d: Date | null) => {
+                  setDate(d);
+                  const ymd = toYmd(d);
+                  setValue('date', ymd, { shouldDirty: true });
+                  // refetch for that month
+                  // (debounce if you prefer; here it’ll refetch via useEffect on date)
+                }}
+                dateFormat="MMMM d, yyyy"
+                placeholderText="Select Date"
+                showTimeSelect={false}
+              />
+              {/* hidden date field for submission */}
+              <input type="hidden" {...register('date')} />
+              {errors.date && (
+                <p className="mt-1 text-sm text-red-500">{errors.date.message as any}</p>
+              )}
+            </FormGroup>
+
             {/* Target Revenue */}
             <FormGroup
               title="Target Revenue"
-              description="Desired revenue target"
+              description="Desired monthly revenue target"
               className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
             >
               <Input

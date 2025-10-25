@@ -243,6 +243,66 @@ const DeleteComments = async (req, res) => {
     res.status(500).json({ success: false, error: 'Error updating status. Please try again.' });
   }
 };
+const DoneFollowUps = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid ID',
+      });
+    }
+
+    // Query to select the nextfollowup based on the ID
+    const selectQuery = 'SELECT nextfollowup FROM leads_comments WHERE id = ?';
+
+    mysqlConnection.query(selectQuery, [id], (error, results) => {
+      if (error) {
+        console.error('Error selecting nextfollowup:', error);
+        return res.status(500).json({ error: 'Error selecting nextfollowup. Please try again.' });
+      }
+
+      // Check if any rows are returned
+      if (results.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No row found with the provided ID',
+        });
+      }
+
+      // Extract the nextfollowup value from the results
+      const nextfollowup = results[0].nextfollowup;
+
+      // Check if nextfollowup is already 0
+      if (nextfollowup === 0) {
+        return res.status(200).json({
+          success: true,
+          message: 'nextfollowup is already 0.',
+        });
+      }
+
+      // Query to update the nextfollowup to 1 for the given ID
+      const updateQuery = 'UPDATE leads_comments SET nextfollowup = ? WHERE id = ?';
+      mysqlConnection.query(updateQuery, [1, id], (updateError, updateResults) => {
+        if (updateError) {
+          console.error('Error updating nextfollowup:', updateError);
+          return res.status(500).json({ error: 'Error updating nextfollowup. Please try again.' });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: 'nextfollowup updated to 1 successfully!',
+        });
+      });
+    });
+  } catch (error) {
+    console.error('Error while updating nextfollowup:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Error updating nextfollowup. Please try again.',
+    });
+  }
+};
 
 const AllLabels = async (req, res) => {
   try {
@@ -420,4 +480,4 @@ const CreateActivityReport = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error", error });
   }
 };
-  module.exports = { SaveTime, CreateComments, GetComments,DeleteComments,AllLabels,SelectForBox,UpdateLabel, GetFollowup,CreateActivityReport};
+  module.exports = { DoneFollowUps,SaveTime, CreateComments, GetComments,DeleteComments,AllLabels,SelectForBox,UpdateLabel, GetFollowup,CreateActivityReport};

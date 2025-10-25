@@ -7,19 +7,20 @@ import cn from '@/utils/class-names';
 import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
-import { PiTrashFill, PiEye } from 'react-icons/pi';
+import { PiTrashFill, PiEye,PiCheckThin , PiChecks  } from 'react-icons/pi';
 import { routes } from '@/config/routes';
 import Spinner from '../ui/spinner';
+import { Button } from 'rizzui';
 
 interface Comment {
   id: string;
   lead_id: string;
   fullName: string;
-  full_name?: string; // <-- you’re using this in columns
+  full_name?: string;
   comments: string;
   followup: string;
   followupdate: string;
-  nextfollowup: boolean;
+  nextfollowup: any; // can be 0/1, '0'/'1', true/false
   date: string;
   user_id?: string;
   assigned_to?: string;
@@ -36,6 +37,21 @@ interface ShowFollowupProps {
 
 const STORAGE_KEY = 'followup_notified_ids';
 const STORAGE_EXPIRY_KEY = 'followup_notified_expiry';
+const STORAGE_PAGE_KEY_PREFIX = 'followup_page_';
+const STORAGE_PAGESIZE_KEY_PREFIX = 'followup_pagesize_';
+// NEW keys for pre/due notifications
+const STORAGE_PRE_KEY = 'followup_notified_pre';
+const STORAGE_DUE_KEY = 'followup_notified_due';
+
+// ---- Helpers to normalize nextfollowup ----
+const isPending = (v: any) => {
+  const s = String(v).trim().toLowerCase();
+  return v === 1 || v === true || s === '1' || s === 'true' || s === 'pending';
+};
+const isDone = (v: any) => {
+  const s = String(v).trim().toLowerCase();
+  return v === 0 || v === false || s === '0' || s === 'false' || s === 'done';
+};
 
 const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const router = useRouter();
@@ -48,16 +64,49 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   // Notifications
   const [notifReady, setNotifReady] = useState(false);
   const notifiedIdsRef = useRef<Set<string>>(new Set());
-  const lastCheckRef = useRef<number>(Date.now()); // used to avoid flood on first load
-  const commentsRef = useRef<Comment[]>([]);       // keep latest comments in interval
+  // track pre-notify (10 minutes before) and exact due notifications separately
+  const notifiedPreRef = useRef<Set<string>>(new Set());
+  const notifiedDueRef = useRef<Set<string>>(new Set());
+  const lastCheckRef = useRef<number>(Date.now());
+  const commentsRef = useRef<Comment[]>([]);
 
   // Filters / table UX
   const [showMyFollowupsOnly, setShowMyFollowupsOnly] = useState(false);
+  const [showDoneFollowups, setShowDoneFollowups] = useState(false); // false = show Pending, true = show Done
   const [query, setQuery] = useState('');
   const [pageSize, setPageSize] = useState(20);
   const [page, setPage] = useState(1);
 
-  // --- Load/restore notified state (daily reset) ---
+  // restore page/pageSize for current user when available
+  useEffect(() => {
+    try {
+      const u = memoizedSession?.user as any;
+      if (!u) return;
+      const pageKey = STORAGE_PAGE_KEY_PREFIX + u.id;
+      const sizeKey = STORAGE_PAGESIZE_KEY_PREFIX + u.id;
+      const savedPage = sessionStorage.getItem(pageKey);
+      const savedSize = sessionStorage.getItem(sizeKey);
+      if (savedSize) setPageSize(Number(savedSize));
+      if (savedPage) setPage(Number(savedPage));
+    } catch (e) {
+      /* ignore */
+    }
+  }, [memoizedSession]);
+
+  // persist page/pageSize for current user
+  useEffect(() => {
+    try {
+      const u = memoizedSession?.user as any;
+      if (!u) return;
+      const pageKey = STORAGE_PAGE_KEY_PREFIX + u.id;
+      const sizeKey = STORAGE_PAGESIZE_KEY_PREFIX + u.id;
+      sessionStorage.setItem(pageKey, String(page));
+      sessionStorage.setItem(sizeKey, String(pageSize));
+    } catch (e) {
+      /* ignore */
+    }
+  }, [page, pageSize, memoizedSession]);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -68,16 +117,17 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       if (expiryTime && now - parseInt(expiryTime) > oneDayMs) {
         localStorage.removeItem(STORAGE_KEY);
         localStorage.removeItem(STORAGE_EXPIRY_KEY);
+        localStorage.removeItem(STORAGE_PRE_KEY);
+        localStorage.removeItem(STORAGE_DUE_KEY);
       } else {
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          notifiedIdsRef.current = new Set(JSON.parse(stored));
-        }
+        if (stored) notifiedIdsRef.current = new Set(JSON.parse(stored));
+        const storedPre = localStorage.getItem(STORAGE_PRE_KEY);
+        if (storedPre) notifiedPreRef.current = new Set(JSON.parse(storedPre));
+        const storedDue = localStorage.getItem(STORAGE_DUE_KEY);
+        if (storedDue) notifiedDueRef.current = new Set(JSON.parse(storedDue));
       }
-
-      if (!expiryTime) {
-        localStorage.setItem(STORAGE_EXPIRY_KEY, String(now));
-      }
+      if (!expiryTime) localStorage.setItem(STORAGE_EXPIRY_KEY, String(now));
     } catch (e) {
       console.warn('Failed to load notification state:', e);
     }
@@ -87,12 +137,13 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     if (typeof window === 'undefined') return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(notifiedIdsRef.current)));
+      localStorage.setItem(STORAGE_PRE_KEY, JSON.stringify(Array.from(notifiedPreRef.current)));
+      localStorage.setItem(STORAGE_DUE_KEY, JSON.stringify(Array.from(notifiedDueRef.current)));
     } catch (e) {
       console.warn('Failed to save notification state:', e);
     }
   };
 
-  // --- Notification capability detection ---
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (!('Notification' in window)) return;
@@ -114,23 +165,28 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     }
   };
 
-  const showNotification = (record: Comment) => {
+  // type: 'pre' = 10 minutes before, 'due' = at exact time
+  const showNotification = (record: Comment, type: 'pre' | 'due' = 'due') => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
-
+    const label = type === 'pre' ? 'Upcoming Follow Up' : 'Follow Up Due';
+    const body =
+      type === 'pre'
+        ? `Upcoming follow-up for ${record.fullName || record.full_name || 'Contact'} in 10 minutes.`
+        : `Follow-up due now for ${record.fullName || record.full_name || 'Contact'}.`;
     try {
-      new Notification('Follow Up Due', {
-        body: `Action required for: ${record.fullName || 'Contact'}`,
-        tag: `followup:${record.id}`,
+      new Notification(label, {
+        body,
+        tag: `followup:${type}:${record.id}`,
         renotify: true,
         icon: '/favicon.ico',
         requireInteraction: true,
       });
     } catch {
-      toast((t) => (
+      toast(() => (
         <div>
-          <strong>Follow Up Due</strong>
-          <div>Action required for: {record.fullName || 'Contact'}</div>
+          <strong>{label}</strong>
+          <div>{body}</div>
         </div>
       ));
     }
@@ -139,7 +195,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const belongsToCurrentUser = (comment: Comment): boolean => {
     const u = memoizedSession?.user as any;
     if (!u) return false;
-
     return (
       comment.user_id === u.id ||
       comment.assigned_to === u.id ||
@@ -151,17 +206,14 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     );
   };
 
-  // Keep latest comments in a ref for the interval
   useEffect(() => {
     commentsRef.current = comments;
   }, [comments]);
 
-  // Initialize last check time ONCE to "now" so first run doesn't flood
   useEffect(() => {
     lastCheckRef.current = Date.now();
   }, []);
 
-  // Notify ONLY when followupdate "crosses" between lastCheck and now
   useEffect(() => {
     if (!notifReady || !memoizedSession?.user) return;
 
@@ -174,16 +226,28 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
       for (const c of list) {
         if (!c.followupdate) continue;
-
-        if (showMyFollowupsOnly && !belongsToCurrentUser(c)) continue;
+        // only notify for pending ones
+        if (!isPending(c.nextfollowup)) continue;
+        // notify only if assigned to current user (or belongs)
+        if (!belongsToCurrentUser(c)) continue;
 
         const t = Date.parse(c.followupdate);
         if (Number.isNaN(t)) continue;
 
-        // Fire only if it just crossed within this window
-        const crossedNow = t > last && t <= now;
-        if (crossedNow && !notifiedIdsRef.current.has(c.id)) {
-          showNotification(c);
+        const tenMinMs = 10 * 60 * 1000;
+        const preTrigger = t - tenMinMs;
+        // Pre-notify: 10 minutes before
+        if (preTrigger > last && preTrigger <= now && !notifiedPreRef.current.has(c.id)) {
+          showNotification(c, 'pre');
+          notifiedPreRef.current.add(c.id);
+          mutated = true;
+        }
+
+        // Due-notify: at exact time (or if missed within the check window)
+        if (t > last && t <= now && !notifiedDueRef.current.has(c.id)) {
+          showNotification(c, 'due');
+          notifiedDueRef.current.add(c.id);
+          // mark as also in the general notifiedIds set for backward compat
           notifiedIdsRef.current.add(c.id);
           mutated = true;
         }
@@ -193,11 +257,8 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       lastCheckRef.current = now;
     };
 
-    // Check every 30s
     const interval = setInterval(checkDueDates, 30000);
-    // Optional quick first tick (won't flood because lastCheckRef was set to now)
     setTimeout(checkDueDates, 1500);
-
     return () => clearInterval(interval);
   }, [notifReady, memoizedSession, showMyFollowupsOnly]);
 
@@ -206,7 +267,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     try {
       const u = memoizedSession?.user as any;
       if (!u) return;
-
       const resp = await apiService.get(`/follow-up/${u?.username}/?permission=${u?.permission}&&id=${u?.id}`);
       const arr = Array.isArray(resp?.data?.leads) ? resp.data.leads : [];
       const withDates = arr.filter((c: Comment) => c.followupdate);
@@ -239,42 +299,53 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     }
   };
 
+  const handleMarkAsDone = async (commentId: string) => {
+    try {
+      const response = await apiService.put(`/update-followup/${commentId}`, { nextfollowup: 0 });
+      if (response.status === 200) {
+        toast.success('Follow-up marked as done.');
+        setComments((prev) =>
+          prev.map((c) => (c.id === commentId ? { ...c, nextfollowup: 0 } : c))
+        );
+      } else {
+        toast.error('Error marking follow-up as done. Please try again.');
+      }
+    } catch {
+      toast.error('Error marking follow-up as done. Please try again.');
+    }
+  };
+
   const getDateStatus = (followupdate: string) => {
     if (!followupdate) {
       return { status: 'N/A', colorClass: 'text-gray-700 dark:text-gray-600', sortOrder: 5 };
     }
-
     const followupDate = new Date(followupdate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const d = new Date(followupDate);
     d.setHours(0, 0, 0, 0);
-
     const daysDiff = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (daysDiff === 0) {
-      return { status: 'Today', colorClass: 'text-green-600 dark:text-green-400', sortOrder: 0 };
-    } else if (daysDiff === 1) {
-      return { status: 'Tomorrow', colorClass: 'text-orange-600 dark:text-orange-400', sortOrder: 1 };
-    } else if (daysDiff > 1 && daysDiff <= 7) {
-      return { status: 'Coming Soon', colorClass: 'text-orange-500 dark:text-orange-300', sortOrder: 2 };
-    } else if (daysDiff > 7) {
-      return { status: 'Scheduled', colorClass: 'text-blue-600 dark:text-blue-400', sortOrder: 3 };
-    } else {
-      return { status: 'Overdue', colorClass: 'text-red-600 dark:text-red-400', sortOrder: 4 };
-    }
+    if (daysDiff === 0) return { status: 'Today', colorClass: 'text-green-600 dark:text-green-400', sortOrder: 0 };
+    if (daysDiff === 1) return { status: 'Tomorrow', colorClass: 'text-orange-600 dark:text-orange-400', sortOrder: 1 };
+    if (daysDiff > 1 && daysDiff <= 7) return { status: 'Coming Soon', colorClass: 'text-orange-500 dark:text-orange-300', sortOrder: 2 };
+    if (daysDiff > 7) return { status: 'Scheduled', colorClass: 'text-blue-600 dark:text-blue-400', sortOrder: 3 };
+    return { status: 'Overdue', colorClass: 'text-red-600 dark:text-red-400', sortOrder: 4 };
   };
 
   // ----- SEARCH + FILTER + SORT -----
   const normalizedQuery = query.trim().toLowerCase();
 
   const filteredSorted = useMemo(() => {
-    const base = showMyFollowupsOnly
-      ? comments.filter(belongsToCurrentUser)
-      : comments.filter((c) => c.nextfollowup);
+    const base = showMyFollowupsOnly ? comments.filter((c) => belongsToCurrentUser(c)) : comments;
+
+    // ✅ Use robust normalizer for pending/done
+    const filteredByDone = showDoneFollowups
+      ? base.filter((c) => isDone(c.nextfollowup))
+      : base.filter((c) => isPending(c.nextfollowup));
 
     const searched = normalizedQuery
-      ? base.filter((c) => {
+      ? filteredByDone.filter((c) => {
           const hay = [
             c.fullName,
             c.full_name,
@@ -288,20 +359,18 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             .join(' ');
           return hay.includes(normalizedQuery);
         })
-      : base;
+      : filteredByDone;
 
-    // Sort by "urgency"
     return [...searched].sort((a, b) => {
       const aStatus = getDateStatus(a.followupdate).sortOrder;
       const bStatus = getDateStatus(b.followupdate).sortOrder;
       return aStatus - bStatus;
     });
-  }, [comments, showMyFollowupsOnly, normalizedQuery]);
+  }, [comments, showMyFollowupsOnly, showDoneFollowups, normalizedQuery]);
 
-  // Reset to page 1 when the dataset or filters change
   useEffect(() => {
     setPage(1);
-  }, [normalizedQuery, showMyFollowupsOnly, comments.length]);
+  }, [normalizedQuery, showMyFollowupsOnly, showDoneFollowups, comments.length]);
 
   // ----- PAGINATION -----
   const totalItems = filteredSorted.length;
@@ -309,7 +378,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const start = (page - 1) * pageSize;
   const pageData = filteredSorted.slice(start, start + pageSize);
 
-  // Ensure each row has a stable key
   const pageDataWithKeys = useMemo(
     () => pageData.map((r) => ({ ...r, key: r.id ?? `${r.lead_id}-${r.date}` })),
     [pageData]
@@ -323,24 +391,25 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-2">
         <div className="flex items-center gap-2">
           {memoizedSession?.user?.permission >= 4 && (
-            <button
+            <Button
               className={`px-3 py-1.5 rounded text-white transition-colors ${
                 showMyFollowupsOnly ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'
               }`}
               onClick={() => setShowMyFollowupsOnly((v) => !v)}
             >
-              {showMyFollowupsOnly ? 'Showing: My Follow-Ups' : 'My Follow-Up'}
-            </button>
+              {showMyFollowupsOnly ? 'All' : 'Own'}
+            </Button>
           )}
 
-          {!notifReady && (
-            <button
-              className="px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              onClick={requestNotifPermission}
-            >
-              Enable Notifications
-            </button>
-          )}
+          <Button
+            className={`px-3 py-1.5 rounded text-white transition-colors ${
+              showDoneFollowups ? 'bg-blue-700 hover:bg-blue-800' : 'bg-blue-600 hover:bg-blue-700'
+            }`}
+            onClick={() => setShowDoneFollowups((v) => !v)}
+            title="Toggle between Pending and Done follow-ups"
+          >
+            {showDoneFollowups ? 'Done' : 'Inprocess'}
+          </Button>
         </div>
 
         <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -356,7 +425,8 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             onChange={(e) => {
               const n = Number(e.target.value);
               setPageSize(n);
-              setPage(1); // reset to first page when page size changes
+              // keep current page if possible, but ensure within bounds after size change
+              setPage((p) => Math.min(Math.max(1, p), Math.max(1, Math.ceil(filteredSorted.length / n))));
             }}
             className="px-0 py-1.5 rounded border border-gray-300 w-[30%] !focus:ring-black !focus:border-black dark:border-gray-700 bg-white/80 dark:bg-gray-900/60"
             title="Rows per page"
@@ -371,14 +441,11 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       </div>
 
       <BasicTableWidget
-        /* Force clean rerender when paging changes (helps if the widget memoizes internally) */
-        key={`pg-${page}-ps-${pageSize}-q-${normalizedQuery}-mine-${showMyFollowupsOnly}`}
+        key={`pg-${page}-ps-${pageSize}-q-${normalizedQuery}-mine-${showMyFollowupsOnly}-done-${showDoneFollowups}`}
         title="All comments"
         className={cn('pb-0 lg:pb-0 [&_.rc-table-row:last-child_td]:border-b-0')}
         data={pageDataWithKeys}
-        /* 🔑 Make sure the inner table uses a stable row key */
         rowKey="key"
-        /* 🧭 Turn off any built-in pagination so our manual paging shows */
         pagination={false}
         getColumns={() => [
           {
@@ -410,11 +477,9 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             key: 'full_name',
             width: 300,
             render: (_: string, record: Comment) => (
-              <>
-                <Text className="font-medium text-gray-700 dark:text-gray-600">
-                  {record?.full_name || 'N/A'}
-                </Text>
-              </>
+              <Text className="font-medium text-gray-700 dark:text-gray-600">
+                {record?.full_name || 'N/A'}
+              </Text>
             ),
           },
           {
@@ -432,18 +497,39 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             title: <span className="block whitespace-nowrap">Follow up</span>,
             dataIndex: 'followup',
             key: 'followup',
-            width: 300,
+            width: 220,
             render: (_: string, record: Comment) => (
               <Text className="font-medium text-gray-700 dark:text-gray-600">
                 {record?.followup || 'N/A'}
               </Text>
             ),
           },
+          // ✅ NEW: Status column (Pending vs Done from nextfollowup)
+          {
+            title: <span className="block whitespace-nowrap">Status</span>,
+            dataIndex: 'nextfollowup',
+            key: 'status-nextfollowup',
+            width: 140,
+            render: (_: any, record: Comment) => {
+              const pending = isPending(record.nextfollowup);
+              return (
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                    pending
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-green-100 text-green-800'
+                  }`}
+                >
+                  {pending ? 'Follow-up' : 'Done'}
+                </span>
+              );
+            },
+          },
           {
             title: <span className="block whitespace-nowrap">Date</span>,
             dataIndex: 'followupdate',
             key: 'followupdate',
-            width: 300,
+            width: 260,
             render: (_: string, record: Comment) => {
               const { status, colorClass } = getDateStatus(record?.followupdate);
               const formatted = record?.followupdate
@@ -455,7 +541,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
                     minute: '2-digit',
                   })
                 : 'N/A';
-
               return (
                 <div className="flex flex-col">
                   <Text className={`font-medium ${colorClass}`}>
@@ -480,37 +565,54 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             ),
             dataIndex: 'status',
             key: 'status',
-            width: 300,
-            render: (_: string, record: Comment) => (
-              <div className="flex justify-end gap-2 mr-5">
-                <button
-                  className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-full transition-colors"
-                  onClick={() => router.push(routes.leads.edit(record.lead_id))}
-                  title="Edit Lead"
-                >
-                  <PiEye className="h-5 w-5" />
-                </button>
-                <button
-                  className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors"
-                  onClick={() => handleDeleteComment(record.id, record.lead_id)}
-                  title="Delete Comment"
-                >
-                  <PiTrashFill className="h-5 w-5" />
-                </button>
-              </div>
-            ),
+            width: 240,
+            render: (_: string, record: Comment) => {
+              const pending = isPending(record.nextfollowup);
+              return (
+                <div className="flex justify-end gap-2 mr-5">
+                  <button
+                    className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded-full transition-colors"
+                    onClick={() => router.push(routes.leads.edit(record.lead_id))}
+                    title="Edit Lead"
+                  >
+                    <PiEye className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors"
+                    onClick={() => handleDeleteComment(record.id, record.lead_id)}
+                    title="Delete Comment"
+                  >
+                    <PiTrashFill className="h-5 w-5" />
+                  </button>
+                  <button
+                    className={`p-2 rounded-full transition-colors ${
+                      pending
+                        ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                        : 'text-gray-400 cursor-not-allowed'
+                    }`}
+                    onClick={() => pending && handleMarkAsDone(record.id)}
+                    title={pending ? 'Mark as Done' : 'Already Done'}
+                    disabled={!pending}
+                  >
+                    {pending? <PiCheckThin className="h-5 w-5" />:<PiChecks className="h-5 w-5" />}
+                  </button>
+                </div>
+              );
+            },
           },
         ]}
         noGutter
         enableSearch={false}
-        scroll={{ x: 900 }}
+        scroll={{ x: 1080 }}
       />
 
       {/* Pagination footer */}
       <div className="flex items-center justify-between pt-3">
         <div className="text-sm text-gray-600 dark:text-gray-400">
-          Showing <strong>{pageData.length}</strong> of <strong>{totalItems}</strong> results
+          Showing <strong>{pageDataWithKeys.length}</strong> of <strong>{totalItems}</strong> results
           {normalizedQuery && <span> (filtered)</span>}
+          {' — '}
+          {showDoneFollowups ? 'Viewing: Done' : 'Viewing: Pending'}
         </div>
 
         <div className="flex items-center gap-2">
