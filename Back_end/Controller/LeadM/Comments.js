@@ -283,7 +283,7 @@ const DoneFollowUps = async (req, res) => {
 
       // Query to update the nextfollowup to 1 for the given ID
       const updateQuery = 'UPDATE leads_comments SET nextfollowup = ? WHERE id = ?';
-      mysqlConnection.query(updateQuery, [1, id], (updateError, updateResults) => {
+      mysqlConnection.query(updateQuery, [0, id], (updateError, updateResults) => {
         if (updateError) {
           console.error('Error updating nextfollowup:', updateError);
           return res.status(500).json({ error: 'Error updating nextfollowup. Please try again.' });

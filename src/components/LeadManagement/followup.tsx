@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Text } from '@/components/ui/text';
 import { useRouter } from 'next/navigation';
 import BasicTableWidget from '@/components/controlled-table/basic-table-widget';
@@ -7,7 +7,7 @@ import cn from '@/utils/class-names';
 import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
-import { PiTrashFill, PiEye,PiCheckThin , PiChecks  } from 'react-icons/pi';
+import { PiTrashFill, PiEye, PiCheckThin, PiChecks } from 'react-icons/pi';
 import { routes } from '@/config/routes';
 import Spinner from '../ui/spinner';
 import { Button } from 'rizzui';
@@ -19,8 +19,8 @@ interface Comment {
   full_name?: string;
   comments: string;
   followup: string;
-  followupdate: string;
-  nextfollowup: any; // can be 0/1, '0'/'1', true/false
+  followupdate: string; // ISO date string
+  nextfollowup: any;    // 0/1 or '0'/'1'/true/false
   date: string;
   user_id?: string;
   assigned_to?: string;
@@ -39,18 +39,21 @@ const STORAGE_KEY = 'followup_notified_ids';
 const STORAGE_EXPIRY_KEY = 'followup_notified_expiry';
 const STORAGE_PAGE_KEY_PREFIX = 'followup_page_';
 const STORAGE_PAGESIZE_KEY_PREFIX = 'followup_pagesize_';
-// NEW keys for pre/due notifications
 const STORAGE_PRE_KEY = 'followup_notified_pre';
 const STORAGE_DUE_KEY = 'followup_notified_due';
 
-// ---- Helpers to normalize nextfollowup ----
+// Robust normalizers
 const isPending = (v: any) => {
+  const n = Number(v);
+  if (n === 0 || n === 1) return n === 1;
   const s = String(v).trim().toLowerCase();
-  return v === 1 || v === true || s === '1' || s === 'true' || s === 'pending';
+  return s === '1' || s === 'true' || s === 'pending';
 };
 const isDone = (v: any) => {
+  const n = Number(v);
+  if (n === 0 || n === 1) return n === 0;
   const s = String(v).trim().toLowerCase();
-  return v === 0 || v === false || s === '0' || s === 'false' || s === 'done';
+  return s === '0' || s === 'false' || s === 'done';
 };
 
 const ShowFollowup: React.FC<ShowFollowupProps> = () => {
@@ -61,10 +64,12 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Force-refresh key for table remount (instant UI reaction)
+  const [dataVersion, setDataVersion] = useState(0);
+
   // Notifications
   const [notifReady, setNotifReady] = useState(false);
   const notifiedIdsRef = useRef<Set<string>>(new Set());
-  // track pre-notify (10 minutes before) and exact due notifications separately
   const notifiedPreRef = useRef<Set<string>>(new Set());
   const notifiedDueRef = useRef<Set<string>>(new Set());
   const lastCheckRef = useRef<number>(Date.now());
@@ -72,7 +77,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
   // Filters / table UX
   const [showMyFollowupsOnly, setShowMyFollowupsOnly] = useState(false);
-  const [showDoneFollowups, setShowDoneFollowups] = useState(false); // false = show Pending, true = show Done
+  const [showDoneFollowups, setShowDoneFollowups] = useState(false); // false = Pending view
   const [query, setQuery] = useState('');
   const [pageSize, setPageSize] = useState(20);
   const [page, setPage] = useState(1);
@@ -88,9 +93,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       const savedSize = sessionStorage.getItem(sizeKey);
       if (savedSize) setPageSize(Number(savedSize));
       if (savedPage) setPage(Number(savedPage));
-    } catch (e) {
-      /* ignore */
-    }
+    } catch {}
   }, [memoizedSession]);
 
   // persist page/pageSize for current user
@@ -102,11 +105,10 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       const sizeKey = STORAGE_PAGESIZE_KEY_PREFIX + u.id;
       sessionStorage.setItem(pageKey, String(page));
       sessionStorage.setItem(sizeKey, String(pageSize));
-    } catch (e) {
-      /* ignore */
-    }
+    } catch {}
   }, [page, pageSize, memoizedSession]);
 
+  // load notified state
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -165,7 +167,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     }
   };
 
-  // type: 'pre' = 10 minutes before, 'due' = at exact time
   const showNotification = (record: Comment, type: 'pre' | 'due' = 'due') => {
     if (typeof window === 'undefined' || !('Notification' in window)) return;
     if (Notification.permission !== 'granted') return;
@@ -214,6 +215,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     lastCheckRef.current = Date.now();
   }, []);
 
+  // Notification ticker
   useEffect(() => {
     if (!notifReady || !memoizedSession?.user) return;
 
@@ -221,14 +223,11 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       const now = Date.now();
       const last = lastCheckRef.current;
       let mutated = false;
-
       const list = commentsRef.current;
 
       for (const c of list) {
         if (!c.followupdate) continue;
-        // only notify for pending ones
-        if (!isPending(c.nextfollowup)) continue;
-        // notify only if assigned to current user (or belongs)
+        if (!isPending(c.nextfollowup)) continue; // only for pending
         if (!belongsToCurrentUser(c)) continue;
 
         const t = Date.parse(c.followupdate);
@@ -236,18 +235,16 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
         const tenMinMs = 10 * 60 * 1000;
         const preTrigger = t - tenMinMs;
-        // Pre-notify: 10 minutes before
+
         if (preTrigger > last && preTrigger <= now && !notifiedPreRef.current.has(c.id)) {
           showNotification(c, 'pre');
           notifiedPreRef.current.add(c.id);
           mutated = true;
         }
 
-        // Due-notify: at exact time (or if missed within the check window)
         if (t > last && t <= now && !notifiedDueRef.current.has(c.id)) {
           showNotification(c, 'due');
           notifiedDueRef.current.add(c.id);
-          // mark as also in the general notifiedIds set for backward compat
           notifiedIdsRef.current.add(c.id);
           mutated = true;
         }
@@ -263,13 +260,19 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   }, [notifReady, memoizedSession, showMyFollowupsOnly]);
 
   // --- Data fetch ---
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     try {
       const u = memoizedSession?.user as any;
       if (!u) return;
       const resp = await apiService.get(`/follow-up/${u?.username}/?permission=${u?.permission}&&id=${u?.id}`);
       const arr = Array.isArray(resp?.data?.leads) ? resp.data.leads : [];
-      const withDates = arr.filter((c: Comment) => c.followupdate);
+      // Filter to those with dates, and normalize the flag immediately
+      const withDates = arr
+        .filter((c: Comment) => c.followupdate)
+        .map((c: Comment) => ({
+          ...c,
+          nextfollowup: Number(c.nextfollowup), // normalize to 0/1
+        }));
       setComments(withDates);
     } catch (e) {
       console.error('Error fetching comments:', e);
@@ -277,11 +280,11 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [memoizedSession]);
 
   useEffect(() => {
     if (memoizedSession) fetchComments();
-  }, [memoizedSession]);
+  }, [memoizedSession, fetchComments]);
 
   const handleDeleteComment = async (commentId: string, leadId: string) => {
     try {
@@ -290,6 +293,8 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
         toast.success('Comment deleted successfully.');
         setComments((prev) => prev.filter((c) => c.id !== commentId));
         notifiedIdsRef.current.delete(commentId);
+        // bump version to force a clean re-render
+        setDataVersion((v) => v + 1);
         saveNotifiedIds();
       } else {
         toast.error('Error Deleting comment. Please try again.');
@@ -301,12 +306,23 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
   const handleMarkAsDone = async (commentId: string) => {
     try {
+      // Optimistic UI: flip to done & re-render immediately
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, nextfollowup: 0 } : c))
+      );
+      setDataVersion((v) => v + 1);
+
       const response = await apiService.put(`/update-followup/${commentId}`, { nextfollowup: 0 });
+
       if (response.status === 200) {
         toast.success('Follow-up marked as done.');
+        // Ensure normalization (API may return '0'/'1')
         setComments((prev) =>
-          prev.map((c) => (c.id === commentId ? { ...c, nextfollowup: 0 } : c))
+          prev.map((c) =>
+            c.id === commentId ? { ...c, nextfollowup: Number(c.nextfollowup) } : c
+          )
         );
+        setDataVersion((v) => v + 1);
       } else {
         toast.error('Error marking follow-up as done. Please try again.');
       }
@@ -338,8 +354,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
   const filteredSorted = useMemo(() => {
     const base = showMyFollowupsOnly ? comments.filter((c) => belongsToCurrentUser(c)) : comments;
-
-    // ✅ Use robust normalizer for pending/done
     const filteredByDone = showDoneFollowups
       ? base.filter((c) => isDone(c.nextfollowup))
       : base.filter((c) => isPending(c.nextfollowup));
@@ -425,7 +439,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             onChange={(e) => {
               const n = Number(e.target.value);
               setPageSize(n);
-              // keep current page if possible, but ensure within bounds after size change
               setPage((p) => Math.min(Math.max(1, p), Math.max(1, Math.ceil(filteredSorted.length / n))));
             }}
             className="px-0 py-1.5 rounded border border-gray-300 w-[30%] !focus:ring-black !focus:border-black dark:border-gray-700 bg-white/80 dark:bg-gray-900/60"
@@ -441,7 +454,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       </div>
 
       <BasicTableWidget
-        key={`pg-${page}-ps-${pageSize}-q-${normalizedQuery}-mine-${showMyFollowupsOnly}-done-${showDoneFollowups}`}
+        key={`v-${dataVersion}-pg-${page}-ps-${pageSize}-q-${normalizedQuery}-mine-${showMyFollowupsOnly}-done-${showDoneFollowups}`}
         title="All comments"
         className={cn('pb-0 lg:pb-0 [&_.rc-table-row:last-child_td]:border-b-0')}
         data={pageDataWithKeys}
@@ -504,7 +517,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
               </Text>
             ),
           },
-          // ✅ NEW: Status column (Pending vs Done from nextfollowup)
           {
             title: <span className="block whitespace-nowrap">Status</span>,
             dataIndex: 'nextfollowup',
@@ -515,9 +527,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
               return (
                 <span
                   className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    pending
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-green-100 text-green-800'
+                    pending ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
                   }`}
                 >
                   {pending ? 'Follow-up' : 'Done'}
@@ -594,7 +604,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
                     title={pending ? 'Mark as Done' : 'Already Done'}
                     disabled={!pending}
                   >
-                    {pending? <PiCheckThin className="h-5 w-5" />:<PiChecks className="h-5 w-5" />}
+                    {pending ? <PiCheckThin className="h-5 w-5" /> : <PiChecks className="h-5 w-5" />}
                   </button>
                 </div>
               );
@@ -610,7 +620,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       <div className="flex items-center justify-between pt-3">
         <div className="text-sm text-gray-600 dark:text-gray-400">
           Showing <strong>{pageDataWithKeys.length}</strong> of <strong>{totalItems}</strong> results
-          {normalizedQuery && <span> (filtered)</span>}
+          {query.trim() && <span> (filtered)</span>}
           {' — '}
           {showDoneFollowups ? 'Viewing: Done' : 'Viewing: Pending'}
         </div>
