@@ -176,6 +176,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
         ? `Upcoming follow-up for ${record.fullName || record.full_name || 'Contact'} in 10 minutes.`
         : `Follow-up due now for ${record.fullName || record.full_name || 'Contact'}.`;
     try {
+      console.log("the notifiaction triggered:")
       new Notification(label, {
         body,
         tag: `followup:${type}:${record.id}`,

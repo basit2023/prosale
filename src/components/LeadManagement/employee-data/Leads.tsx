@@ -50,6 +50,7 @@ export const useEmployeeData = ({ id, pageSize = 50 }: { id: string; pageSize?: 
   const [totalLeads, setTotalLeads] = useState(0);
 
   const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(false); // prevent double fetch in Strict Mode (dev)
 
   const email = session?.user?.email ?? null;
   const company = (session as any)?.user?.company_id ?? null;
@@ -131,8 +132,13 @@ export const useEmployeeData = ({ id, pageSize = 50 }: { id: string; pageSize?: 
   // initial load (and when id/email/pageSize change)
   useEffect(() => {
     if (status === 'authenticated' && email && id) {
-      setOffset(0); // reset pagination
-      fetchLeads({ limit: pageSize, offsetArg: 0, append: false });
+      // In React Strict Mode (dev) effects run twice on mount.
+      // Guard with mountedRef so we don't start two fetches and show spinner twice.
+      if (!mountedRef.current) {
+        mountedRef.current = true;
+        setOffset(0); // reset pagination
+        fetchLeads({ limit: pageSize, offsetArg: 0, append: false });
+      }
     } else {
       setData([]);
       setLoading(false);

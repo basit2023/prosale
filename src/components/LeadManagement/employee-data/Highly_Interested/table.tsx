@@ -52,6 +52,42 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
   const pathname:any = usePathname();
   const searchParams:any = useSearchParams();
 
+  // listen for reassigned event -> clear selected rows immediately
+  useEffect(() => {
+    const onReassigned = (e: any) => {
+      try {
+        const ids: string[] = (e?.detail?.ids) || [];
+        if (ids && ids.length) {
+          // remove those ids from selection; if none left, clear selection entirely
+          const remaining = selectedRowKeys.filter((k: string) => !ids.includes(k));
+          if (remaining.length !== selectedRowKeys.length) {
+            setSelectedRowKeys(remaining);
+          }
+        } else {
+          // no ids provided: clear selection
+          setSelectedRowKeys([]);
+        }
+
+        // ensure table internal state syncs with updated `data` prop (refresh columns/cells)
+        // handleReset is provided by useTable and will re-sync internal table data/state
+        try {
+          handleReset();
+        } catch (err) {
+          // ignore if handleReset not available or fails
+        }
+      } catch (err) {
+        setSelectedRowKeys([]);
+      }
+    };
+    window.addEventListener('leads:reassigned', onReassigned);
+    window.addEventListener('leads:change', onReassigned);
+    return () => {
+      window.removeEventListener('leads:reassigned', onReassigned);
+      window.removeEventListener('leads:change', onReassigned);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRowKeys, setSelectedRowKeys, handleReset]);
+
   // Hydrate from URL on first mount (page, size, total)
   useEffect(() => {
     const qp = Number(searchParams.get('page') || '') || 1;

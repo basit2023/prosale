@@ -117,6 +117,19 @@ export default function TableFooter({
           })
         );
       }
+
+      // Dispatch a DOM event so parent/list components can refresh only the affected part
+      try {
+        const ev = new CustomEvent('leads:reassigned', { detail: { ids: checkedItems } });
+        window.dispatchEvent(ev);
+      } catch (e) {
+        // fallback: no-op
+      }
+      
+      // Also dispatch a generic event for compatibility
+      try {
+        window.dispatchEvent(new Event('leads:change'));
+      } catch {}
     } catch (error) {
       console.error('Error Re-Assigning Leads:', error);
       toast.error(error?.response?.data?.message || 'An error occurred while reassigning leads.');
