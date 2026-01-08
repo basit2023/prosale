@@ -15,7 +15,7 @@ import SimpleBar from '@/components/ui/simplebar';
 import Link from 'next/link';    
 import { useMedia } from '@/hooks/use-media';
 import { routes } from '@/config/routes';
-import { subscribeUser, showPushNotification  }from '@/app/pushService';
+import { subscribeUser, showTestNotification }from '@/app/pushService';
 // Extend dayjs with required pluginsff
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -24,50 +24,115 @@ dayjs.extend(timezone);
 // Set the default timezone (adjust to your server's timezone)
 dayjs.tz.setDefault('Asia/Karachi'); // Change this to your server's timezone
 
-// WebSocket Hook
-const useWebSocket = (url, onMessage) => {
-  const [ws, setWs] = useState(null);
+import { io, Socket } from 'socket.io-client';
+
+// Socket.IO Hook
+const useSocketIO = (url: string, userId: string | undefined, onMessage: (message: any) => void) => {
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
-    const websocket = new WebSocket(url);
+    if (!userId) {
+      console.log('⚠️ [SOCKET] No userId provided, skipping connection');
+      return;
+    }
 
-    websocket.onopen = () => {
-      console.log('WebSocket connected');
-      setWs(websocket);
-    };
+    console.log('🔌 [SOCKET] Attempting to connect to:', url, 'for userId:', userId);
 
-    websocket.onmessage = (event) => {
-      try {
-        const message = JSON.parse(event.data);
-        onMessage(message);
-      } catch (error) {
-        console.error('Error parsing WebSocket message:', error);
-      }
-    };
+    const socketInstance = io(url, {
+      withCredentials: true,
+      transports: ['websocket', 'polling'],
+    });
 
-    websocket.onclose = () => {
-      console.log('WebSocket disconnected');
-      setWs(null);
-    };
+    socketInstance.on('connect', () => {
+      console.log('✅ [SOCKET] Socket.IO connected:', socketInstance.id);
+      // Register user for notifications
+      socketInstance.emit('register', userId);
+      console.log('📤 [SOCKET] Sent register event for userId:', userId);
+    });
+
+    socketInstance.on('registered', (data) => {
+      console.log('✅ [SOCKET] Registered for notifications:', data);
+    });
+
+    socketInstance.on('notification', (message) => {
+      console.log('🔔 [SOCKET] Raw notification event received:', message);
+      onMessage(message);
+    });
+
+    socketInstance.on('disconnect', () => {
+      console.log('❌ [SOCKET] Socket.IO disconnected');
+    });
+
+    socketInstance.on('error', (error) => {
+      console.error('⚠️ [SOCKET] Socket.IO error:', error);
+    });
+
+    socketInstance.on('connect_error', (error) => {
+      console.error('❌ [SOCKET] Connection error:', error.message);
+    });
+
+    setSocket(socketInstance);
 
     return () => {
-      websocket.close();
+      console.log('🔌 [SOCKET] Disconnecting socket');
+      socketInstance.disconnect();
     };
-  }, [url, onMessage]);
+  }, [url, userId, onMessage]);
 
-  return ws;
+  return socket;
 };
 
-// Fetch Notifications
-async function fetchNotifications(email) {
+// Fetch Notifications - combines both lead assignments and follow-ups
+async function fetchNotifications(email: string, userId: string, userName: string, permission: number) {
   try {
-    const response = await apiService.get(`/getNotification/${email}`);
-    const data = response?.data?.results || [];
-    return data.map(notification => ({
+    // Fetch lead assignment notifications
+    const leadsResponse = await apiService.get(`/getNotification/${email}`);
+    const leadNotifications = (leadsResponse?.data?.results || []).map((notification: any) => ({
       ...notification,
-      // Parse the timestamp to ensure it's in correct format
-      created_at: parseTimestamp(notification.created_at)
+      created_at: parseTimestamp(notification.created_at),
+      notification_type: notification.notification_type || 'lead_assignment'
     }));
+
+    // Fetch follow-ups from the same endpoint React Native uses
+    try {
+      const followUpsResponse = await apiService.get(
+        `/follow-up/${userName}/?permission=${permission}&&id=${userId}`
+      );
+      const followUpData = followUpsResponse?.data?.leads || [];
+      
+      console.log('📋 Follow-ups fetched from API:', followUpData.length, 'items');
+      
+      // Convert follow-ups to notification format
+      // Show ALL follow-ups, not just past/due ones
+      const followUpNotifications = followUpData
+        .filter((fu: any) => fu.followupdate) // Only need a date
+        .map((fu: any) => ({
+          id: `followup_${fu.id}`,
+          leadId: fu.lead_id,
+          message: `Reminder: ${fu.followup || 'Follow-up'}`,
+          created_at: parseTimestamp(fu.followupdate),
+          notification_mark: fu.notified || 0, // Use notified field from database (0=unread, 1=read)
+          notification_type: 'followup',
+          userId: fu.user_id || userId
+        }));
+
+      console.log('🔔 Follow-up notifications created:', followUpNotifications.length, 'items');
+
+      // Combine both arrays
+      const allNotifications = [...leadNotifications, ...followUpNotifications];
+      
+      console.log('📊 Total notifications (leads + follow-ups):', allNotifications.length);
+      
+      // Sort by created_at descending (newest first)
+      allNotifications.sort((a: any, b: any) => 
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      return allNotifications.slice(0, 50); // Return latest 50
+    } catch (followUpError) {
+      console.log('Could not fetch follow-ups, returning only lead notifications:', followUpError);
+      return leadNotifications;
+    }
   } catch (error) {
     console.error('Error fetching notifications:', error);
     return [];
@@ -94,6 +159,17 @@ function parseTimestamp(timestamp) {
 
 async function markAsRead(notification) {
   try {
+    // Follow-up notifications need to be marked as read in leads_comments table
+    if (notification.id && String(notification.id).startsWith('followup_')) {
+      // Extract the actual comment ID from followup_XXX
+      const commentId = String(notification.id).replace('followup_', '');
+      console.log('Marking follow-up as read, comment ID:', commentId);
+      
+      const response = await apiService.put(`/mark-followup-read/${commentId}`);
+      return response?.data?.success || false;
+    }
+    
+    // Lead notifications use the real_time_notifications table
     const response = await apiService.put(
       `/markNotificationAsRead/${notification.id}?leadId=${notification.leadId}`
     );
@@ -106,6 +182,7 @@ async function markAsRead(notification) {
 
 function NotificationsList({ notifications, setIsOpen, setNotifications }) {
   const handleNotificationClick = async (notification) => {
+    // Mark as read when clicked
     if (notification.notification_mark === 0) {
       const success = await markAsRead(notification);
       if (success) {
@@ -121,6 +198,9 @@ function NotificationsList({ notifications, setIsOpen, setNotifications }) {
     setIsOpen(false);
   };
 
+  // Show last 10 notifications (both read and unread)
+  const displayNotifications = notifications.slice(0, 10);
+
   return (
     <div className="w-[320px] text-left rtl:text-right sm:w-[360px] 2xl:w-[420px]">
       <div className="mb-3 flex items-center justify-between ps-6">
@@ -129,11 +209,21 @@ function NotificationsList({ notifications, setIsOpen, setNotifications }) {
       </div>
       <SimpleBar className="max-h-[420px]">
         <div className="grid cursor-pointer grid-cols-1 gap-1 ps-4">
-          {notifications?.map((item) => {
+          {displayNotifications?.map((item) => {
             // Parse the timestamp with timezone awareness
             const createdAt = dayjs(item.created_at);
             const formattedDate = createdAt.format('dddd, MMMM D, YYYY');
             const timeAgo = createdAt.fromNow(true);
+            
+            // Determine the title based on notification type
+            let notificationTitle = '';
+            if (item.notification_type === 'followup') {
+              // For follow-ups, show "Follow-up: [message]"
+              notificationTitle = item.message || item.followup || 'Follow-up reminder';
+            } else {
+              // For lead assignments, show "Lead assigned on [date]"
+              notificationTitle = `Lead assigned on ${formattedDate}`;
+            }
             
             return (
               <Link 
@@ -143,12 +233,20 @@ function NotificationsList({ notifications, setIsOpen, setNotifications }) {
               >
                 <div className="group grid grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-md px-2 py-2 pe-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-50">
                   <div className="flex h-9 w-9 items-center justify-center rounded bg-gray-100/70 p-1 dark:bg-gray-50/50 [&>svg]:h-auto [&>svg]:w-5">
-                    {item.icon}
+                    {item.notification_type === 'followup' ? (
+                      <svg className="text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    ) : (
+                      <svg className="text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                      </svg>
+                    )}
                   </div>
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center">
                     <div className="w-full">
                       <Title as="h6" className="mb-0.5 w-11/12 truncate text-sm font-semibold">
-                        Lead assigned on {formattedDate}
+                        {notificationTitle}
                       </Title>
                       <span className="ms-auto whitespace-nowrap pe-8 text-xs text-gray-500">
                         {timeAgo}
@@ -189,87 +287,132 @@ export default function NotificationDropdown({ children }) {
   const email = session?.user?.email;
   const userId = session?.user?.id;
 
-  // WebSocket URL configuration
-//  const websocketUrl = useMemo(() => {
-//   return window.location.protocol === 'https:' 
-//     ? 'wss://api.prosale.sale:8443/ws' 
-//     : 'ws://localhost:4001';
-// }, []);
-const websocketUrl = useMemo(() => {
-  return window.location.protocol === 'https:' 
-    ? 'wss://api.prosale.sale/ws' 
-    : 'ws://localhost:4001/ws';
-}, []);
+  // Socket.IO URL configuration
+  const socketUrl = useMemo(() => {
+    return window.location.protocol === 'https:' 
+      ? 'https://api.prosale.sale' 
+      : 'http://localhost:4000';
+  }, []);
 
 
 
-  // WebSocket message handler
-const handleWebSocketMessage = useCallback(async (message) => {
-  if (!userId) return;
+  // Socket.IO message handler
+  const handleSocketMessage = useCallback(async (message: any) => {
+    if (!userId) return;
 
-  const { event, data } = message;
-  const { userId: messageUserId, leadId, created_at } = data || {};
+    console.log('🔔 [FRONTEND] Notification received:', message);
+    console.log('🔍 [FRONTEND] Current userId:', userId);
 
-  // Only process notifications for the current user
-  if (parseInt(messageUserId) === parseInt(userId)) {
-    if (event === 'lead_assigned') {
-      const newNotification = {
-        id: Date.now(),
-        leadId,
-        message: data.message,
-        created_at: parseTimestamp(created_at),
-        notification_mark: 0,
-        userId: messageUserId,
-      };
+    // Handle both old and new message formats
+    const event = message.event || message.type;
+    const data = message.data || message;
+    const messageUserId = data.userId || data.user_id;
+    const leadId = data.leadId || data.lead_id;
+    const created_at = data.created_at || data.timestamp;
+    const type = data.type || event;
 
-      setNotifications(prev => {
-        const updated = [newNotification, ...prev];
-        setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
-        return updated;
-      });
+    console.log('🔍 [FRONTEND] Parsed - event:', event, 'type:', type, 'messageUserId:', messageUserId, 'leadId:', leadId);
 
-      // Trigger push notification
-      try {
-        await showPushNotification('New Lead Assigned', {
-          body: `You have been assigned a new lead (ID: ${leadId})`,
-          icon: '/path-to-your-icon.png',
-          vibrate: [200, 100, 200],
-          data: {
-            url: `${window.location.origin}${routes.leads.edit(leadId)}`
-          }
+    // For follow-up notifications, they're already user-specific from backend
+    // For lead assignments, check user ID
+    const isForCurrentUser = type === 'followup' || type === 'follow_up_reminder' || 
+                             (messageUserId && parseInt(messageUserId) === parseInt(userId));
+
+    console.log('🔍 [FRONTEND] Is for current user?', isForCurrentUser);
+
+    if (isForCurrentUser) {
+      if (event === 'lead_assigned' || type === 'lead_assignment') {
+        const newNotification = {
+          id: Date.now(),
+          leadId,
+          message: data.message || data.body || 'New lead assigned',
+          created_at: parseTimestamp(created_at),
+          notification_mark: 0, // Unread
+          userId: messageUserId,
+        };
+
+        console.log('✅ [FRONTEND] Adding lead assignment notification:', newNotification);
+
+        setNotifications(prev => {
+          const updated = [newNotification, ...prev];
+          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
+          return updated;
         });
-      } catch (error) {
-        console.error('Error showing push notification:', error);
-      }
-    } 
-    else if (event === 'lead_reassigned') {
-      setNotifications(prev => {
-        const updated = prev.filter(n => n.leadId !== leadId);
-        setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
-        return updated;
-      });
-    }
-  }
-}, [userId]);
 
-  // WebSocket connection
-  const ws = useWebSocket(websocketUrl, handleWebSocketMessage);
+        // Trigger push notification
+        try {
+          await showTestNotification('New Lead Assigned', data.message || `You have been assigned a new lead (ID: ${leadId})`);
+        } catch (error) {
+          console.error('Error showing push notification:', error);
+        }
+      } 
+      else if (event === 'follow_up_reminder' || type === 'followup' || type === 'follow_up_reminder') {
+        const newNotification = {
+          id: Date.now(),
+          leadId,
+          message: data.message || data.body || data.title || 'Follow-up reminder',
+          created_at: parseTimestamp(created_at),
+          notification_mark: 0, // Unread
+          userId: userId, // Use current user ID for follow-ups
+          notification_type: 'followup', // Add type for icon display
+        };
+
+        console.log('✅ [FRONTEND] Adding follow-up notification:', newNotification);
+
+        setNotifications(prev => {
+          const updated = [newNotification, ...prev];
+          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
+          return updated;
+        });
+
+        // Trigger push notification
+        try {
+          await showTestNotification(
+            data.title || 'Follow-Up Reminder', 
+            data.body || data.message || 'You have a follow-up due'
+          );
+        } catch (error) {
+          console.error('Error showing push notification:', error);
+        }
+      }
+      else if (event === 'lead_reassigned') {
+        console.log('🗑️ [FRONTEND] Removing reassigned lead notification for leadId:', leadId);
+        setNotifications(prev => {
+          const updated = prev.filter(n => n.leadId !== leadId);
+          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
+          return updated;
+        });
+      }
+    } else {
+      console.log('⚠️ [FRONTEND] Notification not for current user, ignoring');
+    }
+  }, [userId]);
+
+  // Socket.IO connection
+  const socket = useSocketIO(socketUrl, userId, handleSocketMessage);
 
   // Initial fetch and refresh when dropdown opens
   const fetchAndSetNotifications = useCallback(async () => {
-    if (!email) return;
+    if (!email || !userId || !session?.user?.name) return;
+    
+    // Get permission level from session
+    const permission = session?.user?.permissions?.permission_level ?? session?.user?.permission ?? 0;
+    const userName = session?.user?.username
+
+    console.log('Permission level:', session)
+    console.log('User name:', userName);
     
     try {
-      const data = await fetchNotifications(email);
+      const data = await fetchNotifications(email, userId, userName, permission);
       const sorted = data.sort((a, b) => 
-        new Date(b.created_at) - new Date(a.created_at)
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setNotifications(sorted);
       setUnreadCount(sorted.filter(n => n.notification_mark === 0).length);
     } catch (error) {
       console.error('Error loading notifications:', error);
     }
-  }, [email]);
+  }, [email, userId, session?.user?.name, session?.user?.permissions?.permission_level, session?.user?.permission]);
 
   useEffect(() => {
     fetchAndSetNotifications();

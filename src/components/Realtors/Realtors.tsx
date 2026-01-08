@@ -40,7 +40,9 @@ export const Realtors = () => {
         response = await apiService.get(`/business-profiles/?email=${session.user.email}`);
       } else {
           response = await apiService.get(`/business-profiles/${session.user.username}`);
-      }
+                 
+        }
+        console.log('Response for non-admin user:', response);
       // Prefer `data`, but keep a fallback to `projects` if your backend still returns that key
       const list = response?.data?.data ?? response?.data?.projects ?? [];
       setRaw(Array.isArray(list) ? list : []);

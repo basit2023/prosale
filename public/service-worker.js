@@ -22,7 +22,7 @@
 //   const singleRequire = (uri, parentUri) => {
 //     uri = new URL(uri + ".js", parentUri).href;
 //     return registry[uri] || (
-      
+
 //         new Promise(resolve => {
 //           if ("document" in self) {
 //             const script = document.createElement("script");
@@ -35,7 +35,7 @@
 //             resolve();
 //           }
 //         })
-      
+
 //       .then(() => {
 //         let promise = registry[uri];
 //         if (!promise) {
@@ -188,7 +188,7 @@
 //       }
 //     }]
 //   }), 'GET');
-  
+
 //   workbox.registerRoute(/.*/i, new workbox.NetworkOnly({
 //     "cacheName": "dev",
 //     plugins: []
@@ -305,7 +305,7 @@
 //   const singleRequire = (uri, parentUri) => {
 //     uri = new URL(uri + ".js", parentUri).href;
 //     return registry[uri] || (
-      
+
 //         new Promise(resolve => {
 //           if ("document" in self) {
 //             const script = document.createElement("script");
@@ -318,7 +318,7 @@
 //             resolve();
 //           }
 //         })
-      
+
 //       .then(() => {
 //         let promise = registry[uri];
 //         if (!promise) {
@@ -420,13 +420,13 @@ if (!self.define) {
           resolve();
         }
       })
-      .then(() => {
-        let promise = registry[uri];
-        if (!promise) {
-          throw new Error(`Module ${uri} didn’t register its module`);
-        }
-        return promise;
-      })
+        .then(() => {
+          let promise = registry[uri];
+          if (!promise) {
+            throw new Error(`Module ${uri} didn’t register its module`);
+          }
+          return promise;
+        })
     );
   };
 
@@ -452,7 +452,7 @@ if (!self.define) {
   };
 }
 
-define(['./workbox-9ed6b7fc'], function (workbox) { 
+define(['./workbox-9ed6b7fc'], function (workbox) {
   'use strict';
 
   importScripts();
@@ -474,7 +474,7 @@ define(['./workbox-9ed6b7fc'], function (workbox) {
       }
     }]
   }), 'GET');
-  
+
   workbox.registerRoute(/.*/i, new workbox.NetworkOnly({
     "cacheName": "dev",
     plugins: []
@@ -486,8 +486,8 @@ define(['./workbox-9ed6b7fc'], function (workbox) {
     const title = data.title || 'New Notification';
     const options = {
       body: data.body || 'You have a new notification.',
-      icon: data.icon || '/icons/icon-192x192.png',
-      badge: data.badge || '/icons/badge-72x72.png',
+      icon: data.icon || '/icon-192x192.png',
+      badge: data.badge || '/icon-192x192.png',
       data: data.url || '/'
     };
     event.waitUntil(
@@ -512,6 +512,6 @@ define(['./workbox-9ed6b7fc'], function (workbox) {
       })
     );
   });
-  
+
 });
 //# sourceMappingURL=service-worker.js.map

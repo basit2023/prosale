@@ -12,8 +12,8 @@ enum MODE {
 export const siteConfig = {
   title: 'ProSale',
   description: `Isomorphic the ultimate React TypeScript Admin Template. Streamline your admin dashboard development with our feature-rich, responsive, and highly customizable solution. Boost productivity and create stunning admin interfaces effortlessly.`,
-  logo: logoImg,
-  icon: logoIconImg,
+  logo: '/prosale-favicon.png',
+  icon: '/prosale-favicon.png',
   mode: MODE.LIGHT,
   layout: LAYOUT_OPTIONS.HYDROGEN,
   // TODO: favicon

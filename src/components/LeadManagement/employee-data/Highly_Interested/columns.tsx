@@ -73,13 +73,13 @@ function HistoryInline({ row }: { row: any }) {
                 {h.last_updated ? String(h.last_updated).slice(0, 10) : '—'}
               </div>
               <div className="shrink-0 text-[11px] text-gray-500 ml-2">
-               <Tooltip size="sm" content={() => 'View Details'} placement="top" color="invert">
-            <Link href={routes.leads.edit(h.id)}>
-              <ActionIcon tag="span" size="sm" variant="outline" className="hover:!border-gray-900 hover:text-gray-700">
-                <EyeIcon className="h-4 w-4" />
-              </ActionIcon>
-            </Link>
-          </Tooltip>
+                <Tooltip size="sm" content={() => 'View Details'} placement="top" color="invert">
+                  <Link href={routes.leads.edit(h.id)}>
+                    <ActionIcon tag="span" size="sm" variant="outline" className="hover:!border-gray-900 hover:text-gray-700">
+                      <EyeIcon className="h-4 w-4" />
+                    </ActionIcon>
+                  </Link>
+                </Tooltip>
               </div>
             </div>
           ))}
@@ -106,33 +106,33 @@ export const useGetColumns = ({
   const columns = [
     ...((memoizedSession?.user?.permission) >= 4
       ? [
-          {
-            title: (
-              <div className="ps-2">
-                <Checkbox
-                  title={'Select All'}
-                  onChange={handleSelectAll}
-                  checked={checkedItems.length === data.length}
-                  className="cursor-pointer"
-                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                />
-              </div>
-            ),
-            dataIndex: 'checked',
-            key: 'checked',
-            width: 30,
-            render: (_: any, row: any) => (
-              <div className="inline-flex ps-2" onClick={(e) => e.stopPropagation()}>
-                <Checkbox
-                  className="cursor-pointer"
-                  checked={checkedItems.includes(row.id)}
-                  {...(onChecked && { onChange: () => onChecked(row.id) })}
-                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                />
-              </div>
-            ),
-          },
-        ]
+        {
+          title: (
+            <div className="ps-2">
+              <Checkbox
+                title={'Select All'}
+                onChange={handleSelectAll}
+                checked={data.length > 0 && data.every((row) => checkedItems.includes(row.id))}
+                className="cursor-pointer"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              />
+            </div>
+          ),
+          dataIndex: 'checked',
+          key: 'checked',
+          width: 30,
+          render: (_: any, row: any) => (
+            <div className="inline-flex ps-2" onClick={(e) => e.stopPropagation()}>
+              <Checkbox
+                className="cursor-pointer"
+                checked={checkedItems.includes(row.id)}
+                {...(onChecked && { onChange: () => onChecked(row.id) })}
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              />
+            </div>
+          ),
+        },
+      ]
       : []),
 
     {
@@ -187,7 +187,7 @@ export const useGetColumns = ({
       render: (value: any, row: any) => (
         <RowLink id={row.id}>
           <Text className="font-medium text-gray-700 dark:text-gray-600">
-            {(row.view_dt === 'new_lead' && (memoizedSession?.user?.permission) < 8)? 'Lead Not Opened' : value || 'N/A'}
+            {(row.view_dt === 'new_lead' && (memoizedSession?.user?.permission) < 8) ? 'Lead Not Opened' : value || 'N/A'}
           </Text>
         </RowLink>
       ),
@@ -279,7 +279,7 @@ export const useGetColumns = ({
           </RowLink>
 
           {/* inline history (not clickable to row) */}
-          {Array.isArray(row.history) && row.history.length > 1  && (memoizedSession?.user?.permission) >= 4 && (
+          {Array.isArray(row.history) && row.history.length > 1 && (memoizedSession?.user?.permission) >= 4 && (
             <HistoryInline row={row} />
           )}
         </div>
@@ -339,33 +339,33 @@ export const useGetColumns = ({
 
     ...((memoizedSession?.user?.permission) >= 4
       ? [
-          {
-            title: (
-              <HeaderCell
-                title="Lead Pass"
-                sortable
-                ascending={sortConfig?.direction === 'asc' && sortConfig?.key === 'lead_pass'}
-              />
-            ),
-            onHeaderCell: () => onHeaderCellClick('lead_pass'),
-            dataIndex: 'lead_pass',
-            key: 'lead_pass',
-            width: 200,
-            render: (_: any, row: any) => {
-              const dotColor = row.view_dt === 'new_lead' ? 'red' : 'green';
-              return (
-                <RowLink id={row.id}>
-                  <div className="flex items-center gap-2">
-                    <Text className="font-medium text-gray-700 dark:text-gray-600">
-                      {row.lead_pass || 'N/A'}
-                    </Text>
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: dotColor }} />
-                  </div>
-                </RowLink>
-              );
-            },
+        {
+          title: (
+            <HeaderCell
+              title="Lead Pass"
+              sortable
+              ascending={sortConfig?.direction === 'asc' && sortConfig?.key === 'lead_pass'}
+            />
+          ),
+          onHeaderCell: () => onHeaderCellClick('lead_pass'),
+          dataIndex: 'lead_pass',
+          key: 'lead_pass',
+          width: 200,
+          render: (_: any, row: any) => {
+            const dotColor = row.view_dt === 'new_lead' ? 'red' : 'green';
+            return (
+              <RowLink id={row.id}>
+                <div className="flex items-center gap-2">
+                  <Text className="font-medium text-gray-700 dark:text-gray-600">
+                    {row.lead_pass || 'N/A'}
+                  </Text>
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: dotColor }} />
+                </div>
+              </RowLink>
+            );
           },
-        ]
+        },
+      ]
       : []),
 
     {

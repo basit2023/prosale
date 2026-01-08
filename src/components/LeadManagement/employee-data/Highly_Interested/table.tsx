@@ -49,8 +49,8 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
   } = useTable(data, pageSize, filterState);
 
   const router = useRouter();
-  const pathname:any = usePathname();
-  const searchParams:any = useSearchParams();
+  const pathname: any = usePathname();
+  const searchParams: any = useSearchParams();
 
   // listen for reassigned event -> clear selected rows immediately
   useEffect(() => {
@@ -126,7 +126,7 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
   );
 
   const columns = useGetColumns({
-    data,
+    data: tableData,
     sortConfig,
     checkedItems: selectedRowKeys,
     onHeaderCellClick,
@@ -157,9 +157,7 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
         columns={visibleColumns}
         paginatorOptions={{
           pageSize,
-          setPageSize: (size: number) => {
-            setPageSize(size); // URL sync happens via effect above
-          },
+          setPageSize,
           total: totalCount, // Use controlled total count
           current: currentPage,
           onChange: (page: number) => handlePaginate(page),
@@ -179,17 +177,17 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
         }}
         tableFooter={
           <div className='flex flex-col justify-end'>
-          <TableFooter
-            checkedItems={selectedRowKeys}
-            handleDelete={(ids: string[]) => {
-              setSelectedRowKeys([]);
-              handleDelete(ids);
-            }}
-          >
-            {/* Show "Load More" button only when the current page is the last one */}
-            
-          </TableFooter>
-          {(isLastPage && totalCount) && (
+            <TableFooter
+              checkedItems={selectedRowKeys}
+              handleDelete={(ids: string[]) => {
+                setSelectedRowKeys([]);
+                handleDelete(ids);
+              }}
+            >
+              {/* Show "Load More" button only when the current page is the last one */}
+
+            </TableFooter>
+            {(isLastPage && totalCount) && (
 
               <button
                 type="button"

@@ -122,6 +122,26 @@ export default function LeadReport({ className }: { className?: string }) {
     _usersArray: null,
   });
 
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+  const months = [
+    { label: 'January', value: 1 },
+    { label: 'February', value: 2 },
+    { label: 'March', value: 3 },
+    { label: 'April', value: 4 },
+    { label: 'May', value: 5 },
+    { label: 'June', value: 6 },
+    { label: 'July', value: 7 },
+    { label: 'August', value: 8 },
+    { label: 'September', value: 9 },
+    { label: 'October', value: 10 },
+    { label: 'November', value: 11 },
+    { label: 'December', value: 12 },
+  ];
+
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 2 + i);
+
   // redirect if not signed in
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -176,18 +196,20 @@ export default function LeadReport({ className }: { className?: string }) {
         const id = encodeURIComponent((session?.user as any)?.id || '');
 
         let resSummary;
+        const queryParams = `?id=${id}&permission=${perm}&role=${role}&year=${selectedYear}&month=${selectedMonth}`;
+
         if (perm >= 9) {
-          // Admin: Fetch all users' data
-          resSummary = await apiService.get(`/revenue-targets-dashbrod/?permission=${perm}`);
+          // Admin: Fetch all users' data for specific month/year
+          resSummary = await apiService.get(`/revenue-targets-dashbrod/?permission=${perm}&year=${selectedYear}&month=${selectedMonth}`);
         } else if (perm >= 4 || role === 'manager') {
-          // Manager: Fetch team members' data (includes self on backend as per your API)
+          // Manager: Fetch team members' data
           resSummary = await apiService.get(
-            `/revenue-targets-dashbrod/?id=${id}&permission=${perm}&role=${role}`
+            `/revenue-targets-dashbrod/${queryParams}`
           );
         } else {
           // Simple user: Fetch only their own data
           resSummary = await apiService.get(
-            `/revenue-targets-dashbrod/?id=${id}&permission=${perm}&role=${role}`
+            `/revenue-targets-dashbrod/${queryParams}`
           );
         }
 
@@ -197,8 +219,8 @@ export default function LeadReport({ className }: { className?: string }) {
         // Accept either an array, {users: [...]}, or a single object
         const usersArray =
           Array.isArray(payload) ? payload :
-          Array.isArray(payload?.users) ? payload.users :
-          null;
+            Array.isArray(payload?.users) ? payload.users :
+              null;
 
         let target = 0;
         let achieved = 0;
@@ -235,7 +257,7 @@ export default function LeadReport({ className }: { className?: string }) {
     };
 
     fetchAll();
-  }, [userValue, status, session?.user]);
+  }, [userValue, status, session?.user, selectedMonth, selectedYear]);
 
   const transformData = (data: any[]) => {
     const transformed: LeadData[] = [];
@@ -394,7 +416,7 @@ export default function LeadReport({ className }: { className?: string }) {
 
   return (
     <>
-     
+
       <div className="flex">
         <WidgetCard
           title="Target vs Achieved"
@@ -407,6 +429,32 @@ export default function LeadReport({ className }: { className?: string }) {
             </div>
           }
           descriptionClassName="text-gray-500 mt-1.5"
+          action={
+            <div className="flex items-center gap-2">
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="rounded border-gray-300 text-sm focus:border-primary focus:ring-primary shadow-sm"
+              >
+                {months.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="rounded border-gray-300 text-sm focus:border-primary focus:ring-primary shadow-sm"
+              >
+                {years.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
+          }
           className={className}
         >
           <div className="grid gap-4">
@@ -460,46 +508,46 @@ export default function LeadReport({ className }: { className?: string }) {
           </div>
         </WidgetCard>
       </div>
-       {/* Lead Report (Bar) */}
-       <div className='flex mt-5'>
-      <WidgetCard
-        title={'Lead Report'}
-        titleClassName="font-normal text-gray-700 sm:text-base font-inter"
-        description={
-          <div className="flex items-center justify-start">
-            <Title as="h2" className="me-2 font-semibold">
-              Lead Count by Month
-            </Title>
-          </div>
-        }
-        descriptionClassName="text-gray-500 mt-1.5"
-        action={<div className="hidden @2xl:block" />}
-        className={className}
-      >
-        <SimpleBar>
-          <div className="h-96 w-full pt-9">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={leadData}
-                barSize={isMobile ? 16 : isDesktop ? 28 : is2xl ? 32 : 46}
-                margin={{ left: 16 }}
-                className="[&_.recharts-tooltip-cursor]:fill-opacity-20 dark:[&_.recharts-tooltip-cursor]:fill-opacity-10 [&_.recharts-cartesian-axis-tick-value]:fill-gray-500 [&_.recharts-cartesian-axis.yAxis]:-translate-y-3 rtl:[&_.recharts-cartesian-axis.yAxis]:-translate-x-12 [&_.recharts-cartesian-grid-vertical]:opacity-0"
-              >
-                <CartesianGrid strokeDasharray="8 10" strokeOpacity={0.435} />
-                <XAxis dataKey="month" axisLine={false} tickLine={false} />
-                <YAxis axisLine={false} tickLine={false} tick={<CustomYAxisTick />} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Bar dataKey="employee1.lead_count" name="Top Employee" fill="#8884d8" />
-                <Bar dataKey="employee2.lead_count" name="2nd Employee" fill="#82ca9d" />
-                <Bar dataKey="employee3.lead_count" name="3rd Employee" fill="#ffc658" />
-                <Bar dataKey="employee4.lead_count" name="4th Employee" fill="#ff8042" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </SimpleBar>
-      </WidgetCard>
-       </div>
+      {/* Lead Report (Bar) */}
+      <div className='flex mt-5'>
+        <WidgetCard
+          title={'Lead Report'}
+          titleClassName="font-normal text-gray-700 sm:text-base font-inter"
+          description={
+            <div className="flex items-center justify-start">
+              <Title as="h2" className="me-2 font-semibold">
+                Lead Count by Month
+              </Title>
+            </div>
+          }
+          descriptionClassName="text-gray-500 mt-1.5"
+          action={<div className="hidden @2xl:block" />}
+          className={className}
+        >
+          <SimpleBar>
+            <div className="h-96 w-full pt-9">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={leadData}
+                  barSize={isMobile ? 16 : isDesktop ? 28 : is2xl ? 32 : 46}
+                  margin={{ left: 16 }}
+                  className="[&_.recharts-tooltip-cursor]:fill-opacity-20 dark:[&_.recharts-tooltip-cursor]:fill-opacity-10 [&_.recharts-cartesian-axis-tick-value]:fill-gray-500 [&_.recharts-cartesian-axis.yAxis]:-translate-y-3 rtl:[&_.recharts-cartesian-axis.yAxis]:-translate-x-12 [&_.recharts-cartesian-grid-vertical]:opacity-0"
+                >
+                  <CartesianGrid strokeDasharray="8 10" strokeOpacity={0.435} />
+                  <XAxis dataKey="month" axisLine={false} tickLine={false} />
+                  <YAxis axisLine={false} tickLine={false} tick={<CustomYAxisTick />} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend />
+                  <Bar dataKey="employee1.lead_count" name="Top Employee" fill="#8884d8" />
+                  <Bar dataKey="employee2.lead_count" name="2nd Employee" fill="#82ca9d" />
+                  <Bar dataKey="employee3.lead_count" name="3rd Employee" fill="#ffc658" />
+                  <Bar dataKey="employee4.lead_count" name="4th Employee" fill="#ff8042" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </SimpleBar>
+        </WidgetCard>
+      </div>
       {/* Target vs Achieved (Pie) */}
       <QuickAccess />
     </>

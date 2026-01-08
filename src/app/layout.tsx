@@ -35,7 +35,7 @@
 //         {/* Link to manifest.json and icons */}
 //         <link rel="manifest" href="/manifest.json" />
 //         <link rel="icon" href="/favicon.ico" />
-       
+
 //         <meta name="theme-color" content="#000000" />
 //       </head>
 //       <body
@@ -72,6 +72,7 @@ import { inter, lexendDeca } from '@/app/fonts';
 import { Toaster } from 'react-hot-toast';
 import cn from '@/utils/class-names';
 import ServiceWorkerManager from '@/components/ServiceWorkerManager';
+import FCMProvider from '@/app/FCMProvider';
 
 import '@/app/globals.css';
 import NextProgress from '@/components/next-progress';
@@ -79,6 +80,29 @@ import NextProgress from '@/components/next-progress';
 export const metadata = {
   title: siteConfig.title,
   description: siteConfig.description,
+  manifest: '/manifest.json',
+  icons: {
+    icon: '/prosale-favicon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Prosale',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    url: 'https://www.prosale.sale',
+    siteName: 'Prosale',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Prosale',
+    description: 'Prosale CRM application',
+  },
 };
 
 export default async function RootLayout({
@@ -100,9 +124,22 @@ export default async function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <head>
+        {/* PWA Manifest */}
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" href="/favicon.ico" />
-        <meta name="theme-color" content="#000000" />
+        <link rel="icon" href="/prosale-favicon.png" />
+        <link rel="apple-touch-icon" href="/logo/logo-192.png" />
+
+        {/* PWA Meta Tags */}
+        <meta name="theme-color" content="#c54e57" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Prosale" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+        {/* Notification Icons */}
+        <link rel="icon" type="image/png" sizes="192x192" href="/prosale-favicon.png" />
+        <link rel="icon" type="image/png" sizes="96x96" href="/prosale-favicon.png" />
       </head>
       <body
         suppressHydrationWarning
@@ -111,17 +148,19 @@ export default async function RootLayout({
         {/* Wrap the entire application with the AuthProvider */}
         <AuthProvider session={session}>
           <ThemeProvider>
-            {/* Progress bar for route transitions */}
-            <NextProgress />
-            {/* Main content */}
-            {children}
-            {/* Toast notifications */}
-            <Toaster />
-            {/* Global drawer and modal components */}
-            <GlobalDrawer />
-            <GlobalModal />
-            {/* Service worker manager for PWA */}
-            <ServiceWorkerManager />
+            <FCMProvider>
+              {/* Progress bar for route transitions */}
+              <NextProgress />
+              {/* Main content */}
+              {children}
+              {/* Toast notifications */}
+              <Toaster />
+              {/* Global drawer and modal components */}
+              <GlobalDrawer />
+              <GlobalModal />
+              {/* Service worker manager for PWA */}
+              <ServiceWorkerManager />
+            </FCMProvider>
           </ThemeProvider>
         </AuthProvider>
       </body>

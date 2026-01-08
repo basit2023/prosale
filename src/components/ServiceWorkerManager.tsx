@@ -8,16 +8,22 @@ import { useSession } from 'next-auth/react';
 import { subscribeUser } from '@/app/pushService';
 const ServiceWorkerManager = () => {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     const handleRouteChange = async (url: string) => {
       if ('serviceWorker' in navigator) {
         try {
-            const email=session?.user?.email;
           const registration = await navigator.serviceWorker.register('/service-worker.js');
           console.log('Service Worker registered with scope:', registration.scope);
-          await subscribeUser(email);
+
+          // Only subscribe if user is authenticated
+          if (status === 'authenticated' && session?.user?.email) {
+            const email = session.user.email;
+            await subscribeUser(email);
+          } else {
+            console.log('Skipping push notification subscription - user not authenticated');
+          }
         } catch (error) {
           console.error('Service Worker registration or subscription failed:', error);
         }
@@ -31,7 +37,7 @@ const ServiceWorkerManager = () => {
     return () => {
       router?.events?.off('routeChangeComplete', handleRouteChange);
     };
-  }, [router]);
+  }, [router, session, status]); // Add session and status to dependencies
 
   return null;
 };

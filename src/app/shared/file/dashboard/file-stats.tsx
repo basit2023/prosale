@@ -20,14 +20,27 @@ type FileStatsType = {
   className?: string;
 };
 
+const getProgressColor = (percentage: number) => {
+  if (percentage < 33) return '#EE0000'; // Red
+  if (percentage < 67) return '#FBBF24'; // Yellow
+  return '#32CD32'; // Green
+};
+
+const getSlightFill = (percentage: number) => {
+  if (percentage < 33) return '#fca5a5'; // Light Red
+  if (percentage < 67) return '#fef08a'; // Light Yellow
+  return '#d9f99d'; // Light Green
+};
+
 export function FileStatGrid({ className }: { className?: string }) {
   const { data: session } = useSession();
+  console.log(session);
   const [count, setCount] = useState<any>();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await apiService.get(`/total-items`);
+        const response = await apiService.get(`/total-items?user=${(session?.user as any)?.username || (session?.user as any)?.name}`);
         const userData = response.data.data;
         setCount(userData);
       } catch (error) {
@@ -44,47 +57,63 @@ export function FileStatGrid({ className }: { className?: string }) {
   const filesStatData = [
     {
       id: 1,
-      title: 'Total Leads',
-      metric: count?.Total_Leads,
-      fill: '#32CD32',
-      slightfill:'#d9f99d',
-      percentage: count?.LastMonthLeadsPercentage,
+      title: 'Total Calls',
+      metric: count?.Total_Calls ?? 0,
+      fill: getProgressColor(count?.TotalCallsPercentage ?? 0),
+      slightfill: getSlightFill(count?.TotalCallsPercentage ?? 0),
+      percentage: count?.TotalCallsPercentage ?? 0,
       increased: true,
       decreased: false,
-      value: `+${count?.LastMonthLeadsPercentage}`,
+      value: count?.TotalCallsPercentage ?? '0.00',
+      timePeriod: 'today'
     },
     {
       id: 2,
-      title: 'Closed Leads',
-      metric: count?.Close_Leads,
-      fill: '#FBBF24',
-      slightfill:'#fef08a',
-      percentage: count?.LastMonthCloseLeadsPercentage,
-      increased: false,
-      decreased: true,
-      value: `-${count?.LastMonthCloseLeadsPercentage}`,
+      title: 'Total Leads',
+      metric: count?.Total_Leads,
+      fill: '#32CD32',
+      slightfill: '#d9f99d',
+      percentage: count?.LastMonthLeadsPercentage,
+      increased: true,
+      decreased: false,
+      value: count?.LastMonthLeadsPercentage ?? '0.00',
+      timePeriod: 'last month'
     },
     {
       id: 3,
-      title: 'Total Employees',
-      metric: count?.Total_Employee,
-      fill: '#EE0000',
-      slightfill:'#fca5a5',
-      percentage: count?.TotalNewEmployeesPercentage,
-      increased: true,
-      decreased: false,
-      value: `+${count?.TotalNewEmployeesPercentage}`,
+      title: 'Closed Leads',
+      metric: count?.Close_Leads,
+      fill: '#FBBF24',
+      slightfill: '#fef08a',
+      percentage: count?.LastMonthCloseLeadsPercentage,
+      increased: false,
+      decreased: true,
+      value: count?.LastMonthCloseLeadsPercentage ?? '0.00',
+      timePeriod: 'last month'
     },
     {
       id: 4,
+      title: 'Total Employees',
+      metric: count?.Total_Employee,
+      fill: '#EE0000',
+      slightfill: '#fca5a5',
+      percentage: count?.TotalNewEmployeesPercentage,
+      increased: true,
+      decreased: false,
+      value: count?.TotalNewEmployeesPercentage ?? '0.00',
+      timePeriod: 'last month'
+    },
+    {
+      id: 5,
       title: 'Active Projects',
       metric: count?.Total_Projects,
       fill: '#3872FA',
-      slightfill:'#93c5fd',
+      slightfill: '#93c5fd',
       percentage: 54,
       increased: true,
       decreased: false,
-      value: '+14.45',
+      value: '14.45',
+      timePeriod: 'last month'
     },
   ];
 
@@ -100,7 +129,7 @@ export function FileStatGrid({ className }: { className?: string }) {
         const actualPercentage = stat.percentage ?? 0;
         const displayPercentage = actualPercentage > 0 ? actualPercentage : 1;
         const progressColor = stat.fill;
-        const progressColor2=stat.slightfill;
+        const progressColor2 = stat.slightfill;
 
         return (
           <MetricCard
@@ -144,7 +173,7 @@ export function FileStatGrid({ className }: { className?: string }) {
                 )}
                 {stat.value}%
               </Text>
-              last month
+              {stat.timePeriod}
             </Text>
           </MetricCard>
         );

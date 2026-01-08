@@ -12,6 +12,10 @@ export function useTable<T extends AnyObject>(
 ) {
   const [data, setData] = useState(initialData);
 
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
+
   /*
    * Dummy loading state.
    */
@@ -20,25 +24,6 @@ export function useTable<T extends AnyObject>(
     setLoading(false);
   }, []);
 
-  /*
-   * Handle row selection
-   */
-  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
-  const handleRowSelect = (recordKey: string) => {
-    const selectedKeys = [...selectedRowKeys];
-    if (selectedKeys.includes(recordKey)) {
-      setSelectedRowKeys(selectedKeys.filter((key) => key !== recordKey));
-    } else {
-      setSelectedRowKeys([...selectedKeys, recordKey]);
-    }
-  };
-  const handleSelectAll = () => {
-    if (selectedRowKeys.length === data.length) {
-      setSelectedRowKeys([]);
-    } else {
-      setSelectedRowKeys(data.map((record) => record.id));
-    }
-  };
 
   /*
    * Handle sorting
@@ -173,11 +158,11 @@ export function useTable<T extends AnyObject>(
           Object.values(item).some((value) =>
             typeof value === 'object'
               ? value &&
-                Object.values(value).some(
-                  (nestedItem) =>
-                    nestedItem &&
-                    String(nestedItem).toLowerCase().includes(searchTermLower)
-                )
+              Object.values(value).some(
+                (nestedItem) =>
+                  nestedItem &&
+                  String(nestedItem).toLowerCase().includes(searchTermLower)
+              )
               : value && String(value).toLowerCase().includes(searchTermLower)
           )
         )
@@ -200,11 +185,11 @@ export function useTable<T extends AnyObject>(
       Object.values(item).some((value) =>
         typeof value === 'object'
           ? value &&
-            Object.values(value).some(
-              (nestedItem) =>
-                nestedItem &&
-                String(nestedItem).toLowerCase().includes(searchTermLower)
-            )
+          Object.values(value).some(
+            (nestedItem) =>
+              nestedItem &&
+              String(nestedItem).toLowerCase().includes(searchTermLower)
+          )
           : value && String(value).toLowerCase().includes(searchTermLower)
       )
     );
@@ -234,6 +219,30 @@ export function useTable<T extends AnyObject>(
   }
   const filteredAndSearchedData = isFiltered ? applyFilters() : searchedData();
   const tableData = paginatedData(filteredAndSearchedData);
+
+  /*
+   * Handle row selection
+   */
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
+  const handleRowSelect = (recordKey: string) => {
+    const selectedKeys = [...selectedRowKeys];
+    if (selectedKeys.includes(recordKey)) {
+      setSelectedRowKeys(selectedKeys.filter((key) => key !== recordKey));
+    } else {
+      setSelectedRowKeys([...selectedKeys, recordKey]);
+    }
+  };
+  const handleSelectAll = () => {
+    const currentPageData = paginatedData(filteredAndSearchedData);
+    const pageIds = currentPageData.map((record) => record.id);
+    const isAllSelected = pageIds.length > 0 && pageIds.every((id) => selectedRowKeys.includes(id));
+
+    if (isAllSelected) {
+      setSelectedRowKeys((prev) => prev.filter((id) => !pageIds.includes(id)));
+    } else {
+      setSelectedRowKeys((prev) => Array.from(new Set([...prev, ...pageIds])));
+    }
+  };
 
   /*
    * Go to first page when data is filtered and searched

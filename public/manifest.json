@@ -1,32 +1,40 @@
 {
     "theme_color": "#c54e57",
-    "background_color": "#c54e57",
+    "background_color": "#ffffff",
     "display": "standalone",
-    "scope": "https://www.prosale.sale",
-    "start_url": "https://www.prosale.sale",
-    "name": "Prosale",
+    "scope": "/",
+    "start_url": "/",
+    "name": "Prosale - CRM Management",
     "short_name": "Prosale",
-    "description": "Prosale application",
+    "description": "Prosale CRM application for lead management and follow-ups",
+    "categories": [
+        "productivity",
+        "business"
+    ],
     "icons": [
         {
             "src": "/icon-192x192.png",
             "sizes": "192x192",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         },
         {
             "src": "/icon-256x256.png",
             "sizes": "256x256",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "/icon-384x384.png",
             "sizes": "384x384",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
         },
         {
             "src": "/icon-512x512.png",
             "sizes": "512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any maskable"
         }
     ]
 }

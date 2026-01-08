@@ -18,7 +18,7 @@ import { Empty } from "rizzui";
 
 const pageHeader = {
   title: 'Highly Interested',
-  breadcrumb: [         
+  breadcrumb: [
     // {
     //   href: routes.eCommerce.dashboard,
     //   name: 'Home',
@@ -32,44 +32,30 @@ const pageHeader = {
   ],
 };
 export default function EnhancedTablePage() {
-  let id:string='';
-  const invoiceData = useEmployeeData({id});
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  // console.log("the product data is:", invoiceData);
+  let id: string = '';
+  const { data: invoiceData, totalLeads, loading } = useEmployeeData({ id });
 
   // Check if invoiceData is empty
-  if (invoiceData.length === 0) {
-    // If empty, wait for a second and then render the components
-    setTimeout(() => {
-      renderComponents();
-    }, 1000);
-
+  if (!loading && invoiceData.length === 0) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '24px' }}>
-        
-        
-        <Empty text="No Data found" textClassName="mt-2" />;
+        <Empty text="No Data found" textClassName="mt-2" />
       </div>
     );
   }
 
   // If not empty, render the components immediately
-  return renderComponents();
-
-  function renderComponents() {
-    return (
-      <TableLayout
-        title={pageHeader.title}
-        breadcrumb={pageHeader.breadcrumb}
-        data={invoiceData}
-        fileName="invoice_data"
-        header="ID,Name,Email, Mobile,CNIC,Designation,Department,Assigned Office,Status"
-      >
-        <InvoiceTable data={invoiceData} />
-      </TableLayout>
-    );
-  }
-
+  return (
+    <TableLayout
+      title={pageHeader.title}
+      breadcrumb={pageHeader.breadcrumb}
+      data={invoiceData}
+      fileName="invoice_data"
+      header="ID,Name,Email, Mobile,CNIC,Designation,Department,Assigned Office,Status"
+    >
+      <InvoiceTable data={invoiceData} />
+    </TableLayout>
+  );
 }
 
 

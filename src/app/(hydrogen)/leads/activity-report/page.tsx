@@ -9,7 +9,7 @@ import ShowFollowup from '@/components/LeadManagement/followup';
 // import ActivityReport from '@/app/shared/file/dashboard/activity-report';
 import ActivityReport from '@/components/LeadManagement/Activity-report';
 export const metadata = {
-  ...metaObject('Follow Up'),
+  ...metaObject('Daily Activity Report'),
 };
 
 const pageHeader = {

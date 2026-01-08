@@ -93,7 +93,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       const savedSize = sessionStorage.getItem(sizeKey);
       if (savedSize) setPageSize(Number(savedSize));
       if (savedPage) setPage(Number(savedPage));
-    } catch {}
+    } catch { }
   }, [memoizedSession]);
 
   // persist page/pageSize for current user
@@ -105,7 +105,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       const sizeKey = STORAGE_PAGESIZE_KEY_PREFIX + u.id;
       sessionStorage.setItem(pageKey, String(page));
       sessionStorage.setItem(sizeKey, String(pageSize));
-    } catch {}
+    } catch { }
   }, [page, pageSize, memoizedSession]);
 
   // load notified state
@@ -267,14 +267,13 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       if (!u) return;
       const resp = await apiService.get(`/follow-up/${u?.username}/?permission=${u?.permission}&&id=${u?.id}`);
       const arr = Array.isArray(resp?.data?.leads) ? resp.data.leads : [];
-      // Filter to those with dates, and normalize the flag immediately
-      const withDates = arr
-        .filter((c: Comment) => c.followupdate)
-        .map((c: Comment) => ({
-          ...c,
-          nextfollowup: Number(c.nextfollowup), // normalize to 0/1
-        }));
-      setComments(withDates);
+      console.log("the array for the follow upds is:", resp)
+      // Normalize the nextfollowup flag for all follow-ups
+      const normalized = arr.map((c: Comment) => ({
+        ...c,
+        nextfollowup: Number(c.nextfollowup), // normalize to 0/1
+      }));
+      setComments(normalized);
     } catch (e) {
       console.error('Error fetching comments:', e);
       setComments([]);
@@ -332,6 +331,33 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     }
   };
 
+  const handleMarkAsInProcess = async (commentId: string) => {
+    try {
+      // Optimistic UI: flip to in-process & re-render immediately
+      setComments((prev) =>
+        prev.map((c) => (c.id === commentId ? { ...c, nextfollowup: 1 } : c))
+      );
+      setDataVersion((v) => v + 1);
+
+      const response = await apiService.put(`/update-followup/${commentId}`, { nextfollowup: 1 });
+
+      if (response.status === 200) {
+        toast.success('Follow-up marked as in-process.');
+        // Ensure normalization
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === commentId ? { ...c, nextfollowup: Number(c.nextfollowup) } : c
+          )
+        );
+        setDataVersion((v) => v + 1);
+      } else {
+        toast.error('Error marking follow-up as in-process. Please try again.');
+      }
+    } catch {
+      toast.error('Error marking follow-up as in-process. Please try again.');
+    }
+  };
+
   const getDateStatus = (followupdate: string) => {
     if (!followupdate) {
       return { status: 'N/A', colorClass: 'text-gray-700 dark:text-gray-600', sortOrder: 5 };
@@ -361,19 +387,19 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
     const searched = normalizedQuery
       ? filteredByDone.filter((c) => {
-          const hay = [
-            c.fullName,
-            c.full_name,
-            c.comments,
-            c.followup,
-            c.followupdate,
-            c.lead_id,
-          ]
-            .filter(Boolean)
-            .map((v) => String(v).toLowerCase())
-            .join(' ');
-          return hay.includes(normalizedQuery);
-        })
+        const hay = [
+          c.fullName,
+          c.full_name,
+          c.comments,
+          c.followup,
+          c.followupdate,
+          c.lead_id,
+        ]
+          .filter(Boolean)
+          .map((v) => String(v).toLowerCase())
+          .join(' ');
+        return hay.includes(normalizedQuery);
+      })
       : filteredByDone;
 
     return [...searched].sort((a, b) => {
@@ -407,9 +433,8 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
         <div className="flex items-center gap-2">
           {memoizedSession?.user?.permission >= 4 && (
             <Button
-              className={`px-3 py-1.5 rounded text-white transition-colors ${
-                showMyFollowupsOnly ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'
-              }`}
+              className={`px-3 py-1.5 rounded text-white transition-colors ${showMyFollowupsOnly ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'
+                }`}
               onClick={() => setShowMyFollowupsOnly((v) => !v)}
             >
               {showMyFollowupsOnly ? 'All' : 'Own'}
@@ -417,9 +442,8 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
           )}
 
           <Button
-            className={`px-3 py-1.5 rounded text-white transition-colors ${
-              showDoneFollowups ? 'bg-blue-700 hover:bg-blue-800' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
+            className={`px-3 py-1.5 rounded text-white transition-colors ${showDoneFollowups ? 'bg-blue-700 hover:bg-blue-800' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             onClick={() => setShowDoneFollowups((v) => !v)}
             title="Toggle between Pending and Done follow-ups"
           >
@@ -527,9 +551,8 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
               const pending = isPending(record.nextfollowup);
               return (
                 <span
-                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    pending ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
-                  }`}
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${pending ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                    }`}
                 >
                   {pending ? 'Follow-up' : 'Done'}
                 </span>
@@ -545,12 +568,12 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
               const { status, colorClass } = getDateStatus(record?.followupdate);
               const formatted = record?.followupdate
                 ? new Date(record.followupdate).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })
+                  month: 'short',
+                  day: 'numeric',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
                 : 'N/A';
               return (
                 <div className="flex flex-col">
@@ -595,18 +618,23 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
                   >
                     <PiTrashFill className="h-5 w-5" />
                   </button>
-                  <button
-                    className={`p-2 rounded-full transition-colors ${
-                      pending
-                        ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
-                        : 'text-gray-400 cursor-not-allowed'
-                    }`}
-                    onClick={() => pending && handleMarkAsDone(record.id)}
-                    title={pending ? 'Mark as Done' : 'Already Done'}
-                    disabled={!pending}
-                  >
-                    {pending ? <PiCheckThin className="h-5 w-5" /> : <PiChecks className="h-5 w-5" />}
-                  </button>
+                  {pending ? (
+                    <button
+                      className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
+                      onClick={() => handleMarkAsDone(record.id)}
+                      title="Mark as Done"
+                    >
+                      <PiCheckThin className="h-5 w-5" />
+                    </button>
+                  ) : (
+                    <button
+                      className="p-2 text-orange-600 hover:text-orange-800 hover:bg-orange-50 rounded-full transition-colors"
+                      onClick={() => handleMarkAsInProcess(record.id)}
+                      title="Reopen Follow-up"
+                    >
+                      <PiChecks className="h-5 w-5" />
+                    </button>
+                  )}
                 </div>
               );
             },
