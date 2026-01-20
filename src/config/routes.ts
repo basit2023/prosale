@@ -29,89 +29,92 @@ export const routes = {
     editOrder: (id: string) => `/ecommerce/orders/${id}/edit`,
     reviews: '/ecommerce/reviews',
     shop: '/ecommerce/shop',
-    cart: '/ecommerce/cart',    
+    cart: '/ecommerce/cart',
     checkout: '/ecommerce/checkout',
     trackingId: (id: string) => `/ecommerce/tracking/${id}`,
   },
-  employee:{
-       dashboard:'/employee',
-       employeelist:'/employee/list',
-       newemployee:'/employee/new',
-       zones:'/employee/zones',
-       teams:'/employee/teams',
-       deleteemployee:'/employee/delete',
-       edit: (id: string) => `/employee/${id}/edit`,
-       editteam: (id: string) => `/employee/teams/${id}/edit`,
-       editzone:(id: string) => `/employee/zones/${id}/edit`,
-       //zoneTeams:(id: string) => `/employee/teams/${id}/zones`,
-       zoneTeams:(id: string) => `/employee/zones/${id}/teams`,
-       members:(id: string) => `/employee/teams/${id}/members`,
-       
-       details: (id: string) => `/employee/${id}`,
-       
+  employee: {
+    dashboard: '/employee',
+    employeelist: '/employee/list',
+    newemployee: '/employee/new',
+    zones: '/employee/zones',
+    teams: '/employee/teams',
+    
+    deleteemployee: '/employee/delete',
+    edit: (id: string) => `/employee/${id}/edit`,
+    editteam: (id: string) => `/employee/teams/${id}/edit`,
+    editzone: (id: string) => `/employee/zones/${id}/edit`,
+    //zoneTeams:(id: string) => `/employee/teams/${id}/zones`,
+    zoneTeams: (id: string) => `/employee/zones/${id}/teams`,
+    members: (id: string) => `/employee/teams/${id}/members`,
+
+    details: (id: string) => `/employee/${id}`,
+
+
   },
-  leads:{
-    dashboard:'/leads',
-    management:'/leads/management',
-    new_lead:'/leads/new-lead',
-    Csv_lead:'/leads/new-lead/csv',
-    highly_interested:'/leads/highly_interested',
+  leads: {
+    dashboard: '/leads',
+    management: '/leads/management',
+    new_lead: '/leads/new-lead',
+    Csv_lead: '/leads/new-lead/csv',
+    highly_interested: '/leads/highly_interested',
     followup: '/leads/followup',
     full_report: '/leads/activity-report/full-report',
-    Activity_list:'/leads/activity-report/list',
-    DailyActivity:'/leads/activity-report',
+    Activity_list: '/leads/activity-report/list',
+    DailyActivity: '/leads/activity-report',
+    followupinfo: '/leads/follow-up-info',
     // need_to_convince:'/leads/need_to_convince',
     team_member: (id: string) => `/leads/management/${id}`,
     edit: (id: string) => `/leads/${id}/edit`,
     show_label: (id: string, query?: any) => `/leads/labels/${id}`,
     show_specific_label: (id: string, id1: string) => `/leads/labels/${id}/${id1}`,
 
-    customers:'/leads/customers',
+    customers: '/leads/customers',
     editCustomer: (id: string) => `/leads/customers/${id}/edit`,
     viewCustomer: (id: string) => `/leads/customers/${id}/view`,
-    newcustomer:'/leads/customers/new-customer',
-    
-    
+    newcustomer: '/leads/customers/new-customer',
+
+
   },
   plugins: {
-        AllPlugins:'/plugins'
+    AllPlugins: '/plugins'
   },
   project: {
-      projectlist: '/project/list',
-      newproject:'/project/new',
-      editProject: (id: string) => `/project/edit/${id}`,
-      viewProject: (slug: string) => `/project/${slug}/view`,
-      editFloor:(slug: string, id: string) => `/project/${slug}/${id}`,
-      addnewunites:(slug: string, id: string) => `/project/${slug}/addunites/${id}`,
-      floorunites:(slug: string, id: string) => `/project/${slug}/view/floor/${id}`,
-      floormap:(slug: string, id: string) => `/project/${slug}/view/floor/${id}/map`,
-      managefloor:(slug: string, id: string) => `/project/${slug}/view/manage/${id}`,
-      addbulkunit:(slug: string, id: string) => `/project/${slug}/bulkunits/${id}`,
-      duplicatefloor:(slug: string, id: string) => `/project/${slug}/duplicatefloor/${id}`,
-      FloorMap:(slug: string, id: string) => `/project/${slug}/map/${id}`,
-      Addfloor:(slug: string) => `/project/${slug}/view/newfloor`,
-      
+    projectlist: '/project/list',
+    newproject: '/project/new',
+    editProject: (id: string) => `/project/edit/${id}`,
+    viewProject: (slug: string) => `/project/${slug}/view`,
+    editFloor: (slug: string, id: string) => `/project/${slug}/${id}`,
+    addnewunites: (slug: string, id: string) => `/project/${slug}/addunites/${id}`,
+    floorunites: (slug: string, id: string) => `/project/${slug}/view/floor/${id}`,
+    floormap: (slug: string, id: string) => `/project/${slug}/view/floor/${id}/map`,
+    managefloor: (slug: string, id: string) => `/project/${slug}/view/manage/${id}`,
+    addbulkunit: (slug: string, id: string) => `/project/${slug}/bulkunits/${id}`,
+    duplicatefloor: (slug: string, id: string) => `/project/${slug}/duplicatefloor/${id}`,
+    FloorMap: (slug: string, id: string) => `/project/${slug}/map/${id}`,
+    Addfloor: (slug: string) => `/project/${slug}/view/newfloor`,
+
 
   },
   paymentPlans: {
-    paymentPlans:'/payment-plans',
-    addProject:'/payment-plans/add-project',
-    editpaymentplan:( id: string) => `/payment-plans/${id}/edit`,
-    generatePaymentPlan:( id: string) => `/payment-plans/${id}/paymentplan`,
+    paymentPlans: '/payment-plans',
+    addProject: '/payment-plans/add-project',
+    editpaymentplan: (id: string) => `/payment-plans/${id}/edit`,
+    generatePaymentPlan: (id: string) => `/payment-plans/${id}/paymentplan`,
   },
 
-   RevenueTargets : {
-    RevenueTargets : '/revenue-targets',
-    NewTargets:'/revenue-targets/new-targets',
-    updateTarget :(id: string, name: string) => `/revenue-targets/${id}/update?name=${encodeURIComponent(name)}`,
+  RevenueTargets: {
+    RevenueTargets: '/revenue-targets',
+    NewTargets: '/revenue-targets/new-targets',
+    updateTarget: (id: string, name: string) => `/revenue-targets/${id}/update?name=${encodeURIComponent(name)}`,
 
 
 
   },
   realtors: {
-    realtorslist:'/realtors',
+    realtorslist: '/realtors',
     // realtorslist:'/realtors/list',
-    newrealtors:'/realtors/new-realtors',
+    newrealtors: '/realtors/new-realtors',
     edit: (id: string) => `/realtors/${id}/edit-realtors`,
     // details: (id: string) => `/realtors/${id}`,
   },
@@ -134,8 +137,8 @@ export const routes = {
     viewTemplate: (id: string) => `/support/templates/${id}`,
     editTemplate: (id: string) => `/support/templates/${id}/edit`,
   },
-  
-    activitylogs:'/activitylogs'
+
+  activitylogs: '/activitylogs'
   ,
   logistics: {
     dashboard: '/logistics',
@@ -229,15 +232,15 @@ export const routes = {
     otp5: '/auth/otp-5',
   },
   signIn: '/signin',
-  onboarding:'/onboarding',
-  tamplets:{
-    detailPlained:(slug: string) => `/tamplets/detailed-planed/${slug}`,
-    DailyActivityReport:(slug: string) => `/tamplets/Daily-Activity-Report/${slug}`,
-    FullReport:(slug: string) => `/tamplets/generate-full-report/${slug}`,
-    PrintRealtorReport:(id: string) => `/tamplets/realtor-form/${id}`,
-    PrintRealtorCert:(id: string) => `/tamplets/realtor-certificate/${id}`,
+  onboarding: '/onboarding',
+  tamplets: {
+    detailPlained: (slug: string) => `/tamplets/detailed-planed/${slug}`,
+    DailyActivityReport: (slug: string) => `/tamplets/Daily-Activity-Report/${slug}`,
+    FullReport: (slug: string) => `/tamplets/generate-full-report/${slug}`,
+    PrintRealtorReport: (id: string) => `/tamplets/realtor-form/${id}`,
+    PrintRealtorCert: (id: string) => `/tamplets/realtor-certificate/${id}`,
   },
-  booking:{
-    bookingform:'/bookingform'
+  booking: {
+    bookingform: '/bookingform'
   }
 };

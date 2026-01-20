@@ -33,14 +33,16 @@ const getSlightFill = (percentage: number) => {
 };
 
 export function FileStatGrid({ className }: { className?: string }) {
-  const { data: session } = useSession();
-  console.log(session);
+  const { data: session, status } = useSession();
   const [count, setCount] = useState<any>();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await apiService.get(`/total-items?user=${(session?.user as any)?.username || (session?.user as any)?.name}`);
+        const username = (session?.user as any)?.username || (session?.user as any)?.name;
+        if (!username) return;
+
+        const response = await apiService.get(`/total-items?user=${username}`);
         const userData = response.data.data;
         setCount(userData);
       } catch (error) {
@@ -49,10 +51,10 @@ export function FileStatGrid({ className }: { className?: string }) {
       }
     };
 
-    if (session) {
+    if (status === 'authenticated') {
       fetchData();
     }
-  }, [session]);
+  }, [session, status]);
 
   const filesStatData = [
     {
@@ -118,8 +120,12 @@ export function FileStatGrid({ className }: { className?: string }) {
   ];
 
   const router = useRouter();
-  if (!session) {
+  if (status === 'unauthenticated') {
     router.push(routes.signIn);
+    return null;
+  }
+
+  if (status === 'loading') {
     return null;
   }
 

@@ -67,6 +67,8 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   // Force-refresh key for table remount (instant UI reaction)
   const [dataVersion, setDataVersion] = useState(0);
 
+  const isFirstRender = useRef(true);
+
   // Notifications
   const [notifReady, setNotifReady] = useState(false);
   const notifiedIdsRef = useRef<Set<string>>(new Set());
@@ -410,8 +412,12 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   }, [comments, showMyFollowupsOnly, showDoneFollowups, normalizedQuery]);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     setPage(1);
-  }, [normalizedQuery, showMyFollowupsOnly, showDoneFollowups, comments.length]);
+  }, [normalizedQuery, showMyFollowupsOnly, showDoneFollowups]);
 
   // ----- PAGINATION -----
   const totalItems = filteredSorted.length;
