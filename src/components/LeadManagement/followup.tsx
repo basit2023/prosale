@@ -49,12 +49,6 @@ const isPending = (v: any) => {
   const s = String(v).trim().toLowerCase();
   return s === '1' || s === 'true' || s === 'pending';
 };
-const isDone = (v: any) => {
-  const n = Number(v);
-  if (n === 0 || n === 1) return n === 0;
-  const s = String(v).trim().toLowerCase();
-  return s === '0' || s === 'false' || s === 'done';
-};
 
 const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const router = useRouter();
@@ -66,8 +60,6 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
   // Force-refresh key for table remount (instant UI reaction)
   const [dataVersion, setDataVersion] = useState(0);
-
-  const isFirstRender = useRef(true);
 
   // Notifications
   const [notifReady, setNotifReady] = useState(false);
@@ -83,6 +75,8 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const [query, setQuery] = useState('');
   const [pageSize, setPageSize] = useState(20);
   const [page, setPage] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [debouncedQuery, setDebouncedQuery] = useState('');
 
   // restore page/pageSize for current user when available
   useEffect(() => {
@@ -109,6 +103,15 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       sessionStorage.setItem(sizeKey, String(pageSize));
     } catch { }
   }, [page, pageSize, memoizedSession]);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+      setPage(1); // Reset to first page on search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   // load notified state
   useEffect(() => {
@@ -264,29 +267,47 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
   // --- Data fetch ---
   const fetchComments = useCallback(async () => {
+    setLoading(true);
     try {
       const u = memoizedSession?.user as any;
       if (!u) return;
-      const resp = await apiService.get(`/follow-up/${u?.username}/?permission=${u?.permission}&&id=${u?.id}`);
+
+      const filterStr = showDoneFollowups ? 'done' : 'pending';
+      const ownStr = showMyFollowupsOnly ? 'true' : 'false';
+
+      const params = new URLSearchParams({
+        permission: u.permission.toString(),
+        id: u.id.toString(),
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+        q: debouncedQuery,
+        filter: filterStr,
+        own: ownStr
+      });
+
+      const resp = await apiService.get(`/follow-up/${u?.username}/?${params.toString()}`);
       const arr = Array.isArray(resp?.data?.leads) ? resp.data.leads : [];
-      console.log("the array for the follow upds is:", resp)
+      const total = resp?.data?.pagination?.total || 0;
+
       // Normalize the nextfollowup flag for all follow-ups
       const normalized = arr.map((c: Comment) => ({
         ...c,
         nextfollowup: Number(c.nextfollowup), // normalize to 0/1
       }));
       setComments(normalized);
+      setTotalItems(total);
     } catch (e) {
       console.error('Error fetching comments:', e);
       setComments([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
-  }, [memoizedSession]);
+  }, [memoizedSession, page, pageSize, debouncedQuery, showMyFollowupsOnly, showDoneFollowups]);
 
   useEffect(() => {
     if (memoizedSession) fetchComments();
-  }, [memoizedSession, fetchComments]);
+  }, [fetchComments, memoizedSession]);
 
   const handleDeleteComment = async (commentId: string, leadId: string) => {
     try {
@@ -378,56 +399,10 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     return { status: 'Overdue', colorClass: 'text-red-600 dark:text-red-400', sortOrder: 4 };
   };
 
-  // ----- SEARCH + FILTER + SORT -----
-  const normalizedQuery = query.trim().toLowerCase();
-
-  const filteredSorted = useMemo(() => {
-    const base = showMyFollowupsOnly ? comments.filter((c) => belongsToCurrentUser(c)) : comments;
-    const filteredByDone = showDoneFollowups
-      ? base.filter((c) => isDone(c.nextfollowup))
-      : base.filter((c) => isPending(c.nextfollowup));
-
-    const searched = normalizedQuery
-      ? filteredByDone.filter((c) => {
-        const hay = [
-          c.fullName,
-          c.full_name,
-          c.comments,
-          c.followup,
-          c.followupdate,
-          c.lead_id,
-        ]
-          .filter(Boolean)
-          .map((v) => String(v).toLowerCase())
-          .join(' ');
-        return hay.includes(normalizedQuery);
-      })
-      : filteredByDone;
-
-    return [...searched].sort((a, b) => {
-      const aStatus = getDateStatus(a.followupdate).sortOrder;
-      const bStatus = getDateStatus(b.followupdate).sortOrder;
-      return aStatus - bStatus;
-    });
-  }, [comments, showMyFollowupsOnly, showDoneFollowups, normalizedQuery]);
-
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
-    setPage(1);
-  }, [normalizedQuery, showMyFollowupsOnly, showDoneFollowups]);
-
-  // ----- PAGINATION -----
-  const totalItems = filteredSorted.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
-  const start = (page - 1) * pageSize;
-  const pageData = filteredSorted.slice(start, start + pageSize);
-
+  // ----- DISPLAY DATA -----
   const pageDataWithKeys = useMemo(
-    () => pageData.map((r) => ({ ...r, key: r.id ?? `${r.lead_id}-${r.date}` })),
-    [pageData]
+    () => comments.map((r) => ({ ...r, key: r.id ?? `${r.lead_id}-${r.date}` })),
+    [comments]
   );
 
   if (loading) return <Spinner />;
@@ -470,7 +445,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             onChange={(e) => {
               const n = Number(e.target.value);
               setPageSize(n);
-              setPage((p) => Math.min(Math.max(1, p), Math.max(1, Math.ceil(filteredSorted.length / n))));
+              setPage(1);
             }}
             className="px-0 py-1.5 rounded border border-gray-300 w-[30%] !focus:ring-black !focus:border-black dark:border-gray-700 bg-white/80 dark:bg-gray-900/60"
             title="Rows per page"
@@ -485,7 +460,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       </div>
 
       <BasicTableWidget
-        key={`v-${dataVersion}-pg-${page}-ps-${pageSize}-q-${normalizedQuery}-mine-${showMyFollowupsOnly}-done-${showDoneFollowups}`}
+        key={`v-${dataVersion}-pg-${page}-ps-${pageSize}-q-${query}-mine-${showMyFollowupsOnly}-done-${showDoneFollowups}`}
         title="All comments"
         className={cn('pb-0 lg:pb-0 [&_.rc-table-row:last-child_td]:border-b-0')}
         data={pageDataWithKeys}
@@ -669,12 +644,12 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
             Prev
           </button>
           <span className="text-sm">
-            Page <strong>{page}</strong> / <strong>{totalPages}</strong>
+            Page <strong>{page}</strong> / <strong>{Math.ceil(totalItems / pageSize)}</strong>
           </span>
           <button
             className="px-3 py-1.5 rounded border border-gray-300 dark:border-gray-700 disabled:opacity-50"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page >= Math.ceil(totalItems / pageSize)}
           >
             Next
           </button>

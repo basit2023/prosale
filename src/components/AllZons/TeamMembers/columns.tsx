@@ -9,6 +9,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { HeaderCell } from '@/components/ui/table';
 import { ActionIcon } from '@/components/ui/action-icon';
 import EyeIcon from '@/components/icons/eye';
+import { PiTrashBold } from 'react-icons/pi';
 
 
 type Columns = {
@@ -17,6 +18,7 @@ type Columns = {
   handleSelectAll: any;
   checkedItems: string[];
   onDeleteItem: (id: string) => void;
+  onRemoveMember: (id: string) => void;
   onHeaderCellClick: (value: string) => void;
   onChecked?: (id: string) => void;
 };
@@ -25,20 +27,21 @@ export const getColumns = ({
   sortConfig,
   checkedItems,
   onDeleteItem,
+  onRemoveMember,
   onHeaderCellClick,
   handleSelectAll,
   onChecked,
 }: Columns) => {
 
- // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
- 
+
 
 
 
   const columns = [
     // {
-    
+
     //   title: (
     //     <div className="ps-2">
     //       <Checkbox
@@ -62,7 +65,7 @@ export const getColumns = ({
     //     </div>
     //   ),
     // },
-   
+
     // {
     //   title: (
     //     <HeaderCell
@@ -84,7 +87,7 @@ export const getColumns = ({
     //   ),
     // },
 
-   
+
     {
       title: (
         <HeaderCell
@@ -99,21 +102,21 @@ export const getColumns = ({
       width: 50,
       render: (value: any, row: any) => {
         const fullName = `${row.name || 'N/A'}`;
-    
+
         // Conditional styles for status and sms
         const statusStyle = {
           color: typeof row.view_dt === 'string' ? 'black' : 'black',
         };
-    
-        
-    
+
+
+
         return (
           <div>
             <Text className="font-medium text-gray-700 dark:text-gray-600">
               {fullName}
-             
+
             </Text>
-           
+
           </div>
         );
       },
@@ -200,17 +203,17 @@ export const getColumns = ({
     },
 
 
-   
-   
-    
-     
+
+
+
+
     {
       title: <HeaderCell title="Action" />,
       dataIndex: 'action',
       key: 'action',
       width: 200,
       render: (_: string, row: any) => {
-        
+
         return (
           <div className="flex items-center justify-start gap-3 pe-3 ml-4">
             <Tooltip
@@ -229,6 +232,21 @@ export const getColumns = ({
                   <EyeIcon className="h-4 w-4" />
                 </ActionIcon>
               </Link>
+            </Tooltip>
+            <Tooltip
+              size="sm"
+              content={() => 'Remove Member'}
+              placement="top"
+              color="invert"
+            >
+              <ActionIcon
+                size="sm"
+                variant="outline"
+                className="hover:!border-gray-900 hover:text-red-700"
+                onClick={() => onRemoveMember(row.id)}
+              >
+                <PiTrashBold className="h-4 w-4" />
+              </ActionIcon>
             </Tooltip>
             {/* <Tooltip
               size="sm"

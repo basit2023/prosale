@@ -7,6 +7,8 @@ import { useColumn } from '@/hooks/use-column';
 import { Button } from '@/components/ui/button';
 import ControlledTable from '@/components/controlled-table';
 import { getColumns } from './columns';
+import apiService from '@/utils/apiService';
+import toast from 'react-hot-toast';
 
 
 const FilterElement = dynamic(
@@ -26,7 +28,7 @@ const filterState = {
 
 const InvoiceTable = ({ data = [] }: { data: any[] }) => {
   const [pageSize, setPageSize] = useState(10);
-// eslint-disable-next-line react-hooks/rules-of-hooks
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   // Destructure the hook values outside of the JSX
   const {
     isLoading,
@@ -54,9 +56,24 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
       handleSort(value);
     },
   }), [handleSort]);
- // eslint-disable-next-line react-hooks/rules-of-hooks
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const onDeleteItem = useCallback((id: string) => {
     handleDelete(id);
+  }, [handleDelete]);
+
+  const onRemoveMember = useCallback(async (id: string) => {
+    try {
+      const response = await apiService.put(`/remove-team-member/${id}`);
+      if (response.data.success) {
+        toast.success(response.data.message || 'Member removed from team');
+        handleDelete(id);
+      } else {
+        toast.error(response.data.message || 'Failed to remove member');
+      }
+    } catch (error: any) {
+      console.error('Error removing member:', error);
+      toast.error(error.response?.data?.message || 'Error removing member');
+    }
   }, [handleDelete]);
 
   // useMemo for memoized columns
@@ -68,14 +85,15 @@ const InvoiceTable = ({ data = [] }: { data: any[] }) => {
         checkedItems: selectedRowKeys,
         onHeaderCellClick,
         onDeleteItem,
+        onRemoveMember,
         onChecked: handleRowSelect,
         handleSelectAll,
       }),
-    [selectedRowKeys, onHeaderCellClick, sortConfig.key, sortConfig.direction, onDeleteItem, handleRowSelect, handleSelectAll]
+    [selectedRowKeys, onHeaderCellClick, sortConfig.key, sortConfig.direction, onDeleteItem, onRemoveMember, handleRowSelect, handleSelectAll]
   );
 
   const { visibleColumns, checkedColumns, setCheckedColumns } = useColumn(columns);
-// eslint-disable-next-line react-hooks/rules-of-hooks
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   return (
     <>
       <ControlledTable
