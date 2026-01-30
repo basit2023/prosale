@@ -77,6 +77,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const [page, setPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [debouncedQuery, setDebouncedQuery] = useState('');
+  const [notificationItems, setNotificationItems] = useState<Comment[]>([]);
 
   // restore page/pageSize for current user when available
   useEffect(() => {
@@ -231,15 +232,15 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       let mutated = false;
       const list = commentsRef.current;
 
-      for (const c of list) {
+      for (const c of notificationItems) {
         if (!c.followupdate) continue;
-        if (!isPending(c.nextfollowup)) continue; // only for pending
-        if (!belongsToCurrentUser(c)) continue;
+        if (!isPending(c.nextfollowup)) continue;
 
         const t = Date.parse(c.followupdate);
         if (Number.isNaN(t)) continue;
 
         const tenMinMs = 10 * 60 * 1000;
+        const now = Date.now();
         const preTrigger = t - tenMinMs;
 
         if (preTrigger > last && preTrigger <= now && !notifiedPreRef.current.has(c.id)) {
@@ -257,13 +258,34 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
       }
 
       if (mutated) saveNotifiedIds();
-      lastCheckRef.current = now;
+      lastCheckRef.current = Date.now();
     };
 
     const interval = setInterval(checkDueDates, 30000);
     setTimeout(checkDueDates, 1500);
     return () => clearInterval(interval);
-  }, [notifReady, memoizedSession, showMyFollowupsOnly]);
+  }, [notifReady, memoizedSession, notificationItems]);
+
+  // Global notification fetcher
+  const fetchNotificationItems = useCallback(async () => {
+    try {
+      const u = memoizedSession?.user as any;
+      if (!u) return;
+      const resp = await apiService.get(`/follow-up-notifications/${u?.username}/?permission=${u?.permission}&id=${u?.id}`);
+      const arr = Array.isArray(resp?.data?.data) ? resp.data.data : [];
+      setNotificationItems(arr.map((c: any) => ({ ...c, nextfollowup: 1 }))); // These are all pending from the endpoint
+    } catch (e) {
+      console.error('Error fetching notification items:', e);
+    }
+  }, [memoizedSession]);
+
+  useEffect(() => {
+    if (memoizedSession) {
+      fetchNotificationItems();
+      const interval = setInterval(fetchNotificationItems, 60000); // Background refresh every 1 minute
+      return () => clearInterval(interval);
+    }
+  }, [memoizedSession, fetchNotificationItems]);
 
   // --- Data fetch ---
   const fetchComments = useCallback(async () => {
