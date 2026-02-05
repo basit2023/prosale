@@ -7,6 +7,8 @@ import { useSession } from 'next-auth/react';
 import { Controller, SubmitHandler } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { RadioGroup } from '@/components/ui/radio-group';
+import { Radio } from '@/components/ui/radio';
 import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
@@ -35,22 +37,25 @@ interface SelectOption {
   value: string;
 }
 
+type TargetType = 'designation' | 'user';
+
 export default function NewTargets() {
   const { data: session } = useSession();
   const { back, push } = useRouter();
 
+  const [targetType, setTargetType] = useState<TargetType>('designation');
   const [designationOptions, setDesignationOptions] = useState<SelectOption[]>([]);
+  const [userOptions, setUserOptions] = useState<SelectOption[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
-   const currentDate = new Date();
-    const currentDateString = currentDate.toISOString().split('T')[0];
-    
-    const [date, setDate] = useState<Date | null>(currentDate);
-
+  const currentDate = new Date();
+  const currentDateString = currentDate.toISOString().split('T')[0];
+  const [date, setDate] = useState<Date | null>(currentDate);
 
   const fetchDesignation = useCallback(async () => {
     try {
       const res = await apiService.get('/alldesignation');
-      console.log("the response is:",res)
+      console.log("the response is:", res)
       const opts =
         res?.data?.data?.map((d: any) => ({
           label: d?.name ?? d?.label ?? '',
@@ -63,9 +68,28 @@ export default function NewTargets() {
     }
   }, []);
 
+  const fetchUsers = useCallback(async () => {
+    try {
+      const res = await apiService.get(`/employees/?email=${(session as any)?.user?.email}`);
+      // Filter users where del='N' (active users)
+      const activeUsers = res?.data?.users?.filter((u: any) => u.del === 'N') ?? [];
+      const opts = activeUsers.map((u: any) => ({
+        label: u.name || `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.email,
+        value: String(u.id),
+      }));
+      setUserOptions(opts);
+    } catch (error) {
+      console.error('Error fetching users data:', error);
+      toast.error('Error fetching users data. Please try again.');
+    }
+  }, [session]);
+
   useEffect(() => {
-    if (session) fetchDesignation();
-  }, [session, fetchDesignation]);
+    if (session) {
+      fetchDesignation();
+      fetchUsers();
+    }
+  }, [session, fetchDesignation, fetchUsers]);
 
   const onSubmit: SubmitHandler<NewEmployeeInfoFormTypes> = async (data, event) => {
     setIsLoading(true);
@@ -76,18 +100,26 @@ export default function NewTargets() {
 
       // If your schema already coerces, you can skip this guard.
       if (Number.isNaN(data.targetRevenue)) data.targetRevenue = 0;
-   
 
-      // If backend expects designation_id instead of designation:
       const payload = {
         ...data,
-        designation: (data as any).designation, // map if needed
+        designation: (data as any).designation,
       };
-       console.log("the dat is:",payload)
-      const result = await apiService.put(
-        `/update-target-revenue/?user=${encodeURIComponent((session as any)?.user?.username || '')}`,
-        payload
-      );
+      console.log("the data is:", payload)
+
+      let url = `/update-target-revenue/?user=${encodeURIComponent((session as any)?.user?.username || '')}`;
+
+      // If user-based target, add the user id to the query
+      if (targetType === 'user') {
+        if (!selectedUserId) {
+          toast.error('Please select a user');
+          setIsLoading(false);
+          return;
+        }
+        url = `/update-target-revenue/?id=${selectedUserId}&user=${encodeURIComponent((session as any)?.user?.username || '')}`;
+      }
+
+      const result = await apiService.put(url, payload);
 
       toast.success(result?.data?.message || 'Saved');
       if (result?.data?.success) {
@@ -114,38 +146,54 @@ export default function NewTargets() {
         defaultValues: {
           ...defaultValues,
           targetRevenue: defaultValues.targetRevenue ?? 0,
-      
         },
       }}
     >
-      {({ register, control,setValue, formState: { errors } }) => (
+      {({ register, control, setValue, formState: { errors } }) => (
         <>
           <FormGroup
             title="Enter Targets"
-            description="Add targets for each designation"
+            description="Add targets by designation or for a specific user"
             className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
           />
 
           <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
 
+            {/* Target Type Selection */}
             <FormGroup
-                            title="Select Month"
-                            className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-                          >
-                            <ReactDatePicker
-                              selected={date}
-                              onChange={(date: Date | null) => {
-                                setDate(date);
-                                setValue('date', date ? date.toISOString().split('T')[0] : currentDateString);
-                              }}
-                              dateFormat="MMMM d, yyyy"
-                              placeholderText="Select Date"
-                              showTimeSelect={false}
-                            />
-                            {errors.from && (
-                              <p className="mt-1 text-sm text-red-500">{errors.from.message}</p>
-                            )}
-                          </FormGroup>
+              title="Target Type"
+              description="Choose to set target by designation (all users) or for a specific user"
+              className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+            >
+              <RadioGroup
+                value={targetType}
+                setValue={setTargetType as any}
+                className="flex gap-6"
+              >
+                <Radio label="By Designation" value="designation" />
+                <Radio label="By User" value="user" />
+              </RadioGroup>
+            </FormGroup>
+
+            <FormGroup
+              title="Select Month"
+              className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+            >
+              <ReactDatePicker
+                selected={date}
+                onChange={(date: Date | null) => {
+                  setDate(date);
+                  setValue('date', date ? date.toISOString().split('T')[0] : currentDateString);
+                }}
+                dateFormat="MMMM d, yyyy"
+                placeholderText="Select Date"
+                showTimeSelect={false}
+              />
+              {errors.from && (
+                <p className="mt-1 text-sm text-red-500">{errors.from.message}</p>
+              )}
+            </FormGroup>
+
             {/* Target Revenue */}
             <FormGroup
               title="Target Revenue"
@@ -162,49 +210,55 @@ export default function NewTargets() {
               />
             </FormGroup>
 
-            {/* Achieved Revenue */}
-            {/* <FormGroup
-              title="Achieved Revenue"
-              description="Revenue achieved (default 0)"
-              className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-            >
-              <Input
-                type="number"
-                step="0.01"
-                placeholder="0"
-                {...register('achievedRevenue', { valueAsNumber: true })}
-                error={errors.achievedRevenue?.message}
-                className="col-span-full"
-              />
-            </FormGroup> */}
-
-            {/* Designation */}
-            <FormGroup
-              title="Designation"
-              description="Select the designation this target applies to"
-              className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
-            >
-              <Controller
-                control={control}
-                name="designation"
-                render={({ field: { value, onChange } }) => (
-                  <SelectBox
-                    placeholder="Select Designation"
-                    options={designationOptions}
-                    onChange={(opt: SelectOption | string) =>
-                      onChange(typeof opt === 'string' ? opt : opt?.value)
-                    }
-                    value={value}
-                    className="col-span-full"
-                    getOptionValue={(o: SelectOption) => o.value}
-                    displayValue={(selected: string) =>
-                      designationOptions.find((r) => r.value === selected)?.label ?? ''
-                    }
-                    error={errors?.designation?.message as string}
-                  />
-                )}
-              />
-            </FormGroup>
+            {/* Conditional: Designation or User dropdown */}
+            {targetType === 'designation' ? (
+              <FormGroup
+                title="Designation"
+                description="Select the designation this target applies to"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <Controller
+                  control={control}
+                  name="designation"
+                  render={({ field: { value, onChange } }) => (
+                    <SelectBox
+                      placeholder="Select Designation"
+                      options={designationOptions}
+                      onChange={(opt: SelectOption | string) =>
+                        onChange(typeof opt === 'string' ? opt : opt?.value)
+                      }
+                      value={value}
+                      className="col-span-full"
+                      getOptionValue={(o: SelectOption) => o.value}
+                      displayValue={(selected: string) =>
+                        designationOptions.find((r) => r.value === selected)?.label ?? ''
+                      }
+                      error={errors?.designation?.message as string}
+                    />
+                  )}
+                />
+              </FormGroup>
+            ) : (
+              <FormGroup
+                title="User"
+                description="Select the user this target applies to"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <SelectBox
+                  placeholder="Select User"
+                  options={userOptions}
+                  onChange={(opt: SelectOption | string) =>
+                    setSelectedUserId(typeof opt === 'string' ? opt : opt?.value)
+                  }
+                  value={selectedUserId}
+                  className="col-span-full"
+                  getOptionValue={(o: SelectOption) => o.value}
+                  displayValue={(selected: string) =>
+                    userOptions.find((r) => r.value === selected)?.label ?? ''
+                  }
+                />
+              </FormGroup>
+            )}
           </div>
 
           <FormFooter

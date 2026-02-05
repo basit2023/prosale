@@ -83,17 +83,22 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
     // Initialize Socket.IO for real-time notifications
     const initializeSocketIO = () => {
       try {
-        const socketUrl = window.location.protocol === 'https:'
-          ? 'https://api.prosale.sale'
-          : 'http://localhost:4000';
+        const socketUrl = window.location.hostname === 'localhost'
+          ? 'http://localhost:4000'
+          : `https://${window.location.hostname.replace('www.', '')}`;
 
-        const socket = io(socketUrl, {
+        // Use api.prosale.sale if we're on the main domain
+        const finalUrl = socketUrl.includes('prosale.sale') && !socketUrl.includes('api.')
+          ? 'https://api.prosale.sale'
+          : socketUrl;
+
+        const socket = io(finalUrl, {
           reconnection: true,
           reconnectionDelay: 1000,
           reconnectionDelayMax: 5000,
-          reconnectionAttempts: 5,
+          reconnectionAttempts: 20, // Increased for production
           withCredentials: true,
-          transports: ['websocket', 'polling'],
+          transports: ['websocket', 'polling'], // Allow fallback to polling
         });
 
         socket.on('connect', () => {
