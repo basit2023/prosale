@@ -95,6 +95,7 @@ const memoizedSession=useMemo(()=>session,[session])
         try {
           await apiService.post('/page-time', {
             leadsId: id,
+            whatsapp: 'N',
             user: value1?.user?.name,
             phone: phone,
             opentime: startTime,
