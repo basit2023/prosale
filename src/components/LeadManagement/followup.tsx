@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import dayjs from 'dayjs';
 import { Text } from '@/components/ui/text';
 import { useRouter } from 'next/navigation';
 import BasicTableWidget from '@/components/controlled-table/basic-table-widget';
@@ -81,6 +82,10 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [notificationItems, setNotificationItems] = useState<Comment[]>([]);
 
+  // Tracking visited rows
+  const [visitedIds, setVisitedIds] = useState<Set<string>>(new Set());
+  const [lastVisitedId, setLastVisitedId] = useState<string | null>(null);
+
   // restore page/pageSize for current user when available
   useEffect(() => {
     try {
@@ -133,6 +138,7 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
         localStorage.removeItem(STORAGE_EXPIRY_KEY);
         localStorage.removeItem(STORAGE_PRE_KEY);
         localStorage.removeItem(STORAGE_DUE_KEY);
+        localStorage.removeItem('followup_visited_ids');
       } else {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) notifiedIdsRef.current = new Set(JSON.parse(stored));
@@ -140,12 +146,44 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
         if (storedPre) notifiedPreRef.current = new Set(JSON.parse(storedPre));
         const storedDue = localStorage.getItem(STORAGE_DUE_KEY);
         if (storedDue) notifiedDueRef.current = new Set(JSON.parse(storedDue));
+
+        // Restore visited IDs
+        const visited = localStorage.getItem('followup_visited_ids');
+        if (visited) setVisitedIds(new Set(JSON.parse(visited) as string[]));
       }
       if (!expiryTime) localStorage.setItem(STORAGE_EXPIRY_KEY, String(now));
+
+      // Restore last visited from session
+      const last = sessionStorage.getItem('followup_last_visited');
+      if (last) setLastVisitedId(last);
     } catch (e) {
       console.warn('Failed to load notification state:', e);
     }
   }, []);
+
+  const markAsVisited = (id: string) => {
+    setVisitedIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev).add(id);
+      localStorage.setItem('followup_visited_ids', JSON.stringify(Array.from(next)));
+      return next;
+    });
+    setLastVisitedId(id);
+    sessionStorage.setItem('followup_last_visited', id);
+  };
+
+  // Scroll into view on return
+  useEffect(() => {
+    if (lastVisitedId && !loading) {
+      const timer = setTimeout(() => {
+        const row = document.querySelector(`[data-row-key="${lastVisitedId}"]`);
+        if (row) {
+          row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [lastVisitedId, loading]);
 
   const saveNotifiedIds = () => {
     if (typeof window === 'undefined') return;
@@ -411,20 +449,21 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
 
   const getDateStatus = (followupdate: string) => {
     if (!followupdate) {
-      return { status: 'N/A', colorClass: 'text-gray-700 dark:text-gray-600', sortOrder: 5 };
+      return { status: 'N/A', colorClass: 'text-gray-700 dark:text-gray-600', sortOrder: 9 };
     }
-    const followupDate = new Date(followupdate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const d = new Date(followupDate);
-    d.setHours(0, 0, 0, 0);
-    const daysDiff = Math.floor((d.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const target = dayjs(followupdate).startOf('day');
+    const today = dayjs().startOf('day');
+    const daysDiff = target.diff(today, 'day');
 
-    if (daysDiff === 0) return { status: 'Today', colorClass: 'text-green-600 dark:text-green-400', sortOrder: 0 };
-    if (daysDiff === 1) return { status: 'Tomorrow', colorClass: 'text-orange-600 dark:text-orange-400', sortOrder: 1 };
-    if (daysDiff > 1 && daysDiff <= 7) return { status: 'Coming Soon', colorClass: 'text-orange-500 dark:text-orange-300', sortOrder: 2 };
-    if (daysDiff > 7) return { status: 'Scheduled', colorClass: 'text-blue-600 dark:text-blue-400', sortOrder: 3 };
-    return { status: 'Overdue', colorClass: 'text-red-600 dark:text-red-400', sortOrder: 4 };
+    if (daysDiff < 0) return { status: 'Overdue', colorClass: 'text-red-600 dark:text-red-400', sortOrder: 0 };
+    if (daysDiff === 0) return { status: 'Today', colorClass: 'text-green-600 dark:text-green-400', sortOrder: 1 };
+    if (daysDiff === 1) return { status: 'Tomorrow', colorClass: 'text-orange-600 dark:text-orange-400', sortOrder: 2 };
+    if (daysDiff === 2) return { status: 'In 2 Days', colorClass: 'text-orange-500 dark:text-orange-300', sortOrder: 3 };
+    if (daysDiff === 3) return { status: 'In 3 Days', colorClass: 'text-orange-500 dark:text-orange-300', sortOrder: 4 };
+    if (daysDiff <= 7) return { status: 'This Week', colorClass: 'text-blue-500 dark:text-blue-300', sortOrder: 5 };
+    if (daysDiff <= 14) return { status: 'Next Week', colorClass: 'text-blue-600 dark:text-blue-400', sortOrder: 6 };
+    if (daysDiff <= 31) return { status: 'This Month', colorClass: 'text-purple-600 dark:text-purple-400', sortOrder: 7 };
+    return { status: 'Long Term', colorClass: 'text-gray-500 dark:text-gray-400', sortOrder: 8 };
   };
 
   // ----- DISPLAY DATA -----
@@ -492,8 +531,16 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
         title="All comments"
         className={cn('pb-0 lg:pb-0 [&_.rc-table-row:last-child_td]:border-b-0')}
         data={pageDataWithKeys}
-        rowKey="key"
-        pagination={false}
+        rowKey="id"
+        onRow={(record: any) => ({
+          onClick: () => markAsVisited(record.id),
+          className: cn(
+            'cursor-pointer transition-colors hover:bg-gray-100/50 dark:hover:bg-gray-800/50',
+            visitedIds.has(record.id) && 'bg-gray-100/30 dark:bg-gray-900/40',
+            lastVisitedId === record.id && 'ring-1 ring-inset ring-blue-500/50 bg-blue-50/20 dark:bg-blue-900/30'
+          )
+        })}
+        enablePagination={false}
         getColumns={() => [
           {
             title: <span className="block whitespace-nowrap">Comment By</span>,

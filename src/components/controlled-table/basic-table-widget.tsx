@@ -46,6 +46,8 @@ type BasicTableWidgetProps = {
     y?: number;
   };
   sticky?: boolean;
+  onRow?: any;
+  rowKey?: any;
 };
 
 export default function BasicTableWidget({
@@ -63,6 +65,7 @@ export default function BasicTableWidget({
   scroll = { x: 1300 },
   className,
   searchPlaceholder = 'Search...',
+  ...props
 }: BasicTableWidgetProps) {
   const onHeaderCellClick = (value: string) => ({
     onClick: () => {
@@ -145,6 +148,7 @@ export default function BasicTableWidget({
           sticky={sticky}
           variant={variant}
           className="mt-4"
+          {...props}
           {...(enablePagination && {
             paginatorOptions: {
               pageSize,

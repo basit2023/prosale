@@ -30,7 +30,7 @@ export default function ChangeStatus({ id }: any) {
   const [value1, setUserData] = useState<any>();
   const [phone, setPhone] = useState<any>('N');
   const previousPathname = useRef<string | null>(null); // Ref to store previous pathname
-const memoizedSession=useMemo(()=>session,[session])
+  const memoizedSession = useMemo(() => session, [session])
   useEffect(() => {
     const fetchUserData = async () => {
       try {
@@ -146,41 +146,78 @@ const memoizedSession=useMemo(()=>session,[session])
     });
   };
 
- const [isCalling, setIsCalling] = useState(false);
+  const [isCalling, setIsCalling] = useState(false);
 
-const handleButtonClick = async () => {
-  if (isCalling) return;
+  const handleButtonClick = async () => {
+    if (isCalling) return;
 
-  let phoneNumber = value[0]?.mobile;
+    let phoneNumber = value[0]?.mobile;
 
-  if (!phoneNumber) {
-    toast.error('No phone number available');
-    return;
-  }
+    if (!phoneNumber) {
+      toast.error('No phone number available');
+      return;
+    }
 
-  // 🔹 Add '+' if the number starts with '92'
-  if (phoneNumber.startsWith('92')) {
-    phoneNumber = `+${phoneNumber}`;
-  }
+    // 🔹 Add '+' if the number starts with '92'
+    if (phoneNumber.startsWith('92') && !phoneNumber.startsWith('+')) {
+      phoneNumber = `+${phoneNumber}`;
+    }
 
-  setIsCalling(true);
-  try {
-    setPhone('Y');
-    const getCurrentTimestamp = () =>
-      Math.floor(new Date().getTime() / 1000).toString();
-    await apiService.put(`/lead-open/${id}`, {
-      dt: getCurrentTimestamp(),
-      email: memoizedSession?.user?.email,
-    });
+    setIsCalling(true);
+    try {
+      setPhone('Y');
+      const getCurrentTimestamp = () =>
+        Math.floor(new Date().getTime() / 1000).toString();
+      await apiService.put(`/lead-open/${id}`, {
+        dt: getCurrentTimestamp(),
+        email: memoizedSession?.user?.email,
+      });
 
-    // Trigger phone call
-    window.location.href = `tel:${phoneNumber}`;
-  } catch (error) {
-    console.error('Error while updating lead status:', error);
-    toast.error('Failed to initiate call');
-    setIsCalling(false);
-  }
-};
+      // Trigger phone call in a way that doesn't replace the current page content
+      window.open(`tel:${phoneNumber}`, '_blank');
+    } catch (error) {
+      console.error('Error while updating lead status:', error);
+      toast.error('Failed to initiate call');
+    } finally {
+      setIsCalling(false);
+    }
+  };
+
+  const onWhatsApp = async () => {
+    let phoneNumber = value[0]?.mobile;
+    if (!phoneNumber) {
+      toast.error('No phone number available');
+      return;
+    }
+
+    if (phoneNumber.startsWith('92') && !phoneNumber.startsWith('+')) {
+      phoneNumber = `+${phoneNumber}`;
+    }
+
+    try {
+      const getCurrentTimestamp = () => Math.floor(new Date().getTime() / 1000).toString();
+      await apiService.put(`/lead-open/${id}`, {
+        dt: getCurrentTimestamp(),
+        email: memoizedSession?.user?.email,
+      });
+
+      // Activity tracking
+      await apiService.post('/page-time', {
+        leadsId: id,
+        whatsapp: 'Y',
+        user: value1?.user?.name,
+        phone: 'N',
+        opentime: new Date(),
+        totaltime: 0,
+      });
+
+      const url = `https://wa.me/${phoneNumber.replace('+', '')}`;
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error opening WhatsApp:', error);
+      toast.error('Failed to open WhatsApp');
+    }
+  };
 
 
   return (
@@ -244,17 +281,23 @@ const handleButtonClick = async () => {
         </Form>
       )}
 
-      <div className="flex flex-col mb-10 sm:flex-row sm:items-center">
+      <div className="flex flex-col mb-10 sm:flex-row sm:items-center gap-3">
         {value[0]?.status === 'open' && (
           <button
-            className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 mb-3 mt-0.5 sm:mb-0 sm:mr-3 sm:ml-0"
+            className="bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 mt-0.5"
             onClick={() => handleViewInvoice(id)}
           >
             Close Lead
           </button>
         )}
-       <button
-          className={`bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 ml-0 mt-0.5 ${isCalling ? 'opacity-75' : ''}`}
+        <button
+          className="bg-[#25D366] hover:bg-[#128C7E] text-white font-bold py-2 px-4 rounded relative z-20 mt-0.5"
+          onClick={onWhatsApp}
+        >
+          WhatsApp
+        </button>
+        <button
+          className={`bg-black hover:bg-deep-black text-white font-bold py-2 px-4 rounded relative z-20 mt-0.5 ${isCalling ? 'opacity-75' : ''}`}
           onClick={handleButtonClick}
           disabled={isCalling}
         >
