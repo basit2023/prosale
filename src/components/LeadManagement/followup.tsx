@@ -8,7 +8,7 @@ import cn from '@/utils/class-names';
 import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
 import toast from 'react-hot-toast';
-import { PiTrashFill, PiEye, PiCheckThin, PiChecks } from 'react-icons/pi';
+import { PiTrashFill, PiEye, PiCheckThin, PiChecks, PiPhoneFill, PiWhatsappLogoFill } from 'react-icons/pi';
 import { routes } from '@/config/routes';
 import Spinner from '../ui/spinner';
 import { Button } from 'rizzui';
@@ -27,6 +27,7 @@ interface Comment {
   assigned_to?: string;
   created_by?: string;
   owner_id?: string;
+  mobile?: string;
   [key: string]: any;
 }
 
@@ -447,6 +448,63 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
     }
   };
 
+  const onCall = async (record: Comment) => {
+    let phoneNumber = record.mobile;
+    if (!phoneNumber) {
+      toast.error('No phone number available');
+      return;
+    }
+    if (phoneNumber.startsWith('92') && !phoneNumber.startsWith('+')) {
+      phoneNumber = `+${phoneNumber}`;
+    }
+
+    try {
+      // Activity tracking
+      await apiService.post('/page-time', {
+        leadsId: record.lead_id,
+        whatsapp: 'N',
+        user: memoizedSession?.user?.name,
+        phone: 'Y',
+        opentime: new Date(),
+        totaltime: 0,
+      });
+
+      window.open(`tel:${phoneNumber}`, '_blank');
+    } catch (error) {
+      console.error('Error initiating call:', error);
+      toast.error('Failed to initiate call');
+    }
+  };
+
+  const onWhatsApp = async (record: Comment) => {
+    let phoneNumber = record.mobile;
+    if (!phoneNumber) {
+      toast.error('No phone number available');
+      return;
+    }
+    if (phoneNumber.startsWith('92') && !phoneNumber.startsWith('+')) {
+      phoneNumber = `+${phoneNumber}`;
+    }
+
+    try {
+      // Activity tracking
+      await apiService.post('/page-time', {
+        leadsId: record.lead_id,
+        whatsapp: 'Y',
+        user: memoizedSession?.user?.name,
+        phone: 'N',
+        opentime: new Date(),
+        totaltime: 0,
+      });
+
+      const url = `https://wa.me/${phoneNumber.replace('+', '')}`;
+      window.open(url, '_blank');
+    } catch (error) {
+      console.error('Error opening WhatsApp:', error);
+      toast.error('Failed to open WhatsApp');
+    }
+  };
+
   const getDateStatus = (followupdate: string) => {
     if (!followupdate) {
       return { status: 'N/A', colorClass: 'text-gray-700 dark:text-gray-600', sortOrder: 9 };
@@ -673,6 +731,20 @@ const ShowFollowup: React.FC<ShowFollowupProps> = () => {
                     title="Delete Comment"
                   >
                     <PiTrashFill className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
+                    onClick={() => onCall(record)}
+                    title="Call Customer"
+                  >
+                    <PiPhoneFill className="h-5 w-5" />
+                  </button>
+                  <button
+                    className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-full transition-colors"
+                    onClick={() => onWhatsApp(record)}
+                    title="WhatsApp Customer"
+                  >
+                    <PiWhatsappLogoFill className="h-5 w-5" />
                   </button>
                   {pending ? (
                     <button
