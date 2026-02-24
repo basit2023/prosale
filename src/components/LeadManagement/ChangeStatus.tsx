@@ -173,8 +173,8 @@ export default function ChangeStatus({ id }: any) {
         email: memoizedSession?.user?.email,
       });
 
-      // Trigger phone call in a way that doesn't replace the current page content
-      window.open(`tel:${phoneNumber}`, '_blank');
+      // Trigger phone call using window.location.href for better iOS Safari support
+      window.location.href = `tel:${phoneNumber}`;
     } catch (error) {
       console.error('Error while updating lead status:', error);
       toast.error('Failed to initiate call');
@@ -212,7 +212,7 @@ export default function ChangeStatus({ id }: any) {
       });
 
       const url = `https://wa.me/${phoneNumber.replace('+', '')}`;
-      window.open(url, '_blank');
+      window.location.href = url;
     } catch (error) {
       console.error('Error opening WhatsApp:', error);
       toast.error('Failed to open WhatsApp');
