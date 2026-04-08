@@ -3,6 +3,7 @@ import Sidebar from '@/layouts/hydrogen/sidebar';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import { Toaster } from 'react-hot-toast';
+import ChatWidget from '@/components/AIChatBot/ChatWidget';
 
 export default function HydrogenLayout({
   children,
@@ -19,7 +20,7 @@ export default function HydrogenLayout({
           {children}
           <ToastContainer />
           <Toaster />
-          
+          <ChatWidget />
         </div>
       </div>
     </main>
