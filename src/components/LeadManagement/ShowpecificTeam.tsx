@@ -15,6 +15,7 @@ export type Invoice = {
   project_status: string;
   interested_in: string;
   status: string;
+  last_updated:any;
   view_dt: any;
   permission?: number;
 };
@@ -29,6 +30,7 @@ export const useSpecificTeam = ({ id, id1 }: { id: string; id1: string }) => {
     setError(null);
     try {
       const response = await apiService.get(`/specific-team-member-tabel/${id}/${id1}?field=leads_label`);
+      console.log("response",response)
       setValue(response.data.leads || []);
     } catch (err) {
       console.error('Error fetching label leads:', err);
@@ -50,11 +52,15 @@ export const useSpecificTeam = ({ id, id1 }: { id: string; id1: string }) => {
       mobile: user.mobile,
       project_name: user.project_name,
       project_status: user.project_status,
+      
       interested_in: user.interested_in,
       view_dt: user.view_dt,
       last_updated:user.last_updated,
-      assigned_to:user.assigned_to,
+      assigned_to:user.user,
       status: user.status,
+      last_updated:new Date(user.assigned_on * 1000).toLocaleDateString(), 
+      
+
       permission: parseInt(user.permission || '0', 10)
     }));
   }, [value]);

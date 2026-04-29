@@ -15,12 +15,14 @@ type ImportButtonProps = {
   title?: string;
   className?: string;
   buttonLabel?: string;
+  csv?: boolean;
 };
 
 export default function ImportButton({
   title,
   className,
   buttonLabel = 'New Lead',
+  csv,
 }: React.PropsWithChildren<ImportButtonProps>) {
   return (
     <>
@@ -39,7 +41,7 @@ export default function ImportButton({
       </Button>
     </Link>
     </div>
-    <div className='flex'>
+    {csv && <div className='flex'>
     <Link href={routes.leads.Csv_lead}passHref>
       <Button
          // Use "as" prop to specify the rendered element
@@ -52,7 +54,7 @@ export default function ImportButton({
        { "import CSV"}
       </Button>
     </Link>
-    </div>
+    </div>}
     </div>
     </>
   );

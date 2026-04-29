@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { PiChatDotsBold, PiXBold, PiPaperPlaneRightBold, PiSparkleFill } from 'react-icons/pi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,8 @@ export default function ChatWidget() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const dragControls = useDragControls();
+  const [isDragging, setIsDragging] = useState(false);
 
   // Get user data from localStorage (matching existing pattern in ProfileMenu)
   const [userData, setUserData] = useState<any>(null);
@@ -101,7 +103,15 @@ export default function ChatWidget() {
   }, [messages, isOpen]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-[9999]">
+    <motion.div 
+      className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end"
+      drag
+      dragControls={dragControls}
+      dragListener={false}
+      dragMomentum={false}
+      onDragStart={() => setIsDragging(true)}
+      onDragEnd={() => setTimeout(() => setIsDragging(false), 150)}
+    >
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -111,7 +121,11 @@ export default function ChatWidget() {
             className="mb-4 flex h-[500px] w-[350px] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-800"
           >
             {/* Header */}
-            <div className="flex items-center justify-between bg-primary p-4 text-white" style={{ backgroundColor: '#c95a64' }}>
+            <div 
+              className="flex items-center justify-between bg-primary p-4 text-white cursor-grab active:cursor-grabbing" 
+              style={{ backgroundColor: '#c95a64', touchAction: 'none' }}
+              onPointerDown={(e) => dragControls.start(e)}
+            >
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20">
                   <PiSparkleFill className="h-6 w-6" />
@@ -123,8 +137,9 @@ export default function ChatWidget() {
               </div>
               <Button
                 variant="text"
+                onPointerDown={(e) => e.stopPropagation()}
                 onClick={() => setIsOpen(false)}
-                className="h-auto p-1 text-white hover:bg-white/10"
+                className="h-auto p-1 text-white hover:bg-white/10 relative z-10"
               >
                 <PiXBold className="h-5 w-5" />
               </Button>
@@ -208,11 +223,14 @@ export default function ChatWidget() {
 
       {/* Toggle Button */}
       <motion.button
+        onPointerDown={(e) => dragControls.start(e)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg ring-4 ring-white transition-all hover:shadow-xl dark:ring-gray-800"
-        style={{ backgroundColor: '#c95a64' }}
+        onClick={() => {
+          if (!isDragging) setIsOpen(!isOpen);
+        }}
+        className="mt-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary shadow-lg ring-4 ring-white transition-all hover:shadow-xl dark:ring-gray-800 cursor-grab active:cursor-grabbing"
+        style={{ backgroundColor: '#c95a64', touchAction: 'none' }}
       >
         {isOpen ? (
           <PiXBold className="h-6 w-6 text-white" />
@@ -220,6 +238,6 @@ export default function ChatWidget() {
           <PiChatDotsBold className="h-7 w-7 text-white" />
         )}
       </motion.button>
-    </div>
+    </motion.div>
   );
 }

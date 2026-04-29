@@ -18,9 +18,9 @@ export default function NewEmployeePage() {
   return (
     <>
       <PageHeader title={pageHeader.title} breadcrumb={pageHeader.breadcrumb}>
-        {memoizedsession?.user?.permission > 8 && (
-          <ImportButton title={'Import File'} />
-        )}
+      
+          <ImportButton title={'Import File'} csv={memoizedsession?.user?.permission > 8}/>
+        
       </PageHeader>
       <Vaultinformation />
     </>

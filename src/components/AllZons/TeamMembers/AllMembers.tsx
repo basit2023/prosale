@@ -29,7 +29,7 @@ export const AllTeamMembers = ({id}:any) => {
         if (session) {
           const response = await apiService.get(`/teamates/${id}/?email=${session?.user?.email}`);
           const userData = response.data.team;
-        
+          console.log(userData);
           setValue(userData);
         }
       } catch (error:any) {
@@ -45,7 +45,7 @@ export const AllTeamMembers = ({id}:any) => {
   const productsData = (value || []).map((user:any) => ({
     id:user.id,
     name: user.full_name,
-   
+    fresh_lead_count:user.fresh_lead_count,
     manager: user.manager_full_name,
     title: user.title,
     designation: user.designation,
