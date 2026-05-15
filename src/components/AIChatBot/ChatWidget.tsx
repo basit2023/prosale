@@ -44,18 +44,19 @@ export default function ChatWidget() {
     }
   }, []);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  const handleSend = async (promptText?: string) => {
+    const textToSend = promptText || input;
+    if (!textToSend.trim() || isLoading) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
-      text: input.trim(),
+      text: textToSend.trim(),
       sender: 'user',
       timestamp: new Date(),
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    setInput('');
+    if (!promptText) setInput('');
     setIsLoading(true);
 
     try {
@@ -192,6 +193,22 @@ export default function ChatWidget() {
                 </div>
               )}
             </div>
+
+            {/* Quick Prompts */}
+            {messages.length < 3 && !isLoading && (
+              <div className="flex gap-2 overflow-x-auto px-4 pb-2 scrollbar-hide">
+                {['📊 My performance today', '⏰ Overdue follow-ups?', '📋 Lead status summary'].map((prompt, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleSend(prompt)}
+                    className="whitespace-nowrap rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-primary hover:text-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Input */}
             <div className="border-t border-gray-200 p-3 dark:border-gray-700">

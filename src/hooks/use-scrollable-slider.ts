@@ -6,12 +6,14 @@ export function useScrollableSlider() {
   const sliderNextBtn = useRef<HTMLButtonElement>(null!);
 
   function scrollToTheRight() {
+    if (!sliderEl.current || !sliderPrevBtn.current) return;
     let offsetWidth = sliderEl.current.offsetWidth;
     sliderEl.current.scrollLeft += offsetWidth / 2;
     sliderPrevBtn.current.classList.remove('opacity-0', 'invisible');
   }
 
   function scrollToTheLeft() {
+    if (!sliderEl.current || !sliderNextBtn.current) return;
     let offsetWidth = sliderEl.current.offsetWidth;
     sliderEl.current.scrollLeft -= offsetWidth / 2;
     sliderNextBtn.current.classList.remove('opacity-0', 'invisible');
@@ -21,6 +23,9 @@ export function useScrollableSlider() {
     const filterBarEl = sliderEl.current;
     const prevBtn = sliderPrevBtn.current;
     const nextBtn = sliderNextBtn.current;
+
+    if (!filterBarEl || !prevBtn || !nextBtn) return;
+
     const formPageHeaderEl = filterBarEl.classList.contains(
       'formPageHeaderSliderElJS'
     );

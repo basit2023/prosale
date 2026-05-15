@@ -1,5 +1,5 @@
 import { useSession } from 'next-auth/react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import apiService from '@/utils/apiService';
 
@@ -13,8 +13,8 @@ export type LeadHistoryItem = {
   status?: string | null;
   assigned_to?: string | null;
   user?: string | null;
-  last_updated?: string | null;  // ISO
-  assigned_on?: string | null;   // ISO
+  last_updated?: string | null;
+  assigned_on?: string | null;
 };
 
 export type Invoice = {
@@ -34,39 +34,41 @@ export type Invoice = {
   city?: string | null;
   sp?: any;
   total?: string | number;
-
-  // NEW: history of “same” customer’s other leads
   history?: LeadHistoryItem[];
   customer_id?: number | string;
 };
 
-export const useEmployeeData = ({ id, pageSize = 50 }: { id: string; pageSize?: number }) => {
+export const useEmployeeData = ({ 
+  id, 
+  pageSize = 50, 
+  reloadSignal = 0 
+}: { 
+  id: string; 
+  pageSize?: number; 
+  reloadSignal?: number 
+}) => {
   const { data: session, status } = useSession();
   const [data, setData] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-
-  const [offset, setOffset] = useState(0);
   const [totalLeads, setTotalLeads] = useState(0);
 
   const abortRef = useRef<AbortController | null>(null);
-  const mountedRef = useRef(false); // prevent double fetch in Strict Mode (dev)
-
+  
   const email = session?.user?.email ?? null;
   const company = (session as any)?.user?.company_id ?? null;
 
-  const fetchLeads = async ({
-    limit,
-    offsetArg,
-    append,
-  }: {
-    limit: number;
-    offsetArg: number;
-    append: boolean;
-  }) => {
-    if (status !== 'authenticated' || !email || !id) return;
+  const fetchLeads = useCallback(async (currentOffset: number, append: boolean, silent = false) => {
+    if (status !== 'authenticated' || !email || !id) {
+      setLoading(false);
+      return;
+    }
 
-    setLoading(!append);
+    if (!append && !silent) {
+      setLoading(true);
+      setData([]); // Clear old data for a hard reset
+      setTotalLeads(0);
+    }
     setError(null);
 
     abortRef.current?.abort();
@@ -75,12 +77,17 @@ export const useEmployeeData = ({ id, pageSize = 50 }: { id: string; pageSize?: 
 
     try {
       const res = await apiService.get(`/highly-interested-tabel/${id}`, {
-        params: { field: 'leads_label', email, company, limit, offset: offsetArg },
+        params: { 
+          field: 'leads_label', 
+          email, 
+          company, 
+          limit: pageSize, 
+          offset: currentOffset 
+        },
         signal: controller.signal,
       });
 
       const leadsRaw = res?.data?.leads ?? [];
-
       const mapped: Invoice[] = leadsRaw.map((user: any) => ({
         id: String(user.id ?? ''),
         name: user.customer_name ?? '',
@@ -96,28 +103,11 @@ export const useEmployeeData = ({ id, pageSize = 50 }: { id: string; pageSize?: 
         lead_pass: user.lead_pass,
         city: user.city,
         last_updated: user.last_updated ? String(user.last_updated).substring(0, 10) : null,
-
-        // NEW
         customer_id: user.customer_id,
-        history: Array.isArray(user.history)
-          ? user.history.map((h: any) => ({
-              id: h.id,
-              project_id: h.project_id ?? null,
-              project_name: h.project_name ?? null,
-              leads_label_id: h.leads_label_id ?? null,
-              leads_label: h.leads_label ?? null,
-              leads_label_bg: h.leads_label_bg ?? null,
-              status: h.status ?? null,
-              assigned_to: h.assigned_to ?? null,
-              user: h.user ?? null,
-              last_updated: h.last_updated ?? null,
-              assigned_on: h.assigned_on ?? null,
-            }))
-          : [],
+        history: Array.isArray(user.history) ? user.history : [],
       }));
 
       setData(prev => (append ? [...prev, ...mapped] : mapped));
-      setOffset(offsetArg + mapped.length); // advance by what we actually received
       setTotalLeads(res?.data?.total ?? 0);
     } catch (err: any) {
       if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') return;
@@ -125,30 +115,32 @@ export const useEmployeeData = ({ id, pageSize = 50 }: { id: string; pageSize?: 
       setError(err instanceof Error ? err : new Error('Failed to fetch'));
       toast.error('Error fetching leads. Please try again.');
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
-  };
+  }, [status, email, id, company, pageSize]);
 
-  // initial load (and when id/email/pageSize change)
+  // Initial load and reset on dependency change
   useEffect(() => {
-    if (status === 'authenticated' && email && id) {
-      // In React Strict Mode (dev) effects run twice on mount.
-      // Guard with mountedRef so we don't start two fetches and show spinner twice.
-      if (!mountedRef.current) {
-        mountedRef.current = true;
-        setOffset(0); // reset pagination
-        fetchLeads({ limit: pageSize, offsetArg: 0, append: false });
-      }
-    } else {
-      setData([]);
-      setLoading(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, email, id, pageSize]);
+    fetchLeads(0, false);
+    return () => abortRef.current?.abort();
+  }, [fetchLeads, reloadSignal]);
+
+  // Listen for reassignment events to refresh data automatically (soft refresh)
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchLeads(0, false, true); // true = silent refresh
+    };
+    window.addEventListener('leads:reassigned', handleRefresh);
+    window.addEventListener('leads:change', handleRefresh);
+    return () => {
+      window.removeEventListener('leads:reassigned', handleRefresh);
+      window.removeEventListener('leads:change', handleRefresh);
+    };
+  }, [fetchLeads]);
 
   const loadMore = () => {
-    if (data.length < totalLeads) {
-      fetchLeads({ limit: pageSize, offsetArg: offset, append: true });
+    if (!loading && data.length < totalLeads) {
+      fetchLeads(data.length, true);
     }
   };
 

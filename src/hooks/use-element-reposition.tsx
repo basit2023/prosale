@@ -7,8 +7,9 @@ export function useElementRePosition({ ref, activeTab }: any) {
   React.useEffect(() => {
     function handleScrollLeft() {
       // activeTab + 1 is to prevent 0 index case
-      if (ref.current && activeTab + 1) {
+      if (ref.current && activeTab >= 0) {
         const tabElement = ref.current.children[activeTab] as HTMLElement;
+        if (!tabElement) return;
         const containerWidth = ref.current.offsetWidth;
         const tabWidth = tabElement.offsetWidth;
         const tabOffsetLeft = tabElement.offsetLeft;

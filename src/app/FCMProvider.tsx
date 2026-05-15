@@ -10,18 +10,16 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
   const { data: session } = useSession();
   const socketRef = useRef<any>(null);
 
-  // Function to display actual browser notification
   const showBrowserNotification = (title: string, body: string, leadId?: number) => {
     if ('Notification' in window && Notification.permission === 'granted') {
       const notification = new Notification(title, {
-        body: body,
+        body,
         icon: '/logo/logo-192.png',
         badge: '/logo/logo-96.png',
         tag: 'prosale-notification',
-        requireInteraction: true, // User must interact to dismiss
+        requireInteraction: true,
       });
 
-      // Only navigate on click, don't auto-redirect
       notification.onclick = () => {
         window.focus();
         notification.close();
@@ -34,19 +32,13 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
     }
   };
 
-  // Function to show toast + browser notification
   const displayNotification = (title: string, body: string, leadId?: number) => {
-    console.log('🎉 Displaying notification:', { title, body, leadId });
-
-    // Show toast notification - stores leadId in toast for later access
     toast.success(`${title}\n${body}`, {
-      duration: 0, // Don't auto-dismiss, let user close it
+      duration: 0,
       position: 'top-right',
       className: 'bg-green-50 text-green-900 cursor-pointer',
       icon: '🔔',
     });
-
-    // Show browser notification (user can click to navigate)
     showBrowserNotification(title, body, leadId);
   };
 
@@ -55,39 +47,27 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
 
     const initializeFCM = async () => {
       try {
-        console.log('🔄 Initializing FCM for user:', session.user.id);
-
-        // Subscribe user to notifications (Backend-centric approach)
         const subscribed = await subscribeUserToNotifications(Number(session.user.id));
-
         if (subscribed) {
-          console.log('✅ Subscribed to FCM notifications');
-
-          // Listen for incoming notifications via Service Worker
           onFCMMessage((notification) => {
-            console.log('📬 FCM Notification received:', notification);
             displayNotification(
               notification.title,
               notification.body,
               notification.leadId
             );
           });
-        } else {
-          console.warn('⚠️ Failed to subscribe to notifications');
         }
       } catch (error) {
-        console.error('❌ FCM initialization failed:', error);
+        console.error('FCM initialization failed:', error);
       }
     };
 
-    // Initialize Socket.IO for real-time notifications
     const initializeSocketIO = () => {
       try {
         const socketUrl = window.location.hostname === 'localhost'
           ? 'http://localhost:4000'
           : `https://${window.location.hostname.replace('www.', '')}`;
 
-        // Use api.prosale.sale if we're on the main domain
         const finalUrl = socketUrl.includes('prosale.sale') && !socketUrl.includes('api.')
           ? 'https://api.prosale.sale'
           : socketUrl;
@@ -96,39 +76,29 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
           reconnection: true,
           reconnectionDelay: 1000,
           reconnectionDelayMax: 5000,
-          reconnectionAttempts: 20, // Increased for production
+          reconnectionAttempts: 20,
           withCredentials: true,
-          transports: ['websocket', 'polling'], // Allow fallback to polling
+          transports: ['websocket', 'polling'],
         });
 
         socket.on('connect', () => {
-          console.log('🔌 Socket.IO connected:', socket.id);
-          // Emit user registration
           socket.emit('register', session?.user?.id);
         });
 
         socket.on('notification', (data) => {
-          console.log('📢 Real-time notification received via Socket.IO:', data);
-
-          // Handle different notification types
           let title = 'New Notification';
           let body = 'You have a new notification';
           let leadId = null;
 
-          // Handle follow-up notifications
           if (data.type === 'followup') {
             title = data.title || 'Follow-Up Reminder';
             body = data.body || 'You have a follow-up reminder';
             leadId = data.leadId;
-          }
-          // Handle lead assignment notifications
-          else if (data.event === 'lead_assigned' && data.data) {
+          } else if (data.event === 'lead_assigned' && data.data) {
             title = 'New Lead Assigned';
             body = data.data.message || `New lead assigned (ID: ${data.data.leadId})`;
             leadId = data.data.leadId;
-          }
-          // Generic notification format
-          else {
+          } else {
             title = data.title || 'New Notification';
             body = data.body || data.message || 'You have a new notification';
             leadId = data.leadId || data.id;
@@ -137,12 +107,8 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
           displayNotification(title, body, leadId);
         });
 
-        socket.on('disconnect', () => {
-          console.log('❌ Socket.IO disconnected');
-        });
-
         socket.on('error', (error) => {
-          console.error('⚠️ Socket.IO error:', error);
+          console.error('Socket.IO error:', error);
         });
 
         socketRef.current = socket;
@@ -151,11 +117,10 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
           socket.disconnect();
         };
       } catch (error) {
-        console.error('❌ Socket.IO initialization failed:', error);
+        console.error('Socket.IO initialization failed:', error);
       }
     };
 
-    // Request notification permission if not already granted
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }

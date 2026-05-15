@@ -29,9 +29,9 @@ export default function EnhancedTablePage({ params }: { params: { id: string } }
     };
   }, []);
 
-  const { data, loading, error } = useEmployeeData({ id: params.id, pageSize, reloadSignal });
+  const { data, loading, error, loadMore, totalLeads } = useEmployeeData({ id: params.id, pageSize, reloadSignal });
 
-  if (loading || data === null) {
+  if (loading && data.length === 0) {
     return (
       <div className="flex h-[70vh] items-center justify-center gap-3">
         <Spinner size="xl" />
@@ -39,7 +39,7 @@ export default function EnhancedTablePage({ params }: { params: { id: string } }
     );
   }
 
-  if (error) {
+  if (error && data.length === 0) {
     return (
       <div className="flex h-[70vh] items-center justify-center">
         <Empty text="Failed to load leads. Please try again." textClassName="mt-2" />
@@ -47,7 +47,7 @@ export default function EnhancedTablePage({ params }: { params: { id: string } }
     );
   }
 
-  if (data.length === 0) {
+  if (data.length === 0 && !loading) {
     return (
       <div className="flex h-[70vh] items-center justify-center">
         <Empty text="No Leads found" textClassName="mt-2" />
@@ -63,7 +63,12 @@ export default function EnhancedTablePage({ params }: { params: { id: string } }
       fileName="invoice_data"
       header="ID,Name,Email, Mobile,CNIC,Designation,Department,Assigned Office,Status"
     >
-      <InvoiceTable data={data} />
+      <InvoiceTable 
+        data={data} 
+        loadMore={loadMore} 
+        totalLeads={totalLeads} 
+        isLoading={loading}
+      />
     </TableLayout>
   );
 }

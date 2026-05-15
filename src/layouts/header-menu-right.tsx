@@ -1,11 +1,16 @@
-import { Badge } from '@/components/ui/badge';
+'use client';
+
+import dynamic from 'next/dynamic';
 import { ActionIcon } from '@/components/ui/action-icon';
-import MessagesDropdown from '@/layouts/messages-dropdown';
-import NotificationDropdown from '@/layouts/notification-dropdown';
-import ProfileMenu from '@/layouts/profile-menu';
-import SettingsButton from '@/components/settings/settings-button';
-import RingBellSolidIcon from '@/components/icons/ring-bell-solid';
+import { Badge } from '@/components/ui/badge';
 import ChatSolidIcon from '@/components/icons/chat-solid';
+import RingBellSolidIcon from '@/components/icons/ring-bell-solid';
+import Skeleton from '@/components/ui/skeleton';
+
+const MessagesDropdown = dynamic(() => import('@/layouts/messages-dropdown'), { ssr: false });
+const NotificationDropdown = dynamic(() => import('@/layouts/notification-dropdown'), { ssr: false });
+const ProfileMenu = dynamic(() => import('@/layouts/profile-menu'), { ssr: false });
+const SettingsButton = dynamic(() => import('@/components/settings/settings-button'), { ssr: false });
 
 export default function HeaderMenuRight() {
   return (
@@ -25,8 +30,9 @@ export default function HeaderMenuRight() {
           />
         </ActionIcon>
       </MessagesDropdown>
+      
       <NotificationDropdown>
-        {(unreadCount):any => (
+        {(unreadCount: any) => (
           <ActionIcon
             aria-label="Notification"
             variant="text"
@@ -39,13 +45,15 @@ export default function HeaderMenuRight() {
                 enableOutlineRing
                 className="absolute right-1.5 top-1.1 -translate-y-1/3 translate-x-1/2 text-xs p-0.5"
               >
-                {unreadCount? unreadCount: 0}
+                {unreadCount || 0}
               </Badge>
             )}
           </ActionIcon>
         )}
       </NotificationDropdown>
+
       <SettingsButton />
+      
       <ProfileMenu />
     </div>
   );

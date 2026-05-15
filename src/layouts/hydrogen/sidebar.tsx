@@ -33,7 +33,13 @@ export default function Sidebar({ className }: { className?: string }) {
   // const permissionData = encryptedPermission ? decryptData(encryptedPermission) : null;
   const memoizedSession=useMemo(()=>session,[session])
   const [supper, setSupper] = useState<any>(userData);
-  const [perm_d, setPerm_d] = useState<any>(memoizedSession?.user?.permission);
+  const [perm_d, setPerm_d] = useState<any>(null);
+
+  useEffect(() => {
+    if (memoizedSession?.user?.permission) {
+      setPerm_d(memoizedSession.user.permission);
+    }
+  }, [memoizedSession]);
 
   useEffect(() => {
     if (memoizedSession) {

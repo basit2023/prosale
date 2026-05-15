@@ -273,7 +273,7 @@ export default function ChangeStatus({ id }: any) {
                   type="submit"
                   className="bg-black hover:bg-deep-black text-white text-xs sm:text-sm font-bold py-2 px-4 rounded relative z-20"
                 >
-                  Change Category
+                  Update Category
                 </button>
               </div>
             </div>

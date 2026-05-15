@@ -9,57 +9,68 @@ import MetricCard from '@/components/cards/metric-card';
 import CircleProgressBar from '@/components/charts/circle-progressbar';
 import TrendingUpIcon from '@/components/icons/trending-up';
 import TrendingDownIcon from '@/components/icons/trending-down';
-import { routes } from '@/config/routes';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import apiService from '@/utils/apiService';
-import toast from 'react-hot-toast';
 
 type FileStatsType = {
   className?: string;
+  data?: any;
+  loading?: boolean;
 };
 
 const getProgressColor = (percentage: number) => {
-  if (percentage < 33) return '#EE0000'; // Red
-  if (percentage < 67) return '#FBBF24'; // Yellow
-  return '#32CD32'; // Green
+  if (percentage < 33) return '#EE0000';
+  if (percentage < 67) return '#FBBF24';
+  return '#32CD32';
 };
 
 const getSlightFill = (percentage: number) => {
-  if (percentage < 33) return '#fca5a5'; // Light Red
-  if (percentage < 67) return '#fef08a'; // Light Yellow
-  return '#d9f99d'; // Light Green
+  if (percentage < 33) return '#fca5a5';
+  if (percentage < 67) return '#fef08a';
+  return '#d9f99d';
 };
 
-export function FileStatGrid({ className }: { className?: string }) {
-  const { data: session, status } = useSession();
-  const [count, setCount] = useState<any>();
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const username = (session?.user as any)?.username || (session?.user as any)?.name;
-        if (!username) return;
-
-        const response = await apiService.get(`/total-items?user=${username}`);
-        const userData = response.data.data;
-        setCount(userData);
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        toast.error('Error fetching user data. Please try again.');
-      }
-    };
-
-    if (status === 'authenticated') {
-      fetchData();
-    }
-  }, [session, status]);
+export function FileStatGrid({ className, data }: { className?: string; data?: any }) {
+  const count = data;
 
   const filesStatData = [
     {
+      id: 6,
+      title: "Today's Leads",
+      metric: count?.Today_Leads ?? 0,
+      fill: '#3b82f6',
+      slightfill: '#dbeafe',
+      percentage: 100,
+      increased: true,
+      decreased: false,
+      value: '100',
+      timePeriod: 'today'
+    },
+    {
+      id: 7,
+      title: 'Unread Leads',
+      metric: count?.Unread_Leads ?? 0,
+      fill: '#ef4444',
+      slightfill: '#fee2e2',
+      percentage: 100,
+      increased: false,
+      decreased: true,
+      value: '0',
+      timePeriod: 'total'
+    },
+    {
+      id: 8,
+      title: 'Follow-ups (C/A)',
+      metric: `${count?.FollowUps_Created ?? 0} / ${count?.FollowUps_Attended ?? 0}`,
+      fill: '#f59e0b',
+      slightfill: '#fef3c7',
+      percentage: count?.FollowUps_Created ? Math.round((count.FollowUps_Attended / count.FollowUps_Created) * 100) : 0,
+      increased: true,
+      decreased: false,
+      value: count?.FollowUps_Created ? Math.round((count.FollowUps_Attended / count.FollowUps_Created) * 100) : '0',
+      timePeriod: 'today'
+    },
+    {
       id: 1,
-      title: 'Total Calls',
+      title: 'Today\'s Calls',
       metric: count?.Total_Calls ?? 0,
       fill: getProgressColor(count?.TotalCallsPercentage ?? 0),
       slightfill: getSlightFill(count?.TotalCallsPercentage ?? 0),
@@ -93,41 +104,7 @@ export function FileStatGrid({ className }: { className?: string }) {
       value: count?.LastMonthCloseLeadsPercentage ?? '0.00',
       timePeriod: 'last month'
     },
-    {
-      id: 4,
-      title: 'Total Employees',
-      metric: count?.Total_Employee,
-      fill: '#EE0000',
-      slightfill: '#fca5a5',
-      percentage: count?.TotalNewEmployeesPercentage,
-      increased: true,
-      decreased: false,
-      value: count?.TotalNewEmployeesPercentage ?? '0.00',
-      timePeriod: 'last month'
-    },
-    {
-      id: 5,
-      title: 'Active Projects',
-      metric: count?.Total_Projects,
-      fill: '#3872FA',
-      slightfill: '#93c5fd',
-      percentage: 54,
-      increased: true,
-      decreased: false,
-      value: '14.45',
-      timePeriod: 'last month'
-    },
   ];
-
-  const router = useRouter();
-  if (status === 'unauthenticated') {
-    router.push(routes.signIn);
-    return null;
-  }
-
-  if (status === 'loading') {
-    return null;
-  }
 
   return (
     <>
@@ -188,7 +165,7 @@ export function FileStatGrid({ className }: { className?: string }) {
   );
 }
 
-export default function FileStats({ className }: FileStatsType) {
+export default function FileStats({ className, data, loading }: FileStatsType) {
   const {
     sliderEl,
     sliderPrevBtn,
@@ -196,6 +173,20 @@ export default function FileStats({ className }: FileStatsType) {
     scrollToTheRight,
     scrollToTheLeft,
   } = useScrollableSlider();
+
+  if (loading) {
+    return (
+      <div className={cn('relative flex w-auto items-center overflow-hidden', className)}>
+        <div className="w-full overflow-hidden">
+          <div className="grid grid-flow-col gap-5 overflow-x-auto 2xl:gap-6 3xl:gap-8">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="min-w-[292px] h-32 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -218,7 +209,7 @@ export default function FileStats({ className }: FileStatsType) {
           ref={sliderEl}
           className="custom-scrollbar-x grid grid-flow-col gap-5 overflow-x-auto scroll-smooth 2xl:gap-6 3xl:gap-8"
         >
-          <FileStatGrid className="min-w-[292px]" />
+          <FileStatGrid className="min-w-[292px]" data={data} />
         </div>
       </div>
       <Button

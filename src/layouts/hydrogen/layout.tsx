@@ -3,7 +3,9 @@ import Sidebar from '@/layouts/hydrogen/sidebar';
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import { Toaster } from 'react-hot-toast';
-import ChatWidget from '@/components/AIChatBot/ChatWidget';
+import dynamic from 'next/dynamic';
+
+const ChatWidget = dynamic(() => import('@/components/AIChatBot/ChatWidget'), { ssr: false });
 
 export default function HydrogenLayout({
   children,

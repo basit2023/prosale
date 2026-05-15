@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import HamburgerButton from '@/layouts/hamburger-button';
-import SearchWidget from '@/components/search/search';
 import Sidebar from '@/layouts/hydrogen/sidebar';
 import cn from '@/utils/class-names';
 import Logo from '@/components/logo';
 import { useIsMounted } from '@/hooks/use-is-mounted';
 import { useWindowScroll } from '@/hooks/use-window-scroll';
 import HeaderMenuRight from '@/layouts/header-menu-right';
+import dynamic from 'next/dynamic';
+
+const SearchWidget = dynamic(() => import('@/components/search/search'), { ssr: false });
 
 export default function Header() {
   const isMounted = useIsMounted();

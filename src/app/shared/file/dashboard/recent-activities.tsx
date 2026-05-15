@@ -1,142 +1,118 @@
-import Image from 'next/image';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import WidgetCard from '@/components/cards/widget-card';
 import { Title, Text } from '@/components/ui/text';
-import { PiImageDuotone } from 'react-icons/pi';
+import apiService from '@/utils/apiService';
+import { useSession } from 'next-auth/react';
+import { decryptData } from '@/components/encriptdycriptdata';
+import SimpleBar from '@/components/ui/simplebar';
+import { PiNotePencilDuotone, PiUsersDuotone } from 'react-icons/pi';
+import { Avatar } from '@/components/ui/avatar';
 
-const activities = [
-  {
-    title: 'Today',
-    threads: [
-      {
-        avatar: 'https://randomuser.me/api/portraits/men/81.jpg',
-        username: 'Denny Albuz',
-        logMessage: 'added new file in',
-        alias: 'photos',
-        date: '09:28 PM',
-        files: ['Untitled photo.jpg', 'brief-feature-chats.png'],
-      },
-      {
-        avatar: 'https://randomuser.me/api/portraits/women/50.jpg',
-        username: 'Monty Prismic',
-        logMessage: 'edited a file',
-        alias: '',
-        date: '01:28 PM',
-        files: ['Saraly statement.doc'],
-      },
-      {
-        avatar: 'https://randomuser.me/api/portraits/men/51.jpg',
-        username: 'Jacky Andersion',
-        logMessage: 'uploaded a new file',
-        alias: '',
-        date: '11:15 AM',
-        files: ['Employee.xml'],
-      },
-    ],
-  },
-  {
-    title: 'Yesterday',
-    threads: [
-      {
-        avatar: 'https://randomuser.me/api/portraits/women/75.jpg',
-        username: 'Wolbu fenny',
-        logMessage: 'added new file in',
-        alias: 'photos',
-        date: '06:44 PM',
-        files: ['Collage photo.png', 'Certificates.png'],
-      },
-    ],
-  },
-];
+interface ActivityReport {
+  id: number;
+  full_name: string;
+  daily_office_visits: number;
+  client_matured: number;
+  daily_lead_follow_up: number;
+  lead_assigned: number;
+  dealers_meeting: number;
+  dealers_register: number;
+  office_activity: string;
+  dt: string;
+}
 
-export function ActivityThreadCard({ thread }: any) {
-  const { avatar, username, logMessage, alias, date, files } = thread;
+export default function RecentActivities({ className }: { className?: string }) {
+  const { data: session } = useSession();
+  const [activities, setActivities] = useState<ActivityReport[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const encryptedData = localStorage.getItem('uData');
+        if (!encryptedData) return;
+        const userData: any = decryptData(encryptedData);
+        if (!userData?.user) return;
+
+        const perm = Number(userData.user.permission || 0);
+        const id = encodeURIComponent(userData.user.id || '');
+        const email = userData.user.email;
+
+        const res = await apiService.get(`/daily-activity-report/${email}?permission=${perm}&id=${id}`);
+        
+        let data = res.data?.data || res.data || [];
+        if (!Array.isArray(data)) {
+           data = [];
+        }
+        
+        setActivities(data.slice(0, 10)); // Top 10 most recent
+      } catch (error) {
+        console.error('Error fetching activities:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session) {
+      fetchActivities();
+    }
+  }, [session]);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   return (
-    <div className="relative flex items-start gap-x-2.5 pb-8 before:absolute before:top-0 before:z-0 before:h-full before:w-[1px] before:bg-gray-300 last:pb-0 last:before:hidden before:start-[17px]">
-      <div className="relative h-9 w-9 flex-shrink-0 overflow-hidden rounded-full">
-        <Image
-          className="aspect-square object-cover"
-          src={avatar}
-          alt={username}
-          fill
-          sizes="(max-width: 768px) 100vw"
-        />
-      </div>
-      <div className="">
-        <Text className="text-sm font-normal text-gray-500">
-          <Text as="span" className="font-medium capitalize text-gray-700">
-            {username}
-          </Text>{' '}
-          {logMessage}{' '}
-          {alias && (
-            <Text as="span" className="font-medium capitalize text-gray-700">
-              {alias}
-            </Text>
-          )}
-        </Text>
-        <Text as="span" className="text-xs text-gray-500">
-          {date}
-        </Text>
-        {files.map((file: string) => (
-          <div
-            key={file}
-            className="mt-2 flex items-center gap-2.5 rounded-lg border border-gray-300 px-2 py-1.5"
-          >
-            <PiImageDuotone className="h-5 w-5  text-[#0761D1]" />
-            <Text as="span" className="text-sm text-gray-700">
-              {file}
-            </Text>
+    <WidgetCard
+      title="Recent Activity Reports"
+      titleClassName="font-semibold text-gray-800 text-lg"
+      className={className}
+    >
+      <div className="mt-4 h-72">
+        {loading ? (
+          <div className="flex h-full items-center justify-center text-gray-500">Loading activities...</div>
+        ) : activities.length === 0 ? (
+          <div className="flex h-full flex-col items-center justify-center text-gray-500">
+            <PiNotePencilDuotone className="h-10 w-10 text-gray-300 mb-2" />
+            <Text>No recent activity reports found.</Text>
           </div>
-        ))}
+        ) : (
+          <SimpleBar className="h-full pr-4">
+            <div className="flex flex-col gap-5">
+              {activities.map((item, index) => (
+                <div key={index} className="relative flex items-start gap-x-3 pb-4 before:absolute before:top-0 before:z-0 before:h-full before:w-[1px] before:bg-gray-200 last:pb-0 last:before:hidden before:start-[19px]">
+                  <Avatar name={item.full_name} className="h-10 w-10 shrink-0 border-2 border-white relative z-10" />
+                  <div className="flex-grow">
+                    <div className="flex justify-between items-start">
+                      <Title as="h6" className="text-sm font-medium">
+                        {item.full_name}
+                      </Title>
+                      <Text className="text-xs text-gray-400">{formatDate(item.dt)}</Text>
+                    </div>
+                    
+                    <div className="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded-md border border-gray-100">
+                      <ul className="grid grid-cols-2 gap-1">
+                        {item.daily_lead_follow_up > 0 && <li>• Follow-ups: <span className="font-medium text-gray-800">{item.daily_lead_follow_up}</span></li>}
+                        {item.client_matured > 0 && <li>• Clients Matured: <span className="font-medium text-gray-800">{item.client_matured}</span></li>}
+                        {item.dealers_meeting > 0 && <li>• Dealer Mtgs: <span className="font-medium text-gray-800">{item.dealers_meeting}</span></li>}
+                        {item.daily_office_visits > 0 && <li>• Office Visits: <span className="font-medium text-gray-800">{item.daily_office_visits}</span></li>}
+                      </ul>
+                      {item.office_activity && item.office_activity !== 'None' && item.office_activity !== '' && (
+                        <p className="mt-1 pt-1 border-t border-gray-200 text-gray-500 line-clamp-2">
+                           <span className="font-medium">Note:</span> {item.office_activity}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </SimpleBar>
+        )}
       </div>
-    </div>
-  );
-}
-
-export function ActivityThreads({
-  title,
-  threads,
-}: {
-  title: string;
-  threads: object[];
-}) {
-  return (
-    <div className="relative mb-4 last:mb-0">
-      <Text className="mb-4 text-sm font-semibold text-gray-900 dark:text-gray-700 2xl:text-base">
-        {title}
-      </Text>
-      <div>
-        {threads.map((item, index) => (
-          <ActivityThreadCard key={`singleThread-${index}`} thread={item} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export default function RecentActivities({
-  className,
-}: {
-  className?: string;
-}) {
-  return (
-    // <div className={className}>
-    //   <Title
-    //     as="h3"
-    //     className="mb-3 text-lg font-semibold text-gray-900 xl:text-xl 2xl:mb-5"
-    //   >
-    //     Recent Activities
-    //   </Title>
-    //   <WidgetCard title="" headerClassName="hidden">
-    //     {activities.map((activity, index) => (
-    //       <ActivityThreads
-    //         key={`thread-${index}`}
-    //         title={activity.title}
-    //         threads={activity.threads}
-    //       />
-    //     ))}
-    //   </WidgetCard>
-    // </div>
-    <>
-    </>
+    </WidgetCard>
   );
 }

@@ -1,5 +1,5 @@
 import { useSession } from 'next-auth/react';
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import apiService from '@/utils/apiService';
 
@@ -15,59 +15,74 @@ export type Invoice = {
   Location: string;
   Image: string;
   slug: string;
+  company_title?: string;
+  del?: string;
 };
 
-export const ProjectData = () => {
+export const ProjectData = (pageSize = 10) => {
   const { data: session, status } = useSession();
-  const [value, setValue] = useState<any>([]);
-
-  const [raw, setRaw] = useState<any[] | null>(null);
+  const [raw, setRaw] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  // Memoize the fetch function using useCallback
-  const fetchData = useCallback(async () => {
+  const [totalProjects, setTotalProjects] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  
+  const abortRef = useRef<AbortController | null>(null);
+
+  const fetchData = useCallback(async (page: number) => {
     if (!session?.user?.email) return;
+    
     setLoading(true);
     setError(null);
+
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
-      if (session) {
-        const response = await apiService.get(`/project-data/?email=${session?.user?.email}`);
-        const userData = response.data.projects;
-        setRaw(userData?? []);
-        setValue(userData);
-      }
+      const response = await apiService.get(`/project-data/`, {
+        params: { 
+          email: session.user.email,
+          limit: pageSize,
+          page: page
+        },
+        signal: controller.signal
+      });
+
+      const userData = response.data.projects ?? [];
+      setRaw(userData);
+      setTotalProjects(response.data.total ?? 0);
+      setCurrentPage(page);
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Failed to fetch employees';
+      if (err?.name === 'CanceledError') return;
+      const msg = err?.response?.data?.message || 'Failed to fetch projects';
       setError(msg);
-      toast.error(msg);
-      setRaw([]);
+      // toast.error(msg); // Reduced noise
     } finally {
       setLoading(false);
     }
-  }, [session]); // The function is recreated only if `session` changes
+  }, [session, pageSize]);
 
   useEffect(() => {
-    if (status === 'loading') return;            // wait for session
-    if (status === 'unauthenticated') {
+    if (status === 'authenticated') {
+      fetchData(1);
+    } else if (status === 'unauthenticated') {
       setRaw([]);
       setLoading(false);
-      return;
     }
-    fetchData();
+    return () => abortRef.current?.abort();
   }, [status, fetchData]);
 
-  // Memoize the productsData to prevent re-calculating it on every render
-  const data = useMemo<Invoice[] | null>(() => {
-      if (raw === null) return null;               // still not loaded
-      return raw.map((user: any) => ({
-      id: user.id,
+  const data = useMemo<Invoice[]>(() => {
+    return raw.map((user: any) => ({
+      id: String(user.id),
       name: user.name,
       status: user.status,
       Csv_Label: user.Csv_Label,
       Whatsapp_Sort: user.Whatsapp_Sort,
       Whatsapp_Status: user.Whatsapp_Status,
       Portal_Status: user.Portal_Status,
-      Status: user.status1, // Corrected the property name
+      Status: user.status1 || user.status,
       Location: user.Location,
       Image: user.Image,
       company_title: user.company_title,
@@ -76,5 +91,9 @@ export const ProjectData = () => {
     }));
   }, [raw]);
 
-  return { data, loading, error };
+  const handlePageChange = (page: number) => {
+    fetchData(page);
+  };
+
+  return { data, loading, error, handlePageChange, totalProjects, currentPage };
 };

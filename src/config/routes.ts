@@ -58,6 +58,7 @@ export const routes = {
     new_lead: '/leads/new-lead',
     Csv_lead: '/leads/new-lead/csv',
     highly_interested: '/leads/highly_interested',
+    search_leads: '/leads/search',
     followup: '/leads/followup',
     full_report: '/leads/activity-report/full-report',
     Activity_list: '/leads/activity-report/list',

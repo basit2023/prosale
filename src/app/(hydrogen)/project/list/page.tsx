@@ -18,12 +18,12 @@ const pageHeader = {
   ],
 };
 
- function EnhancedTablePage() {
- const { data, loading, error } = ProjectData();
+  function EnhancedTablePage() {
+  const pageSize = 10;
+  const { data, loading, error, handlePageChange, totalProjects, currentPage } = ProjectData(pageSize);
     
-  
-    // Initial load: show spinner
-    if (loading || data === null) {
+    // Initial load: show spinner only if we have no data
+    if (loading && data.length === 0) {
       return (
         <div className="flex h-[70vh] items-center justify-center gap-3">
           <Spinner size="xl" />
@@ -31,8 +31,8 @@ const pageHeader = {
       );
     }
   
-    // Error state
-    if (error) {
+    // Error state only if we have no data
+    if (error && data.length === 0) {
       return (
         <div className="flex h-[70vh] items-center justify-center">
           <Empty text="Failed to load projects. Please try again." textClassName="mt-2" />
@@ -41,7 +41,7 @@ const pageHeader = {
     }
   
     // Empty state
-    if (data.length === 0) {
+    if (data.length === 0 && !loading) {
       return (
         <div className="flex h-[70vh] items-center justify-center">
           <Empty text="No Project found" textClassName="mt-2" />
@@ -58,7 +58,14 @@ const pageHeader = {
       fileName="invoice_data"
       header="ID,Name,Email,Mobile,CNIC,Designation,Department,Assigned Office,Status"
     >
-      <InvoiceTable data={data} />
+      <InvoiceTable 
+        data={data} 
+        onPageChange={handlePageChange} 
+        totalProjects={totalProjects} 
+        currentPage={currentPage}
+        pageSize={pageSize}
+        isLoading={loading}
+      />
     </TableLayout>
   );
 }
