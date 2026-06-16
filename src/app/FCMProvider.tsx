@@ -71,6 +71,7 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
         const finalUrl = socketUrl.includes('prosale.sale') && !socketUrl.includes('api.')
           ? 'https://api.prosale.sale'
           : socketUrl;
+        const usePollingOnly = window.location.protocol === 'https:' && finalUrl.includes('api.prosale.sale');
 
         const socket = io(finalUrl, {
           reconnection: true,
@@ -78,7 +79,8 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
           reconnectionDelayMax: 5000,
           reconnectionAttempts: 20,
           withCredentials: true,
-          transports: ['websocket', 'polling'],
+          transports: usePollingOnly ? ['polling'] : ['polling', 'websocket'],
+          upgrade: !usePollingOnly,
         });
 
         socket.on('connect', () => {

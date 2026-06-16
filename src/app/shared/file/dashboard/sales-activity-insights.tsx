@@ -128,11 +128,11 @@ export default function SalesActivityInsights({ className = '' }: { className?: 
           <div className="text-xs font-bold uppercase tracking-wide text-rose-600">Team tracking</div>
           <h3 className="mt-1 text-lg font-bold text-gray-900 dark:text-white">Sales activity control</h3>
           <p className="mt-1 text-sm text-gray-500">
-            See who opened leads, added comments, made calls, and who needs attention today.
+            Daily sales-user activity only. Admin and permission 9+ users are excluded.
           </p>
         </div>
         <div className="rounded-xl bg-gray-50 px-4 py-3 text-right dark:bg-gray-800">
-          <div className="text-xs text-gray-500">Tracked actions</div>
+          <div className="text-xs text-gray-500">Daily actions</div>
           <div className="text-2xl font-black text-gray-900 dark:text-white">
             {loading ? '-' : Number(summary.total_actions || 0)}
           </div>

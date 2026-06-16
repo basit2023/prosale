@@ -68,9 +68,12 @@ const useSocketIO = (url: string, userId: string | undefined, onMessage: (messag
 
     console.log('🔌 [SOCKET] Attempting to connect to:', url, 'for userId:', userId);
 
+    const usePollingOnly = window.location.protocol === 'https:' && url.includes('api.prosale.sale');
+
     const socketInstance = io(url, {
       withCredentials: true,
-      transports: ['websocket', 'polling'],
+      transports: usePollingOnly ? ['polling'] : ['polling', 'websocket'],
+      upgrade: !usePollingOnly,
     });
 
     socketInstance.on('connect', () => {
