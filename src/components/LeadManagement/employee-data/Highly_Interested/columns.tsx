@@ -216,15 +216,15 @@ export const useGetColumns = ({
 
     {
       title: (
-        <HeaderCell
-          title="Assigned On"
-          sortable
-          ascending={sortConfig?.direction === 'asc' && sortConfig?.key === 'last_updated'}
-        />
-      ),
-      onHeaderCell: () => onHeaderCellClick('last_updated'),
-      dataIndex: 'last_updated',
-      key: 'last_updated',
+          <HeaderCell
+            title="Assigned On"
+            sortable
+            ascending={sortConfig?.direction === 'asc' && sortConfig?.key === 'assigned_on'}
+          />
+        ),
+      onHeaderCell: () => onHeaderCellClick('assigned_on'),
+      dataIndex: 'assigned_on',
+      key: 'assigned_on',
       width: 200,
       render: (value: string | undefined, row: any) => (
         <RowLink id={row.id}>

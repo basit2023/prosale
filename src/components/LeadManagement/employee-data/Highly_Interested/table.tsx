@@ -19,21 +19,33 @@ const filterState = {
   dueDate: [null, null],
   status: '',
 };
+const DEFAULT_PAGE_SIZE = 25;
 
 interface InvoiceTableProps {
   data: any[];
   loadMore?: () => void;
   totalLeads?: number;
   isLoading?: boolean;
+  isFetchingMore?: boolean;
+  initialPageSize?: number;
 }
 
 const InvoiceTable = ({ 
   data = [], 
   loadMore, 
   totalLeads = 0,
-  isLoading: isParentLoading = false 
+  isLoading: isParentLoading = false,
+  isFetchingMore = false,
+  initialPageSize = DEFAULT_PAGE_SIZE,
 }: InvoiceTableProps) => {
-  const [pageSize, setPageSize] = useState<number>(10);
+  const router = useRouter();
+  const pathname: any = usePathname();
+  const searchParams: any = useSearchParams();
+  const searchParamsString = searchParams.toString();
+  const urlPageSize = Number(searchParams.get('size') || '');
+  const [pageSize, setPageSize] = useState<number>(
+    urlPageSize > 0 ? urlPageSize : initialPageSize
+  );
 
   const {
     isLoading,
@@ -53,9 +65,47 @@ const InvoiceTable = ({
     handleReset,
   } = useTable(data, pageSize, filterState);
 
-  const router = useRouter();
-  const pathname: any = usePathname();
-  const searchParams: any = useSearchParams();
+  const syncPaginationUrl = useCallback(
+    ({ page, size }: { page: number; size: number }) => {
+      const params = new URLSearchParams(searchParamsString);
+
+      if (page > 1) {
+        params.set('page', String(page));
+      } else {
+        params.delete('page');
+      }
+
+      if (size !== DEFAULT_PAGE_SIZE) {
+        params.set('size', String(size));
+      } else {
+        params.delete('size');
+      }
+      params.delete('total');
+
+      const nextSearch = params.toString();
+      if (nextSearch === searchParamsString) return;
+
+      router.replace(`${pathname}${nextSearch ? `?${nextSearch}` : ''}`, { scroll: false });
+    },
+    [pathname, router, searchParamsString]
+  );
+
+  const handlePageChange = useCallback(
+    (page: number) => {
+      handlePaginate(page);
+      syncPaginationUrl({ page, size: pageSize });
+    },
+    [handlePaginate, pageSize, syncPaginationUrl]
+  );
+
+  const handlePageSizeChange = useCallback(
+    (size: number) => {
+      setPageSize(size);
+      handlePaginate(1);
+      syncPaginationUrl({ page: 1, size });
+    },
+    [handlePaginate, syncPaginationUrl]
+  );
 
   useEffect(() => {
     const onReassigned = (e: any) => {
@@ -85,20 +135,13 @@ const InvoiceTable = ({
   }, [selectedRowKeys, setSelectedRowKeys, handleReset]);
 
   useEffect(() => {
-    const qp = Number(searchParams.get('page') || '') || 1;
-    const qs = Number(searchParams.get('size') || '') || pageSize;
+    const params = new URLSearchParams(searchParamsString);
+    const qp = Number(params.get('page') || '') || 1;
+    const qs = Number(params.get('size') || '') || initialPageSize;
 
     if (qs !== pageSize) setPageSize(qs);
     if (qp !== currentPage) handlePaginate(qp);
-  }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('page', String(currentPage));
-    params.set('size', String(pageSize));
-    params.set('total', String(totalLeads));
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  }, [currentPage, pageSize, totalLeads, router, pathname, searchParams]);
+  }, [searchParamsString, initialPageSize, pageSize, currentPage, handlePaginate]);
 
   const onHeaderCellClick = useCallback(
     (value: string) => ({
@@ -141,10 +184,10 @@ const InvoiceTable = ({
         columns={visibleColumns}
         paginatorOptions={{
           pageSize,
-          setPageSize,
+          setPageSize: handlePageSizeChange as React.Dispatch<React.SetStateAction<number>>,
           total: data.length, // Client-side pagination of currently loaded data
           current: currentPage,
-          onChange: (page: number) => handlePaginate(page),
+          onChange: handlePageChange,
         }}
         filterOptions={{
           searchTerm,
@@ -169,7 +212,7 @@ const InvoiceTable = ({
                 variant="outline"
                 className="mt-4 w-full border-dashed border-gray-300 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                 onClick={loadMore}
-                isLoading={isParentLoading}
+                isLoading={isFetchingMore}
               >
                 Load More Leads ({totalLeads - data.length} remaining)
               </Button>

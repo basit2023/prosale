@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import toast from 'react-hot-toast';
 import { useSession } from 'next-auth/react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import apiService from '@/utils/apiService';
 import { routes } from '@/config/routes';
 import Link from 'next/link';
@@ -22,7 +22,7 @@ const SelectBox = dynamic(() => import('@/components/ui/select'), {
 
 export default function Vaultinformation() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { openModal, closeModal } = useModal();
   const [company_id, setCompany_id] = useState<string | undefined>(undefined);
   const [leads, setLeads] = useState<any>(null);
@@ -30,22 +30,36 @@ export default function Vaultinformation() {
   const [userType, setUserType] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Memoize session to prevent unnecessary re-renders
-  const memoizedSession = useMemo(() => session, [session]);
-  
+  // Keep session values in refs so fetchAllData isn't recreated on each
+  // session property change (NextAuth can trigger 2 renders on page load).
+  const emailRef = useRef<string | undefined>(undefined);
+  const companyIdRef = useRef<any>(undefined);
+  const permissionRef = useRef<any>(undefined);
+  emailRef.current = session?.user?.email;
+  companyIdRef.current = session?.user?.company_id;
+  permissionRef.current = session?.user?.permission;
+
+  const lastFetchedParamsRef = useRef<string>('');
 
   // Fetch all data in parallel using Promise.all
   const fetchAllData = useCallback(async () => {
+    const email = emailRef.current;
+    const companyId = companyIdRef.current;
+    const permission = permissionRef.current;
+
+    if (!email || !companyId) return;
+
+    // Deduplicate identical requests
+    const fetchKey = `${email}-${companyId}-${permission}`;
+    if (lastFetchedParamsRef.current === fetchKey) return;
+    lastFetchedParamsRef.current = fetchKey;
+
     try {
       setLoading(true);
       
-      if (!memoizedSession?.user?.email || !memoizedSession?.user?.company_id) {
-        return;
-      }
-
       const [labelsResponse, leadsResponse] = await Promise.all([
-        apiService.get(`/lables/${memoizedSession.user.email}/?company=${memoizedSession.user.company_id}`),
-        apiService.get(`/leads/?email=${memoizedSession.user.email}&permission=${memoizedSession.user?.permission}`)
+        apiService.get(`/lables/${email}/?company=${companyId}`),
+        apiService.get(`/leads/?email=${email}&permission=${permission}`)
       ]);
 
       setAllLabel(labelsResponse.data.allLabels || []);
@@ -57,23 +71,31 @@ export default function Vaultinformation() {
     } finally {
       setLoading(false);
     }
-  }, [memoizedSession]);
+    // No session values in deps — they live in refs above.
+  }, []);
 
   useEffect(() => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated') {
+      setLoading(false);
+      return;
+    }
     fetchAllData();
-  }, [fetchAllData]);
+  }, [status, fetchAllData]);
 
   // Memoize sorted data to prevent unnecessary sorting on every render
   const sortedData = useMemo(() => {
+    
     return [...allLabel].sort((a, b) => parseFloat(a.sort) - parseFloat(b.sort));
+    
   }, [allLabel]);
 
   // Memoize permission check for better performance
   const hasAdminPermission = useMemo(() => {
-    return memoizedSession?.user?.permission >= 9;
-  }, [memoizedSession]);
+    return Number(session?.user?.permission) >= 9;
+  }, [session?.user?.permission]);
 
-  if (loading) {
+  if (loading || status === 'loading') {
     return (
       <div className="grid place-content-center h-screen">
         <Spinner />

@@ -1,21 +1,28 @@
 'use client';
 import { useSession } from 'next-auth/react';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import * as dayjs from 'dayjs';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type Dispatch,
+  type ReactElement,
+  type SetStateAction,
+} from 'react';
+import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { Popover } from '@/components/ui/popover';
 import { Title } from '@/components/ui/text';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { PiCheck } from 'react-icons/pi'; 
 import apiService from '@/utils/apiService';
 import SimpleBar from '@/components/ui/simplebar'; 
 import Link from 'next/link';    
 import { useMedia } from '@/hooks/use-media';
 import { routes } from '@/config/routes';
-import { subscribeUser, showTestNotification }from '@/app/pushService';
+import { showTestNotification }from '@/app/pushService';
 // Extend dayjs with required pluginsff
 dayjs.extend(relativeTime);
 dayjs.extend(utc);
@@ -25,6 +32,29 @@ dayjs.extend(timezone);
 dayjs.tz.setDefault('Asia/Karachi'); // Change this to your server's timezone
 
 import { io, Socket } from 'socket.io-client';
+
+type NotificationItem = {
+  id: string | number;
+  leadId?: string | number;
+  message?: string;
+  followup?: string;
+  created_at: string;
+  notification_mark?: number | string;
+  read?: boolean;
+  notification_type?: string;
+  userId?: string | number;
+  [key: string]: any;
+};
+
+type NotificationsListProps = {
+  notifications: NotificationItem[];
+  setIsOpen: (isOpen: boolean) => void;
+  setNotifications: Dispatch<SetStateAction<NotificationItem[]>>;
+};
+
+type NotificationDropdownProps = {
+  children: (unreadCount: number) => ReactElement;
+};
 
 // Socket.IO Hook
 const useSocketIO = (url: string, userId: string | undefined, onMessage: (message: any) => void) => {
@@ -90,6 +120,8 @@ async function fetchNotifications(email: string, userId: string, userName: strin
     const leadNotifications = (leadsResponse?.data?.results || []).map((notification: any) => ({
       ...notification,
       created_at: parseTimestamp(notification.created_at),
+      notification_mark: Number(notification.notification_mark || 0),
+      read: Number(notification.notification_mark || 0) !== 0,
       notification_type: notification.notification_type || 'lead_assignment'
     }));
 
@@ -111,7 +143,8 @@ async function fetchNotifications(email: string, userId: string, userName: strin
           leadId: fu.lead_id,
           message: `Reminder: ${fu.followup || 'Follow-up'}`,
           created_at: parseTimestamp(fu.followupdate),
-          notification_mark: fu.notified || 0, // Use notified field from database (0=unread, 1=read)
+          notification_mark: Number(fu.notified || 0), // Use notified field from database (0=unread, 1=read)
+          read: Number(fu.notified || 0) !== 0,
           notification_type: 'followup',
           userId: fu.user_id || userId
         }));
@@ -140,7 +173,7 @@ async function fetchNotifications(email: string, userId: string, userName: strin
 }
 
 // Helper function to parse and normalize timestamps
-function parseTimestamp(timestamp) {
+function parseTimestamp(timestamp: any) {
   if (!timestamp) return new Date().toISOString();
   
   // If timestamp is already in ISO format, return as-is
@@ -157,7 +190,10 @@ function parseTimestamp(timestamp) {
   return new Date().toISOString();
 }
 
-async function markAsRead(notification) {
+const isUnreadNotification = (notification: any) =>
+  Number(notification?.notification_mark || 0) === 0 && notification?.read !== true;
+
+async function markAsRead(notification: NotificationItem) {
   try {
     // Follow-up notifications need to be marked as read in leads_comments table
     if (notification.id && String(notification.id).startsWith('followup_')) {
@@ -180,22 +216,31 @@ async function markAsRead(notification) {
   }
 }
 
-function NotificationsList({ notifications, setIsOpen, setNotifications }) {
-  const handleNotificationClick = async (notification) => {
+function NotificationsList({ notifications, setIsOpen, setNotifications }: NotificationsListProps) {
+  const handleNotificationClick = async (notification: NotificationItem) => {
     // Mark as read when clicked
-    if (notification.notification_mark === 0) {
-      const success = await markAsRead(notification);
-      if (success) {
-        setNotifications(prev =>
-          prev.map(item =>
-            item.id === notification.id 
-              ? { ...item, notification_mark: 1 } 
-              : item
-          )
-        );
-      }
+    if (isUnreadNotification(notification)) {
+      setNotifications(prev =>
+        prev.map(item =>
+          String(item.id) === String(notification.id)
+            ? { ...item, notification_mark: 1, read: true }
+            : item
+        )
+      );
+      await markAsRead(notification);
     }
     setIsOpen(false);
+  };
+
+  const handleMarkAllAsRead = async () => {
+    const unreadNotifications = notifications.filter(isUnreadNotification);
+    if (!unreadNotifications.length) return;
+
+    setNotifications(prev =>
+      prev.map(item => ({ ...item, notification_mark: 1, read: true }))
+    );
+
+    await Promise.allSettled(unreadNotifications.map(markAsRead));
   };
 
   // Show last 10 notifications (both read and unread)
@@ -205,7 +250,14 @@ function NotificationsList({ notifications, setIsOpen, setNotifications }) {
     <div className="w-[320px] text-left rtl:text-right sm:w-[360px] 2xl:w-[420px]">
       <div className="mb-3 flex items-center justify-between ps-6">
         <Title as="h5">Notifications</Title>
-        <Checkbox label="Mark All As Read" />
+        <button
+          type="button"
+          onClick={handleMarkAllAsRead}
+          className="text-xs font-medium text-primary hover:underline disabled:text-gray-400"
+          disabled={!notifications.some(isUnreadNotification)}
+        >
+          Mark All As Read
+        </button>
       </div>
       <SimpleBar className="max-h-[420px]">
         <div className="grid cursor-pointer grid-cols-1 gap-1 ps-4">
@@ -228,7 +280,7 @@ function NotificationsList({ notifications, setIsOpen, setNotifications }) {
             return (
               <Link 
                 key={item.id} 
-                href={routes.leads.edit(item.leadId)} 
+                href={routes.leads.edit(String(item.leadId ?? ''))} 
                 onClick={() => handleNotificationClick(item)}
               >
                 <div className="group grid grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-md px-2 py-2 pe-3 transition-colors hover:bg-gray-100 dark:hover:bg-gray-50">
@@ -253,7 +305,7 @@ function NotificationsList({ notifications, setIsOpen, setNotifications }) {
                       </span>
                     </div>
                     <div className="ms-auto flex-shrink-0">
-                      {item.notification_mark === 0 ? (
+                      {isUnreadNotification(item) ? (
                         <Badge renderAsDot size="lg" color="primary" className="scale-90" />
                       ) : (
                         <PiCheck className="h-auto w-[9px]" />
@@ -277,15 +329,18 @@ function NotificationsList({ notifications, setIsOpen, setNotifications }) {
   );
 }
 
-export default function NotificationDropdown({ children }) {
+export default function NotificationDropdown({ children }: NotificationDropdownProps) {
   const { data: session } = useSession();
   const isMobile = useMedia('(max-width: 480px)', false);
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   
   const email = session?.user?.email;
-  const userId = session?.user?.id;
+  const userId = session?.user?.id ? String(session.user.id) : undefined;
+  const unreadCount = useMemo(
+    () => notifications.filter(isUnreadNotification).length,
+    [notifications]
+  );
 
   // Socket.IO URL configuration
   const socketUrl = useMemo(() => {
@@ -322,22 +377,20 @@ export default function NotificationDropdown({ children }) {
 
     if (isForCurrentUser) {
       if (event === 'lead_assigned' || type === 'lead_assignment') {
-        const newNotification = {
+        const newNotification: NotificationItem = {
           id: Date.now(),
           leadId,
           message: data.message || data.body || 'New lead assigned',
           created_at: parseTimestamp(created_at),
           notification_mark: 0, // Unread
+          read: false,
           userId: messageUserId,
+          notification_type: 'lead_assignment',
         };
 
         console.log('✅ [FRONTEND] Adding lead assignment notification:', newNotification);
 
-        setNotifications(prev => {
-          const updated = [newNotification, ...prev];
-          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
-          return updated;
-        });
+        setNotifications(prev => [newNotification, ...prev]);
 
         // Trigger push notification
         try {
@@ -347,23 +400,20 @@ export default function NotificationDropdown({ children }) {
         }
       } 
       else if (event === 'follow_up_reminder' || type === 'followup' || type === 'follow_up_reminder') {
-        const newNotification = {
+        const newNotification: NotificationItem = {
           id: Date.now(),
           leadId,
           message: data.message || data.body || data.title || 'Follow-up reminder',
           created_at: parseTimestamp(created_at),
           notification_mark: 0, // Unread
+          read: false,
           userId: userId, // Use current user ID for follow-ups
           notification_type: 'followup', // Add type for icon display
         };
 
         console.log('✅ [FRONTEND] Adding follow-up notification:', newNotification);
 
-        setNotifications(prev => {
-          const updated = [newNotification, ...prev];
-          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
-          return updated;
-        });
+        setNotifications(prev => [newNotification, ...prev]);
 
         // Trigger push notification
         try {
@@ -377,11 +427,7 @@ export default function NotificationDropdown({ children }) {
       }
       else if (event === 'lead_reassigned') {
         console.log('🗑️ [FRONTEND] Removing reassigned lead notification for leadId:', leadId);
-        setNotifications(prev => {
-          const updated = prev.filter(n => n.leadId !== leadId);
-          setUnreadCount(updated.filter(n => n.notification_mark === 0).length);
-          return updated;
-        });
+        setNotifications(prev => prev.filter((n) => n.leadId !== leadId));
       }
     } else {
       console.log('⚠️ [FRONTEND] Notification not for current user, ignoring');
@@ -389,30 +435,35 @@ export default function NotificationDropdown({ children }) {
   }, [userId]);
 
   // Socket.IO connection
-  const socket = useSocketIO(socketUrl, userId, handleSocketMessage);
+  useSocketIO(socketUrl, userId, handleSocketMessage);
 
   // Initial fetch and refresh when dropdown opens
   const fetchAndSetNotifications = useCallback(async () => {
-    if (!email || !userId || !session?.user?.name) return;
+    const userName =
+      (session?.user as any)?.username ||
+      session?.user?.name ||
+      session?.user?.email ||
+      '';
+
+    if (!email || !userId || !userName) return;
     
     // Get permission level from session
-    const permission = session?.user?.permissions?.permission_level ?? session?.user?.permission ?? 0;
-    const userName = session?.user?.username
+    const sessionUser = session?.user as any;
+    const permission = sessionUser?.permissions?.permission_level ?? sessionUser?.permission ?? 0;
 
     console.log('Permission level:', session)
     console.log('User name:', userName);
     
     try {
       const data = await fetchNotifications(email, userId, userName, permission);
-      const sorted = data.sort((a, b) => 
+      const sorted = data.sort((a: NotificationItem, b: NotificationItem) => 
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setNotifications(sorted);
-      setUnreadCount(sorted.filter(n => n.notification_mark === 0).length);
     } catch (error) {
       console.error('Error loading notifications:', error);
     }
-  }, [email, userId, session?.user?.name, session?.user?.permissions?.permission_level, session?.user?.permission]);
+  }, [email, userId, session]);
 
   useEffect(() => {
     fetchAndSetNotifications();

@@ -2,14 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import WidgetCard from '@/components/cards/widget-card';
-import { Title, Text } from '@/components/ui/text';
+import { Text } from '@/components/ui/text';
 import apiService from '@/utils/apiService';
-import { useSession } from 'next-auth/react';
 import { PiFunnelDuotone } from 'react-icons/pi';
 import { useUser } from '@/context/UserContext';
 
 export default function LeadConversionFunnel({ className }: { className?: string }) {
-  const { data: session } = useSession();
   const [data, setData] = useState({
     total: 0,
     open: 0,
@@ -17,7 +15,7 @@ export default function LeadConversionFunnel({ className }: { className?: string
   });
   const [loading, setLoading] = useState(true);
 
-  const { userData } = useUser();
+  const { userData } = useUser() as { userData?: any };
 
   useEffect(() => {
     const fetchFunnelData = async () => {
@@ -29,13 +27,12 @@ export default function LeadConversionFunnel({ className }: { className?: string
         const user = userData?.user?.username || userData?.user?.name || '';
         const email = userData?.user?.email || '';
         const role = userData?.user?.role || userData?.user?.user_type || '';
+        const params = { user, email, permission: perm, id, role };
 
         const [totalRes, openRes] = await Promise.all([
-          apiService.get(`total-items?user=${user}&email=${email}&permission=${perm}&id=${id}&role=${role}`),
-          apiService.get(`highly-interested?user=${user}&email=${email}&permission=${perm}&id=${id}&role=${role}`)
+          apiService.get('/total-items', { params }),
+          apiService.get('/highly-interested', { params }),
         ]);
-        console.log('--- Open Res ---', openRes);
-        console.log('--- Total Res ---', totalRes);
 
         const totalLeads = totalRes.data?.data?.Total_Leads || 0;
         const closedLeads = totalRes.data?.data?.Close_Leads || 0;

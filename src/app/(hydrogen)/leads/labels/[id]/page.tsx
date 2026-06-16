@@ -5,31 +5,15 @@ import TableLayout from './table-layout';
 import InvoiceTable from '@/components/LeadManagement/employee-data/Highly_Interested/table';
 import { useEmployeeData } from '@/components/LeadManagement/employee-data/Leads';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 export default function EnhancedTablePage({ params }: { params: { id: string } }) {
   const searchParams = useSearchParams();
 
-  // Treat ?total= as page size
-  const pageSizeParam = searchParams.get('total');
-  const pageSize = Number(pageSizeParam) > 0 ? Number(pageSizeParam) : 50;
+  // Fetch 100 records per server batch, then paginate those records in the table.
+  const batchSizeParam = searchParams?.get('batch');
+  const batchSize = Number(batchSizeParam) > 0 ? Number(batchSizeParam) : 100;
 
-  const [reloadSignal, setReloadSignal] = useState<number>(0);
-
-  useEffect(() => {
-    const handler = (e: any) => {
-      // increment reload signal to force data hook to refetch
-      setReloadSignal(Date.now());
-    };
-    window.addEventListener('leads:reassigned', handler);
-    window.addEventListener('leads:change', handler);
-    return () => {
-      window.removeEventListener('leads:reassigned', handler);
-      window.removeEventListener('leads:change', handler);
-    };
-  }, []);
-
-  const { data, loading, error, loadMore, totalLeads } = useEmployeeData({ id: params.id, pageSize, reloadSignal });
+  const { data, loading, error, loadMore, totalLeads, fetchingMore, missingUser } = useEmployeeData({ id: params.id, pageSize: batchSize });
 
   if (loading && data.length === 0) {
     return (
@@ -43,6 +27,14 @@ export default function EnhancedTablePage({ params }: { params: { id: string } }
     return (
       <div className="flex h-[70vh] items-center justify-center">
         <Empty text="Failed to load leads. Please try again." textClassName="mt-2" />
+      </div>
+    );
+  }
+
+  if (missingUser && data.length === 0) {
+    return (
+      <div className="flex h-[70vh] items-center justify-center">
+        <Empty text="Session not found. Please sign in again." textClassName="mt-2" />
       </div>
     );
   }
@@ -68,6 +60,7 @@ export default function EnhancedTablePage({ params }: { params: { id: string } }
         loadMore={loadMore} 
         totalLeads={totalLeads} 
         isLoading={loading}
+        isFetchingMore={fetchingMore}
       />
     </TableLayout>
   );

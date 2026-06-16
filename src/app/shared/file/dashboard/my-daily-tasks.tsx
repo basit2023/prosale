@@ -5,12 +5,12 @@ import WidgetCard from '@/components/cards/widget-card';
 import { Title, Text } from '@/components/ui/text';
 import apiService from '@/utils/apiService';
 import { useSession } from 'next-auth/react';
-import { decryptData } from '@/components/encriptdycriptdata';
 import SimpleBar from '@/components/ui/simplebar';
 import { Badge } from '@/components/ui/badge';
 import { ActionIcon } from '@/components/ui/action-icon';
 import { PiCheckCircle, PiPhoneCall, PiCalendarBlank } from 'react-icons/pi';
 import Link from 'next/link';
+import { useUser } from '@/context/UserContext';
 
 interface Task {
   id: string | number;
@@ -28,22 +28,21 @@ interface Task {
 
 export default function MyDailyTasks({ className }: { className?: string }) {
   const { data: session } = useSession();
+  const { userData } = useUser() as { userData?: any };
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchTasks = async () => {
       try {
-        const encryptedData = localStorage.getItem('uData');
-        if (!encryptedData) return;
-        const userData: any = decryptData(encryptedData);
         if (!userData?.user?.email) return;
 
         const perm = Number(userData.user.permission || 0);
-        const id = encodeURIComponent(userData.user.id || '');
+        const id = userData.user.id || '';
         
-        // Fetching pending follow-ups
-        const res = await apiService.get(`/follow-up/${userData.user.email}?permission=${perm}&id=${id}&filter=pending&pageSize=10`);
+        const res = await apiService.get(`/follow-up/${userData.user.email}`, {
+          params: { permission: perm, id, filter: 'pending', pageSize: 10 },
+        });
         
         let data = res.data?.leads || res.data?.data || res.data || [];
         if (!Array.isArray(data)) {
@@ -61,7 +60,7 @@ export default function MyDailyTasks({ className }: { className?: string }) {
     if (session) {
       fetchTasks();
     }
-  }, [session]);
+  }, [session, userData]);
 
   return (
     <WidgetCard

@@ -14,36 +14,36 @@ import cn from '@/utils/class-names';
 import { Title } from '@/components/ui/text';
 
 // Lazy-load recharts — only needed when user clicks "Chart" toggle
-const LazyBarChart = dynamic(
-  () => import('recharts').then(mod => ({ default: mod.BarChart })),
+const LazyBarChart = dynamic<any>(
+  () => import('recharts').then(mod => mod.BarChart as any),
   { ssr: false }
 );
-const LazyBar = dynamic(
-  () => import('recharts').then(mod => ({ default: mod.Bar })),
+const LazyBar = dynamic<any>(
+  () => import('recharts').then(mod => mod.Bar as any),
   { ssr: false }
 );
-const LazyXAxis = dynamic(
-  () => import('recharts').then(mod => ({ default: mod.XAxis })),
+const LazyXAxis = dynamic<any>(
+  () => import('recharts').then(mod => mod.XAxis as any),
   { ssr: false }
 );
-const LazyYAxis = dynamic(
-  () => import('recharts').then(mod => ({ default: mod.YAxis })),
+const LazyYAxis = dynamic<any>(
+  () => import('recharts').then(mod => mod.YAxis as any),
   { ssr: false }
 );
-const LazyCartesianGrid = dynamic(
-  () => import('recharts').then(mod => ({ default: mod.CartesianGrid })),
+const LazyCartesianGrid = dynamic<any>(
+  () => import('recharts').then(mod => mod.CartesianGrid as any),
   { ssr: false }
 );
-const LazyTooltip = dynamic(
-  () => import('recharts').then(mod => ({ default: mod.Tooltip })),
+const LazyTooltip = dynamic<any>(
+  () => import('recharts').then(mod => mod.Tooltip as any),
   { ssr: false }
 );
-const LazyLegend = dynamic(
-  () => import('recharts').then(mod => ({ default: mod.Legend })),
+const LazyLegend = dynamic<any>(
+  () => import('recharts').then(mod => mod.Legend as any),
   { ssr: false }
 );
-const LazyResponsiveContainer = dynamic(
-  () => import('recharts').then(mod => ({ default: mod.ResponsiveContainer })),
+const LazyResponsiveContainer = dynamic<any>(
+  () => import('recharts').then(mod => mod.ResponsiveContainer as any),
   { ssr: false }
 );
 
@@ -57,7 +57,19 @@ interface StatsData {
   Breakdown: any[];
 }
 
-export default function LeadStats({ className, data, loading }: { className?: string; data?: any; loading?: boolean }) {
+export default function LeadStats({
+  className,
+  data,
+  loading,
+  showStatCards = true,
+  showTeamOverview = true,
+}: {
+  className?: string;
+  data?: any;
+  loading?: boolean;
+  showStatCards?: boolean;
+  showTeamOverview?: boolean;
+}) {
   const [view, setView] = useState<'table' | 'chart'>('table');
   const stats: StatsData | null = data || null;
 
@@ -102,27 +114,29 @@ export default function LeadStats({ className, data, loading }: { className?: st
 
   const chartData = stats?.Breakdown?.map(user => ({
     name: user.full_name,
-    'Assigned Today': user.today_leads,
-    'Open Leads': user.open_leads,
+    Assigned: user.today_leads,
+    Open: user.open_leads,
   })) || [];
 
   return (
     <div className={cn('space-y-6', className)}>
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((item) => (
-          <div key={item.title} className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:bg-gray-900 transition-all hover:shadow-md">
-            <div className={cn('flex h-12 w-12 items-center justify-center rounded-lg', item.fill, item.color)}>
-              {item.icon}
+      {showStatCards && (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {statCards.map((item) => (
+            <div key={item.title} className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:bg-gray-900 transition-all hover:shadow-md">
+              <div className={cn('flex h-12 w-12 items-center justify-center rounded-lg', item.fill, item.color)}>
+                {item.icon}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.title}</p>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{item.metric || 0}</h3>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.title}</p>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{item.metric || 0}</h3>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {stats?.Breakdown && stats.Breakdown.length > 0 && (
+      {showTeamOverview && stats?.Breakdown && stats.Breakdown.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm dark:bg-gray-900 transition-all duration-300">
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <Title as="h3" className="text-base font-semibold text-gray-800 dark:text-gray-200">

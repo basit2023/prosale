@@ -3,7 +3,7 @@ import Pagination, { type PaginationProps } from '@/components/ui/pagination';
 import Select from '@/components/ui/select';
 import cn from '@/utils/class-names';
 
-const paginationLimitOptions = [5, 10, 15, 20, 25].map((v, idx) => ({
+const paginationLimitOptions = [5, 10, 15, 20, 25, 50, 100].map((v, idx) => ({
   id: idx,
   name: String(v),
   value: v,

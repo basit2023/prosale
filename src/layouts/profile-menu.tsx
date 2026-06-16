@@ -5,14 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Popover } from '@/components/ui/popover';
 import { Title, Text } from '@/components/ui/text';
 import { routes } from '@/config/routes';
-import apiService from '@/utils/apiService';
 import cn from '@/utils/class-names';
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { AES, enc } from 'crypto-js';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { decryptData } from '@/components/encriptdycriptdata';
 const menuItems = [
   {
@@ -28,27 +26,26 @@ const menuItems = [
     href:'/activitylogs',
   },
 ];
+
+function readStoredProfile() {
+  if (typeof window === 'undefined') return null;
+  return decryptData(localStorage.getItem('uData'));
+}
+
+function getProfileImageSrc(value: any, session: any) {
+  const rawImage = value?.user?.img || value?.user?.profileImage || session?.user?.image || '';
+  return typeof rawImage === 'string' ? rawImage : '';
+}
+
 function DropdownMenu() {
   const { data: session } = useSession();
-  const router = useRouter();
-
-  const encryptedData:any = localStorage.getItem('userData');
-  const decryptedData = AES.decrypt(encryptedData, 'encryptionSecret');
-  const decData = JSON.parse(decryptedData.toString(enc.Utf8));
+  const value: any = readStoredProfile();
   
-  const ncryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(ncryptedData)
-  
-  const displayName = value ? `${value.user.first_name} ${value.user.last_name}` : 'User';
-  const base64Image = value ? `${value.user.img}` : '';
-  const designation=value ? `${value.user.role}` : '';
-      //console.log('Base64 Image Data:', base64Image);
-
-      const parts = base64Image.split(';base64,');
-      const mimeType = parts[0].split(':')[1];
-      const imageData = parts[1];
-
-      const imageBuffer = imageData ? Buffer.from(imageData, 'base64') : undefined;
+  const displayName = value?.user
+    ? `${value.user.first_name || ''} ${value.user.last_name || ''}`.trim() || value.user.name || 'User'
+    : session?.user?.name || session?.user?.email || 'User';
+  const base64Image = getProfileImageSrc(value, session);
+  const designation = value?.user?.role || value?.user?.user_type || '';
       
   return (
     <div className="w-64 text-left rtl:text-right">
@@ -131,21 +128,11 @@ export default function ProfileMenu({
     setIsOpen(false);
   }, [pathname]);
   const { data: session } = useSession();
-  const encryptedData = localStorage.getItem('userData');
-  const ncryptedData = localStorage.getItem('uData');
-  const value: any =decryptData(ncryptedData)
-
-
-  const base64Image = value ? `${value.user.img}` : '';
-      // console.log('Base64 Image Data:', base64Image);
-
-      const parts = base64Image.split(';base64,');
-      const mimeType = parts[0].split(':')[1];
-      const imageData = parts[1];
-
-      // Create a buffer from the Base64 data
-      // const imageBuffer = Buffer.from(imageData, 'base64');
-      const imageBuffer = imageData ? Buffer.from(imageData, 'base64') : undefined;
+  const value: any = readStoredProfile();
+  const profileImage = getProfileImageSrc(value, session);
+  const displayName = value?.user
+    ? `${value.user.first_name || ''} ${value.user.last_name || ''}`.trim() || value.user.name || 'User'
+    : session?.user?.name || session?.user?.email || 'User';
 
   return (
     <Popover
@@ -163,8 +150,8 @@ export default function ProfileMenu({
         )}
       >
         <Avatar
-          src={imageBuffer ? `data:${mimeType};base64,${imageData}` : 'fallback_url'}
-          name="User"
+          src={profileImage || 'fallback_url'}
+          name={displayName}
           color="invert"
           className={cn('!h-9 w-9 sm:!h-10 sm:w-10', avatarClassName)}
         />
