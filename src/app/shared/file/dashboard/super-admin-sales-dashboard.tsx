@@ -687,8 +687,6 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
     fetchDashboard();
   }, [params]);
 
-  if (permission < 20) return null;
-
   const summary = data?.summary || {};
   const users = data?.users || [];
   const reassignmentGroups = useMemo<ReassignmentGroup[]>(() => {
@@ -713,6 +711,9 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
 
     return Array.from(groups.values()).sort((a: ReassignmentGroup, b: ReassignmentGroup) => b.total_assigned - a.total_assigned);
   }, [data?.reassignmentBreakdown]);
+
+  if (permission < 20) return null;
+
   const topUsers = users.slice(0, 10).map((item) => ({
     name: item.full_name,
     Comments: item.comments_added,
