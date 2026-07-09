@@ -55,6 +55,9 @@ const RecentActivities = dynamic(() => import('./recent-activities'), {
 const AISmartInsights = dynamic(() => import('./ai-smart-insights'), {
   loading: () => skeleton('h-40'),
 });
+const SuperAdminSalesDashboard = dynamic(() => import('./super-admin-sales-dashboard'), {
+  loading: () => skeleton('h-[720px]'),
+});
 
 function SalesCommandCenter({
   data,
@@ -237,6 +240,7 @@ export default function FileDashboard() {
   const user = userData?.user;
   const permission = Number(user?.permissions?.permission_level || user?.permission || 0);
   const role = user?.role || '';
+  const isSuperAdmin = permission >= 20;
   const isAdmin = permission >= 9;
   const isManager = (permission >= 4 && permission < 9) || role === 'manager';
   const isUser = permission < 4 && role !== 'manager';
@@ -288,19 +292,28 @@ export default function FileDashboard() {
             showTeamOverview={false}
           />
         </div>
-        <SalesCommandCenter
-          data={dashboardData}
-          loading={loading}
-          isAdmin={isAdmin}
-          isManager={isManager}
-        />
-        <SalesPlaybook
-          data={dashboardData}
-          loading={loading}
-          isAdmin={isAdmin}
-          isManager={isManager}
-        />
-        {(isAdmin || isManager) && (
+        {!isSuperAdmin && (
+          <>
+            <SalesCommandCenter
+              data={dashboardData}
+              loading={loading}
+              isAdmin={isAdmin}
+              isManager={isManager}
+            />
+            <SalesPlaybook
+              data={dashboardData}
+              loading={loading}
+              isAdmin={isAdmin}
+              isManager={isManager}
+            />
+          </>
+        )}
+        {isSuperAdmin && (
+          <div className="col-span-full">
+            <SuperAdminSalesDashboard className="w-full" />
+          </div>
+        )}
+        {!isSuperAdmin && (isAdmin || isManager) && (
           <div className="col-span-full">
             <SalesActivityInsights className="w-full" />
           </div>

@@ -44,8 +44,13 @@ export default function AISmartInsights({ className }: { className?: string }) {
           setError("Could not generate insight at this time.");
         }
       } catch (err: any) {
-        console.error('Error fetching AI insight:', err);
-        setError("AI Engine temporarily unavailable.");
+        const status = err?.response?.status;
+        if (status === 401) {
+          setError('AI insight needs a fresh login.');
+        } else {
+          console.error('Error fetching AI insight:', err);
+          setError("AI Engine temporarily unavailable.");
+        }
       } finally {
         setLoading(false);
       }
@@ -56,6 +61,8 @@ export default function AISmartInsights({ className }: { className?: string }) {
 
   return (
     <WidgetCard
+      title=""
+      headerClassName="hidden"
       className={`relative overflow-hidden border border-[#c95a64]/20 bg-gradient-to-br from-[#c95a64]/5 to-transparent ${className}`}
     >
       <div className="flex items-start gap-4 p-2">

@@ -74,6 +74,7 @@ export default function FCMProvider({ children }: { children: React.ReactNode })
         const usePollingOnly = window.location.protocol === 'https:' && finalUrl.includes('api.prosale.sale');
 
         const socket = io(finalUrl, {
+          path: '/api/socket.io',
           reconnection: true,
           reconnectionDelay: 1000,
           reconnectionDelayMax: 5000,

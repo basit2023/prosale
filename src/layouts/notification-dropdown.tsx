@@ -71,6 +71,11 @@ const useSocketIO = (url: string, userId: string | undefined, onMessage: (messag
     const usePollingOnly = window.location.protocol === 'https:' && url.includes('api.prosale.sale');
 
     const socketInstance = io(url, {
+      path: '/api/socket.io',
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
       withCredentials: true,
       transports: usePollingOnly ? ['polling'] : ['polling', 'websocket'],
       upgrade: !usePollingOnly,

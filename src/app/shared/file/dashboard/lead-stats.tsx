@@ -55,7 +55,24 @@ interface StatsData {
   Total_Leads?: number;
   Close_Leads?: number;
   Breakdown: any[];
+  CardDetails?: Record<DetailKey, any[]>;
 }
+
+type DetailKey = 'todayAssigned' | 'unreadLeads' | 'followupsCreated' | 'followupsAttended';
+
+const detailTitles: Record<DetailKey, string> = {
+  todayAssigned: "Today's Assigned Leads",
+  unreadLeads: 'Unread Leads',
+  followupsCreated: 'Follow-ups Created',
+  followupsAttended: 'Follow-ups Attended',
+};
+
+const formatDateTime = (value?: string) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+  return date.toLocaleString();
+};
 
 export default function LeadStats({
   className,
@@ -71,6 +88,7 @@ export default function LeadStats({
   showTeamOverview?: boolean;
 }) {
   const [view, setView] = useState<'table' | 'chart'>('table');
+  const [selectedDetail, setSelectedDetail] = useState<DetailKey | null>(null);
   const stats: StatsData | null = data || null;
 
   if (loading) {
@@ -85,6 +103,7 @@ export default function LeadStats({
     {
       title: "Today's Assigned",
       metric: stats?.Today_Leads || 0,
+      detailKey: 'todayAssigned' as DetailKey,
       icon: <PiUsersDuotone className="h-6 w-6" />,
       color: 'text-blue-600',
       fill: 'bg-blue-50',
@@ -92,6 +111,7 @@ export default function LeadStats({
     {
       title: 'Unread Leads',
       metric: stats?.Unread_Leads || 0,
+      detailKey: 'unreadLeads' as DetailKey,
       icon: <PiEnvelopeOpenDuotone className="h-6 w-6" />,
       color: 'text-red-600',
       fill: 'bg-red-50',
@@ -99,6 +119,7 @@ export default function LeadStats({
     {
       title: 'Follow-ups Created',
       metric: stats?.FollowUps_Created || 0,
+      detailKey: 'followupsCreated' as DetailKey,
       icon: <PiCalendarPlusDuotone className="h-6 w-6" />,
       color: 'text-orange-600',
       fill: 'bg-orange-50',
@@ -106,6 +127,7 @@ export default function LeadStats({
     {
       title: 'Follow-ups Attended',
       metric: stats?.FollowUps_Attended || 0,
+      detailKey: 'followupsAttended' as DetailKey,
       icon: <PiCheckCircleDuotone className="h-6 w-6" />,
       color: 'text-green-600',
       fill: 'bg-green-50',
@@ -118,12 +140,33 @@ export default function LeadStats({
     Open: user.open_leads,
   })) || [];
 
+  const detailRows = selectedDetail ? stats?.CardDetails?.[selectedDetail] || [] : [];
+
+  const rowDetail = (row: any) => {
+    if (selectedDetail === 'followupsCreated' || selectedDetail === 'followupsAttended') {
+      return row.followup || '-';
+    }
+
+    return `${row.status || '-'} | ${row.label || 'No label'} | Assigned to ${row.assigned_to || '-'}`;
+  };
+
+  const rowTime = (row: any) => {
+    if (selectedDetail === 'followupsCreated') return row.dt;
+    if (selectedDetail === 'followupsAttended') return row.attended_at;
+    return row.assigned_on;
+  };
+
   return (
     <div className={cn('space-y-6', className)}>
       {showStatCards && (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {statCards.map((item) => (
-            <div key={item.title} className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-5 shadow-sm dark:bg-gray-900 transition-all hover:shadow-md">
+            <button
+              key={item.title}
+              type="button"
+              onClick={() => setSelectedDetail(item.detailKey)}
+              className="flex items-center gap-4 rounded-xl border border-gray-100 bg-white p-5 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-900"
+            >
               <div className={cn('flex h-12 w-12 items-center justify-center rounded-lg', item.fill, item.color)}>
                 {item.icon}
               </div>
@@ -131,8 +174,69 @@ export default function LeadStats({
                 <p className="text-sm font-medium text-gray-500 dark:text-gray-400">{item.title}</p>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{item.metric || 0}</h3>
               </div>
-            </div>
+            </button>
           ))}
+        </div>
+      )}
+
+      {selectedDetail && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/45 p-4">
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-gray-900">
+            <div className="flex flex-col gap-3 border-b border-gray-100 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-gray-700">
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wide text-rose-600">Today details</div>
+                <h3 className="mt-1 text-xl font-black text-gray-900 dark:text-white">{detailTitles[selectedDetail]}</h3>
+                <p className="text-sm text-gray-500">{detailRows.length} rows for current date.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDetail(null)}
+                className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-bold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-100"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="max-h-[calc(90vh-98px)] overflow-auto p-5">
+              {detailRows.length ? (
+                <table className="w-full min-w-[920px] text-left text-sm">
+                  <thead className="sticky top-0 bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-4 py-3">Lead</th>
+                      <th className="px-4 py-3">Customer</th>
+                      <th className="px-4 py-3">Project</th>
+                      <th className="px-4 py-3">Assigned / User</th>
+                      <th className="px-4 py-3">Details</th>
+                      <th className="px-4 py-3">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+                    {detailRows.map((row, index) => (
+                      <tr key={`${selectedDetail}-${row.id || row.lead_id || index}`} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">#{row.lead_id || '-'}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-gray-900 dark:text-white">{row.customer_name || 'Customer'}</div>
+                          <div className="text-xs font-semibold text-amber-600">{row.mobile || '-'}</div>
+                          <div className="text-xs text-gray-500">{row.city || row.email || ''}</div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{row.project_name || 'No project'}</td>
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-gray-900 dark:text-white">{row.assigned_to || row.user || '-'}</div>
+                          <div className="text-xs text-gray-500">Through {row.assigned_through || '-'}</div>
+                        </td>
+                        <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{rowDetail(row)}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500">{formatDateTime(rowTime(row))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="rounded-xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 dark:border-gray-700">
+                  No rows found for current date.
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
