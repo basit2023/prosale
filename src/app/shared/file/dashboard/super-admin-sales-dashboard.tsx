@@ -116,6 +116,20 @@ const detailLabels: Record<DetailType, string> = {
 };
 
 const summaryCards = [
+  {
+    key: 'fresh_leads',
+    label: 'Fresh Leads',
+    hint: 'Customer and lead dates match',
+    icon: PiUsersThreeDuotone,
+    tone: 'bg-emerald-50 text-emerald-600',
+  },
+  {
+    key: 'cool_leads',
+    label: 'Cool Data',
+    hint: 'Older or date-mismatched leads',
+    icon: PiUsersThreeDuotone,
+    tone: 'bg-amber-50 text-amber-600',
+  },
  
   {
     key: 'comments_added',
@@ -166,6 +180,7 @@ const summaryCards = [
     icon: PiUsersThreeDuotone,
     tone: 'bg-blue-50 text-blue-600',
   },
+  
   {
     key: 'reassigned_leads',
     label: 'Reassigned',
@@ -183,6 +198,8 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
   const leads = details.leads || [];
 
   if (key === 'leads_assigned') return leads;
+  if (key === 'fresh_leads') return leads.filter((row: any) => row.data_temperature === 'fresh');
+  if (key === 'cool_leads') return leads.filter((row: any) => row.data_temperature !== 'fresh');
   if (key === 'reassigned_leads') return leads.filter((row: any) => row.assigned_through);
   if (key === 'unread_leads') return leads.filter((row: any) => row.view_dt === 'new_lead');
   if (key === 'comments_added') return details.comments || [];
@@ -196,7 +213,7 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
 };
 
 const summaryRowUser = (key: SummaryCardKey, row: any) => {
-  if (key === 'leads_assigned' || key === 'reassigned_leads' || key === 'unread_leads') {
+  if (key === 'leads_assigned' || key === 'fresh_leads' || key === 'cool_leads' || key === 'reassigned_leads' || key === 'unread_leads') {
     return row.assigned_to || row.username || '-';
   }
   return row.username || row.assigned_to || '-';
@@ -204,6 +221,8 @@ const summaryRowUser = (key: SummaryCardKey, row: any) => {
 
 const summaryRowDetails = (key: SummaryCardKey, row: any) => {
   if (key === 'leads_assigned') return `Assigned to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data | By ${row.assigned_through || row.created_by || '-'}`;
+  if (key === 'fresh_leads') return `Fresh lead | Lead ${row.lead_created_day || '-'} | Customer ${row.customer_created_day || '-'} | Assigned to ${row.assigned_to || '-'}`;
+  if (key === 'cool_leads') return `Cool data | Lead ${row.lead_created_day || '-'} | Customer ${row.customer_created_day || '-'} | Assigned to ${row.assigned_to || '-'}`;
   if (key === 'reassigned_leads') return `Reassigned by ${row.assigned_through || '-'} to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data`;
   if (key === 'unread_leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Not opened yet`;
   if (key === 'comments_added') return row.comments || '-';
@@ -215,7 +234,7 @@ const summaryRowDetails = (key: SummaryCardKey, row: any) => {
 };
 
 const summaryRowTime = (key: SummaryCardKey, row: any) => {
-  if (key === 'leads_assigned' || key === 'reassigned_leads' || key === 'unread_leads') return row.assigned_on;
+  if (key === 'leads_assigned' || key === 'fresh_leads' || key === 'cool_leads' || key === 'reassigned_leads' || key === 'unread_leads') return row.assigned_on;
   if (key === 'unique_leads_opened') return row.last_opened_at;
   if (key === 'followups_attended') return row.attended_at || row.followupdate || row.dt;
   if (key === 'followups_created') return row.dt || row.followupdate || row.attended_at;
@@ -801,6 +820,45 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
     Number(row.Calls || 0) > 0 ||
     Number(row.Opens || 0) > 0
   );
+  const tableTotals = visibleUsers.reduce(
+    (acc, item) => {
+      acc.leads_assigned += Number(item.leads_assigned || 0);
+      acc.fresh_leads += Number(item.fresh_leads || 0);
+      acc.cool_leads += Number(item.cool_leads || 0);
+      acc.reassigned_leads += Number(item.reassigned_leads || 0);
+      acc.reassignments_made += Number(item.reassignments_made || 0);
+      acc.read_leads += Number(item.read_leads || 0);
+      acc.unread_leads += Number(item.unread_leads || 0);
+      acc.total_unread_leads += Number(item.total_unread_leads || 0);
+      acc.comments_added += Number(item.comments_added || 0);
+      acc.calls_started += Number(item.calls_started || 0);
+      acc.unique_leads_opened += Number(item.unique_leads_opened || 0);
+      acc.lead_open_events += Number(item.lead_open_events || 0);
+      acc.followups_created += Number(item.followups_created || 0);
+      acc.followups_attended += Number(item.followups_attended || 0);
+      acc.overdue_followups += Number(item.overdue_followups || 0);
+      acc.work_score += Number(item.work_score || 0);
+      return acc;
+    },
+    {
+      leads_assigned: 0,
+      fresh_leads: 0,
+      cool_leads: 0,
+      reassigned_leads: 0,
+      reassignments_made: 0,
+      read_leads: 0,
+      unread_leads: 0,
+      total_unread_leads: 0,
+      comments_added: 0,
+      calls_started: 0,
+      unique_leads_opened: 0,
+      lead_open_events: 0,
+      followups_created: 0,
+      followups_attended: 0,
+      overdue_followups: 0,
+      work_score: 0,
+    }
+  );
 
   const selectMetric = (type: DetailType, item: SuperAdminUser) => {
     setSelected({ type, username: item.username, fullName: item.full_name });
@@ -827,31 +885,58 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
     setSelectedLead(null);
   };
 
-  const buildActiveUserExportRows = () => visibleUsers.map((item) => ({
-    User: item.full_name,
-    Username: item.username,
-    Assigned: item.leads_assigned,
-    Fresh: item.fresh_leads,
-    Cool: item.cool_leads,
-    Reassigned: item.reassigned_leads,
-    'Assigned By Them': item.reassignments_made,
-    Read: item.read_leads,
-    Unread: item.unread_leads,
-    'Total Unread': item.total_unread_leads,
-    Comments: item.comments_added,
-    Calls: item.calls_started,
-    'Unique Opens': item.unique_leads_opened,
-    'Raw Opens': item.lead_open_events,
-    'Follow-ups Created': item.followups_created,
-    'Follow-ups Attended': item.followups_attended,
-    'Follow-ups Due': item.followups_due,
-    Overdue: item.overdue_followups,
-    Score: item.work_score,
-    Status: item.status,
-    'Last Activity': item.last_activity_date || '',
-    'Inactive Days': item.inactive_days ?? '',
-    'Inactive Reason': item.inactive_reason || '',
-  }));
+  const buildActiveUserExportRows = () => [
+    ...visibleUsers.map((item) => ({
+      User: item.full_name,
+      Username: item.username,
+      Assigned: item.leads_assigned,
+      Fresh: item.fresh_leads,
+      Cool: item.cool_leads,
+      Reassigned: item.reassigned_leads,
+      'Assigned By Them': item.reassignments_made,
+      Read: item.read_leads,
+      Unread: item.unread_leads,
+      'Total Unread': item.total_unread_leads,
+      Comments: item.comments_added,
+      Calls: item.calls_started,
+      'Unique Opens': item.unique_leads_opened,
+      'Raw Opens': item.lead_open_events,
+      'Follow-ups Created': item.followups_created,
+      'Follow-ups Attended': item.followups_attended,
+      'Follow-ups Due': item.followups_due,
+      Overdue: item.overdue_followups,
+      Score: item.work_score,
+      Status: item.status,
+      'Last Activity': item.last_activity_date || '',
+      'Inactive Days': item.inactive_days ?? '',
+      'Inactive Reason': item.inactive_reason || '',
+    })),
+    {
+      User: 'Total',
+      Username: '',
+      Assigned: tableTotals.leads_assigned,
+      Fresh: tableTotals.fresh_leads,
+      Cool: tableTotals.cool_leads,
+      Reassigned: tableTotals.reassigned_leads,
+      'Assigned By Them': tableTotals.reassignments_made,
+      Read: tableTotals.read_leads,
+      Unread: tableTotals.unread_leads,
+      'Total Unread': tableTotals.total_unread_leads,
+      Comments: tableTotals.comments_added,
+      Calls: tableTotals.calls_started,
+      'Unique Opens': tableTotals.unique_leads_opened,
+      'Raw Opens': tableTotals.lead_open_events,
+      'Follow-ups Created': tableTotals.followups_created,
+      'Follow-ups Attended': tableTotals.followups_attended,
+      'Follow-ups Due': '',
+      Overdue: tableTotals.overdue_followups,
+      Score: tableTotals.work_score,
+      Status: '',
+      'Last Activity': '',
+      'Inactive Days': '',
+      'Inactive Reason': '',
+    },
+  ];
 
   const buildReassignmentExportRows = () => reassignmentGroups.flatMap((group) =>
     group.recipients.map((recipient) => ({
@@ -1320,6 +1405,32 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                 </tr>
               ))}
             </tbody>
+            <tfoot className="border-t border-gray-200 bg-gray-50 text-sm font-black text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
+              <tr>
+                <td className="px-4 py-3">Total</td>
+                <td className="px-4 py-3 text-center">{number(tableTotals.leads_assigned)}</td>
+                <td className="px-4 py-3 text-center text-emerald-600">{number(tableTotals.fresh_leads)}</td>
+                <td className="px-4 py-3 text-center text-amber-600">{number(tableTotals.cool_leads)}</td>
+                <td className="px-4 py-3 text-center">
+                  {number(tableTotals.reassigned_leads)}
+                  <div className="text-[10px] font-semibold text-gray-500">{number(tableTotals.reassignments_made)} by them</div>
+                </td>
+                <td className="px-4 py-3 text-center text-blue-600">{number(tableTotals.read_leads)}</td>
+                <td className="px-4 py-3 text-center text-rose-600">
+                  {number(tableTotals.unread_leads)}
+                  <div className="text-[10px] font-semibold text-gray-500">{number(tableTotals.total_unread_leads)} total</div>
+                </td>
+                <td className="px-4 py-3 text-center text-emerald-600">{number(tableTotals.comments_added)}</td>
+                <td className="px-4 py-3 text-center text-amber-600">{number(tableTotals.calls_started)}</td>
+                <td className="px-4 py-3 text-center text-violet-600">
+                  {number(tableTotals.unique_leads_opened)}
+                  <div className="text-[10px] font-semibold text-gray-500">{number(tableTotals.lead_open_events)} raw</div>
+                </td>
+                <td className="px-4 py-3 text-center">{number(tableTotals.followups_created)} / {number(tableTotals.followups_attended)}</td>
+                <td className="px-4 py-3 text-center text-rose-600">{number(tableTotals.overdue_followups)}</td>
+                <td className="px-4 py-3 text-center">{number(tableTotals.work_score)}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
