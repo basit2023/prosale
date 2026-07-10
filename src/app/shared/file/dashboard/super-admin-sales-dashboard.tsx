@@ -36,6 +36,8 @@ type SuperAdminUser = {
   user_type?: string;
   permission_level?: number;
   leads_assigned: number;
+  fresh_leads: number;
+  cool_leads: number;
   reassigned_leads: number;
   reassignments_made: number;
   unread_leads: number;
@@ -201,9 +203,9 @@ const summaryRowUser = (key: SummaryCardKey, row: any) => {
 };
 
 const summaryRowDetails = (key: SummaryCardKey, row: any) => {
-  if (key === 'leads_assigned') return `Assigned to ${row.assigned_to || '-'} | By ${row.assigned_through || row.created_by || '-'}`;
-  if (key === 'reassigned_leads') return `Reassigned by ${row.assigned_through || '-'} to ${row.assigned_to || '-'}`;
-  if (key === 'unread_leads') return `${row.status || '-'} | ${row.label || 'No label'} | Not opened yet`;
+  if (key === 'leads_assigned') return `Assigned to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data | By ${row.assigned_through || row.created_by || '-'}`;
+  if (key === 'reassigned_leads') return `Reassigned by ${row.assigned_through || '-'} to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data`;
+  if (key === 'unread_leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Not opened yet`;
   if (key === 'comments_added') return row.comments || '-';
   if (key === 'calls_started') return `Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
   if (key === 'unique_leads_opened') return `Opened ${row.event_count || 1} time(s), counted as 1 unique lead.`;
@@ -218,6 +220,63 @@ const summaryRowTime = (key: SummaryCardKey, row: any) => {
   if (key === 'followups_attended') return row.attended_at || row.followupdate || row.dt;
   if (key === 'followups_created') return row.dt || row.followupdate || row.attended_at;
   return row.dt || row.opentime || row.attended_at || row.followupdate;
+};
+
+const safeExportValue = (value: any) => {
+  const text = value === null || value === undefined ? '' : String(value);
+  return /^[=+\-@]/.test(text) ? `'${text}` : text;
+};
+
+const csvCell = (value: any) => {
+  const text = safeExportValue(value);
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
+const htmlCell = (value: any) => {
+  return safeExportValue(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+const downloadTextFile = (content: string, filename: string, mimeType: string) => {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+};
+
+const rowsToCsv = (rows: Array<Record<string, any>>) => {
+  if (!rows.length) return '';
+  const headers = Object.keys(rows[0]);
+  return [
+    headers.map(csvCell).join(','),
+    ...rows.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
+  ].join('\n');
+};
+
+const rowsToHtmlTable = (title: string, rows: Array<Record<string, any>>) => {
+  if (!rows.length) {
+    return `<h2>${htmlCell(title)}</h2><p>No rows found.</p>`;
+  }
+
+  const headers = Object.keys(rows[0]);
+  return `
+    <h2>${htmlCell(title)}</h2>
+    <table>
+      <thead><tr>${headers.map((header) => `<th>${htmlCell(header)}</th>`).join('')}</tr></thead>
+      <tbody>
+        ${rows.map((row) => `<tr>${headers.map((header) => `<td>${htmlCell(row[header])}</td>`).join('')}</tr>`).join('')}
+      </tbody>
+    </table>
+  `;
 };
 
 function DetailPanel({
@@ -423,7 +482,7 @@ function UserActivityModal({
   ];
 
   const describeRow = (type: DetailType, row: any) => {
-    if (type === 'leads') return `${row.status || '-'} | ${row.label || 'No label'} | Assigned by ${row.assigned_through || '-'}`;
+    if (type === 'leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Assigned by ${row.assigned_through || '-'}`;
     if (type === 'comments') return row.comments || '-';
     if (type === 'calls') return `Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
     if (type === 'followups') return `${row.followup || 'Follow-up'} | ${row.nextfollowup === 0 ? 'Done' : 'Pending'}`;
@@ -460,6 +519,8 @@ function UserActivityModal({
           <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-6">
             {[
               ['Assigned', user.leads_assigned],
+              ['Fresh', user.fresh_leads],
+              ['Cool', user.cool_leads],
               ['Reassigned', user.reassigned_leads],
               ['Assigned by them', user.reassignments_made],
               ['Read', user.read_leads],
@@ -608,6 +669,8 @@ function LeadDetailModal({
               ['Project', leadBase.project_name || '-'],
               ['Assigned to', leadBase.assigned_to || leadBase.username || '-'],
               ['Assigned through', leadBase.assigned_through || '-'],
+              ['Data type', `${leadBase.data_temperature || 'cool'} data`],
+              ['Lead / Customer date', `${leadBase.lead_created_day || '-'} / ${leadBase.customer_created_day || '-'}`],
               ['Status', leadBase.status || '-'],
               ['Label', leadBase.label || '-'],
               ['Assigned on', formatDateTime(leadBase.assigned_on)],
@@ -714,12 +777,30 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
 
   if (permission < 20) return null;
 
-  const topUsers = users.slice(0, 10).map((item) => ({
+  const visibleUsers = users.filter((item) => Number(item.permission_level || 0) < 9);
+  const visibleTopCommenters = (data?.topCommenters || []).filter((item) => Number(item.permission_level || 0) < 9);
+  const visibleAttentionUsers = (data?.attentionUsers || []).filter((item) => Number(item.permission_level || 0) < 9);
+  const visibleInactiveUsers = (data?.inactiveUsers || []).filter((item) => Number(item.permission_level || 0) < 9);
+  const topUsers = visibleUsers.slice(0, 10).map((item) => ({
     name: item.full_name,
     Comments: item.comments_added,
     Calls: item.calls_started,
     Opens: item.unique_leads_opened,
   }));
+  const trendRows = data?.trends || [];
+  const hasDailyMovement = trendRows.some((row) =>
+    Number(row.leads_assigned || 0) > 0 ||
+    Number(row.comments_added || 0) > 0 ||
+    Number(row.calls_started || 0) > 0 ||
+    Number(row.followups_created || 0) > 0 ||
+    Number(row.followups_attended || 0) > 0 ||
+    Number(row.unique_leads_opened || 0) > 0
+  );
+  const hasTopUsersData = topUsers.some((row) =>
+    Number(row.Comments || 0) > 0 ||
+    Number(row.Calls || 0) > 0 ||
+    Number(row.Opens || 0) > 0
+  );
 
   const selectMetric = (type: DetailType, item: SuperAdminUser) => {
     setSelected({ type, username: item.username, fullName: item.full_name });
@@ -744,6 +825,128 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
     setSelectedSummary(null);
     setSelectedUser(null);
     setSelectedLead(null);
+  };
+
+  const buildActiveUserExportRows = () => visibleUsers.map((item) => ({
+    User: item.full_name,
+    Username: item.username,
+    Assigned: item.leads_assigned,
+    Fresh: item.fresh_leads,
+    Cool: item.cool_leads,
+    Reassigned: item.reassigned_leads,
+    'Assigned By Them': item.reassignments_made,
+    Read: item.read_leads,
+    Unread: item.unread_leads,
+    'Total Unread': item.total_unread_leads,
+    Comments: item.comments_added,
+    Calls: item.calls_started,
+    'Unique Opens': item.unique_leads_opened,
+    'Raw Opens': item.lead_open_events,
+    'Follow-ups Created': item.followups_created,
+    'Follow-ups Attended': item.followups_attended,
+    'Follow-ups Due': item.followups_due,
+    Overdue: item.overdue_followups,
+    Score: item.work_score,
+    Status: item.status,
+    'Last Activity': item.last_activity_date || '',
+    'Inactive Days': item.inactive_days ?? '',
+    'Inactive Reason': item.inactive_reason || '',
+  }));
+
+  const buildReassignmentExportRows = () => reassignmentGroups.flatMap((group) =>
+    group.recipients.map((recipient) => ({
+      'Assigned By': group.assigned_by_full_name,
+      'Assigned By Username': group.assigned_by,
+      'Assigned To': recipient.assigned_to_full_name,
+      'Assigned To Username': recipient.assigned_to,
+      'Lead Count': recipient.assigned_count,
+      'Latest Assigned Day': recipient.latest_assigned_day || '',
+    }))
+  );
+
+  const exportFilename = (extension: string) => `super-admin-dashboard-${from}-to-${to}.${extension}`;
+
+  const downloadCsv = () => {
+    const activeRows = buildActiveUserExportRows();
+    const reassignmentRows = buildReassignmentExportRows();
+    const content = [
+      ['ProSale Super Admin Dashboard'].map(csvCell).join(','),
+      ['From', from, 'To', to, 'Exported At', new Date().toLocaleString()].map(csvCell).join(','),
+      '',
+      ['Every active user'].map(csvCell).join(','),
+      rowsToCsv(activeRows),
+      '',
+      ['Reassigned lead handoff'].map(csvCell).join(','),
+      rowsToCsv(reassignmentRows),
+    ].join('\n');
+
+    downloadTextFile(content, exportFilename('csv'), 'text/csv;charset=utf-8');
+  };
+
+  const downloadExcel = () => {
+    const activeRows = buildActiveUserExportRows();
+    const reassignmentRows = buildReassignmentExportRows();
+    const html = `
+      <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            body { font-family: Arial, sans-serif; }
+            h1 { font-size: 20px; }
+            h2 { margin-top: 24px; font-size: 16px; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
+            th, td { border: 1px solid #d9d9d9; padding: 8px; font-size: 12px; }
+            th { background: #f3f4f6; font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          <h1>ProSale Super Admin Dashboard</h1>
+          <p>From: ${htmlCell(from)} | To: ${htmlCell(to)} | Exported At: ${htmlCell(new Date().toLocaleString())}</p>
+          ${rowsToHtmlTable('Every active user', activeRows)}
+          ${rowsToHtmlTable('Reassigned lead handoff', reassignmentRows)}
+        </body>
+      </html>
+    `;
+
+    downloadTextFile(html, exportFilename('xls'), 'application/vnd.ms-excel;charset=utf-8');
+  };
+
+  const downloadPdf = () => {
+    const activeRows = buildActiveUserExportRows();
+    const reassignmentRows = buildReassignmentExportRows();
+    const reportWindow = window.open('', '_blank');
+    if (!reportWindow) return;
+
+    reportWindow.document.write(`
+      <html>
+        <head>
+          <title>ProSale Super Admin Dashboard</title>
+          <style>
+            @page { size: landscape; margin: 12mm; }
+            body { font-family: Arial, sans-serif; color: #111827; }
+            h1 { font-size: 22px; margin: 0 0 6px; }
+            h2 { margin-top: 22px; font-size: 15px; }
+            p { color: #4b5563; font-size: 12px; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 16px; page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            th, td { border: 1px solid #d1d5db; padding: 6px; font-size: 10px; text-align: left; }
+            th { background: #f3f4f6; font-weight: 700; }
+          </style>
+        </head>
+        <body>
+          <h1>ProSale Super Admin Dashboard</h1>
+          <p>From: ${htmlCell(from)} | To: ${htmlCell(to)} | Exported At: ${htmlCell(new Date().toLocaleString())}</p>
+          ${rowsToHtmlTable('Every active user', activeRows)}
+          ${rowsToHtmlTable('Reassigned lead handoff', reassignmentRows)}
+          <script>
+            window.onload = function () {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    reportWindow.document.close();
   };
 
   return (
@@ -810,19 +1013,25 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
             <p className="text-sm text-gray-500">Leads, comments, calls, follow-ups, and unique opens by date.</p>
           </div>
           <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data?.trends || []}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="leads_assigned" name="Leads" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="comments_added" name="Comments" stroke="#10b981" strokeWidth={2} />
-                <Line type="monotone" dataKey="calls_started" name="Calls" stroke="#f59e0b" strokeWidth={2} />
-                <Line type="monotone" dataKey="unique_leads_opened" name="Unique opens" stroke="#8b5cf6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+            {hasDailyMovement ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendRows}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="leads_assigned" name="Leads" stroke="#3b82f6" strokeWidth={2} />
+                  <Line type="monotone" dataKey="comments_added" name="Comments" stroke="#10b981" strokeWidth={2} />
+                  <Line type="monotone" dataKey="calls_started" name="Calls" stroke="#f59e0b" strokeWidth={2} />
+                  <Line type="monotone" dataKey="unique_leads_opened" name="Unique opens" stroke="#8b5cf6" strokeWidth={2} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800">
+                No lead movement, comments, calls, follow-ups, or opens found for this date range.
+              </div>
+            )}
           </div>
         </div>
 
@@ -832,18 +1041,24 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
             <p className="text-sm text-gray-500">Click the table below for exact user details.</p>
           </div>
           <div className="h-[320px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={topUsers}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={70} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Comments" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Calls" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Opens" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {hasTopUsersData ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={topUsers}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={70} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Comments" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Calls" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Opens" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800">
+                No active-user activity found for this date range.
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -853,7 +1068,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <h3 className="mb-3 font-bold text-gray-900 dark:text-white">Most comments</h3>
             <div className="space-y-3">
-              {(data?.topCommenters || []).slice(0, 6).map((item) => (
+              {visibleTopCommenters.slice(0, 6).map((item) => (
                 <button
                   key={item.username}
                   type="button"
@@ -875,7 +1090,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
           <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <h3 className="mb-3 font-bold text-gray-900 dark:text-white">Needs attention</h3>
             <div className="space-y-3">
-              {(data?.attentionUsers || []).slice(0, 6).map((item) => (
+              {visibleAttentionUsers.slice(0, 6).map((item) => (
                 <div key={item.username} className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800">
                   <span>
                     <span className="block text-sm font-semibold text-gray-900 dark:text-white">{item.full_name}</span>
@@ -900,11 +1115,11 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                 </h3>
               </div>
               <span className="rounded-full bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700">
-                {number((data?.inactiveUsers || []).length)}
+                {number(visibleInactiveUsers.length)}
               </span>
             </div>
             <div className="max-h-[420px] space-y-3 overflow-y-auto pr-1">
-              {(data?.inactiveUsers || []).map((item) => (
+              {visibleInactiveUsers.map((item) => (
                 <button
                   key={item.username}
                   type="button"
@@ -922,7 +1137,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                   </span>
                 </button>
               ))}
-              {!(data?.inactiveUsers || []).length ? (
+              {!visibleInactiveUsers.length ? (
                 <div className="rounded-xl bg-gray-50 px-3 py-3 text-sm text-gray-500 dark:bg-gray-800">
                   No inactive users found.
                 </div>
@@ -943,19 +1158,49 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h3 className="font-bold text-gray-900 dark:text-white">Every active user</h3>
-            <p className="text-sm text-gray-500">Read/unread leads, comments, calls, opens, and follow-ups for the selected day/range.</p>
+            <p className="text-sm text-gray-500">
+              Read/unread leads, fresh/cool data, comments, calls, opens, and follow-ups for the selected day/range.
+            </p>
           </div>
-          <div className="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800">
-            {loading ? 'Loading...' : `${users.length} users`}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={downloadCsv}
+              disabled={loading}
+              className="rounded-lg border border-gray-200 px-3 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-700 dark:text-gray-100"
+            >
+              CSV
+            </button>
+            <button
+              type="button"
+              onClick={downloadExcel}
+              disabled={loading}
+              className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Excel
+            </button>
+            <button
+              type="button"
+              onClick={downloadPdf}
+              disabled={loading}
+              className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              PDF
+            </button>
+            <div className="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800">
+              {loading ? 'Loading...' : `${visibleUsers.length} users`}
+            </div>
           </div>
         </div>
 
         <div className="overflow-auto rounded-xl border border-gray-100 dark:border-gray-700">
-          <table className="w-full min-w-[1240px] text-left text-sm">
+          <table className="w-full min-w-[1380px] text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800">
               <tr>
                 <th className="px-4 py-3">User</th>
                 <th className="px-4 py-3 text-center">Assigned</th>
+                <th className="px-4 py-3 text-center">Fresh</th>
+                <th className="px-4 py-3 text-center">Cool</th>
                 <th className="px-4 py-3 text-center">Reassigned</th>
                 <th className="px-4 py-3 text-center">Read</th>
                 <th className="px-4 py-3 text-center">Unread</th>
@@ -968,7 +1213,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {users.map((item) => (
+              {visibleUsers.map((item) => (
                 <tr
                   key={item.user_id || item.username}
                   onClick={() => openUserDetails(item)}
@@ -986,7 +1231,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                         </span>
                       ) : null}
                     </div>
-                    <div className="text-xs text-gray-500">{item.username} | Permission {item.permission_level || 0}</div>
+                    <div className="text-xs text-gray-500">{item.username}</div>
                     {item.is_inactive_attention ? (
                       <div className="text-xs font-semibold text-rose-600">
                         {item.inactive_reason || 'No tracked activity'}
@@ -994,6 +1239,16 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                     ) : null}
                   </td>
                   <td className="px-4 py-3 text-center font-semibold">{number(item.leads_assigned)}</td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={cn('rounded-full px-2.5 py-1 text-xs font-bold', item.fresh_leads ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-500')}>
+                      {number(item.fresh_leads)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <span className={cn('rounded-full px-2.5 py-1 text-xs font-bold', item.cool_leads ? 'bg-amber-50 text-amber-600' : 'bg-gray-50 text-gray-500')}>
+                      {number(item.cool_leads)}
+                    </span>
+                  </td>
                   <td className="px-4 py-3 text-center">
                     <span className={cn('rounded-full px-2.5 py-1 text-xs font-bold', item.reassigned_leads ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-50 text-gray-500')}>
                       {number(item.reassigned_leads)}
@@ -1099,7 +1354,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                   {[...group.recipients]
                     .sort((a: ReassignmentBreakdown, b: ReassignmentBreakdown) => Number(b.assigned_count || 0) - Number(a.assigned_count || 0))
                     .map((recipient: ReassignmentBreakdown) => {
-                      const recipientUser = users.find((item) => item.username === recipient.assigned_to);
+                      const recipientUser = visibleUsers.find((item) => item.username === recipient.assigned_to);
                       const content = (
                         <>
                           <span>
