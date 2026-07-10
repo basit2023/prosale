@@ -53,6 +53,9 @@ type SuperAdminUser = {
   unique_leads_opened: number;
   lead_open_events: number;
   work_score: number;
+  needs_attention?: boolean;
+  attention_score?: number;
+  attention_reason?: string;
   last_activity_date?: string | null;
   inactive_days?: number | null;
   is_inactive_attention?: boolean;
@@ -140,10 +143,17 @@ const summaryCards = [
   },
   {
     key: 'calls_started',
-    label: 'Calls',
-    hint: 'Phone attempts in selected date',
+    label: 'Connected Leads',
+    hint: 'Phone N with 1+ minute duration',
     icon: PiPhoneCallDuotone,
     tone: 'bg-amber-50 text-amber-600',
+  },
+  {
+    key: 'whatsapp_opened',
+    label: 'WhatsApp Shared',
+    hint: 'WhatsApp N means details shared',
+    icon: PiPhoneCallDuotone,
+    tone: 'bg-teal-50 text-teal-600',
   },
   {
     key: 'unique_leads_opened',
@@ -204,7 +214,10 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
   if (key === 'unread_leads') return leads.filter((row: any) => row.view_dt === 'new_lead');
   if (key === 'comments_added') return details.comments || [];
   if (key === 'calls_started') {
-    return (details.calls || []).filter((row: any) => String(row.phone || '').toUpperCase() === 'Y');
+    return (details.calls || []).filter((row: any) => Number(row.is_connected_call || 0) === 1);
+  }
+  if (key === 'whatsapp_opened') {
+    return (details.calls || []).filter((row: any) => Number(row.is_whatsapp_shared || 0) === 1);
   }
   if (key === 'unique_leads_opened') return details.opens || [];
   if (key === 'followups_attended') return (details.followups || []).filter((row: any) => Number(row.nextfollowup) === 0);
@@ -226,7 +239,8 @@ const summaryRowDetails = (key: SummaryCardKey, row: any) => {
   if (key === 'reassigned_leads') return `Reassigned by ${row.assigned_through || '-'} to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data`;
   if (key === 'unread_leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Not opened yet`;
   if (key === 'comments_added') return row.comments || '-';
-  if (key === 'calls_started') return `Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
+  if (key === 'calls_started') return `Connected call | Phone: ${row.phone || 'N'} | Duration: ${row.totaltime || '-'}`;
+  if (key === 'whatsapp_opened') return `WhatsApp details shared | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
   if (key === 'unique_leads_opened') return `Opened ${row.event_count || 1} time(s), counted as 1 unique lead.`;
   if (key === 'followups_attended') return `${row.followup || 'Follow-up'} | Done`;
   if (key === 'followups_created') return `${row.followup || 'Follow-up'} | ${Number(row.nextfollowup) === 0 ? 'Done' : 'Pending'}`;
@@ -803,7 +817,8 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
   const topUsers = visibleUsers.slice(0, 10).map((item) => ({
     name: item.full_name,
     Comments: item.comments_added,
-    Calls: item.calls_started,
+    Connected: item.calls_started,
+    WhatsApp: item.whatsapp_opened,
     Opens: item.unique_leads_opened,
   }));
   const trendRows = data?.trends || [];
@@ -811,13 +826,15 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
     Number(row.leads_assigned || 0) > 0 ||
     Number(row.comments_added || 0) > 0 ||
     Number(row.calls_started || 0) > 0 ||
+    Number(row.whatsapp_opened || 0) > 0 ||
     Number(row.followups_created || 0) > 0 ||
     Number(row.followups_attended || 0) > 0 ||
     Number(row.unique_leads_opened || 0) > 0
   );
   const hasTopUsersData = topUsers.some((row) =>
     Number(row.Comments || 0) > 0 ||
-    Number(row.Calls || 0) > 0 ||
+    Number(row.Connected || 0) > 0 ||
+    Number(row.WhatsApp || 0) > 0 ||
     Number(row.Opens || 0) > 0
   );
   const tableTotals = visibleUsers.reduce(
@@ -832,6 +849,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       acc.total_unread_leads += Number(item.total_unread_leads || 0);
       acc.comments_added += Number(item.comments_added || 0);
       acc.calls_started += Number(item.calls_started || 0);
+      acc.whatsapp_opened += Number(item.whatsapp_opened || 0);
       acc.unique_leads_opened += Number(item.unique_leads_opened || 0);
       acc.lead_open_events += Number(item.lead_open_events || 0);
       acc.followups_created += Number(item.followups_created || 0);
@@ -851,6 +869,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       total_unread_leads: 0,
       comments_added: 0,
       calls_started: 0,
+      whatsapp_opened: 0,
       unique_leads_opened: 0,
       lead_open_events: 0,
       followups_created: 0,
@@ -898,7 +917,8 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       Unread: item.unread_leads,
       'Total Unread': item.total_unread_leads,
       Comments: item.comments_added,
-      Calls: item.calls_started,
+      'Connected Leads': item.calls_started,
+      'WhatsApp Shared': item.whatsapp_opened,
       'Unique Opens': item.unique_leads_opened,
       'Raw Opens': item.lead_open_events,
       'Follow-ups Created': item.followups_created,
@@ -923,7 +943,8 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       Unread: tableTotals.unread_leads,
       'Total Unread': tableTotals.total_unread_leads,
       Comments: tableTotals.comments_added,
-      Calls: tableTotals.calls_started,
+      'Connected Leads': tableTotals.calls_started,
+      'WhatsApp Shared': tableTotals.whatsapp_opened,
       'Unique Opens': tableTotals.unique_leads_opened,
       'Raw Opens': tableTotals.lead_open_events,
       'Follow-ups Created': tableTotals.followups_created,
@@ -1108,7 +1129,8 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                   <Legend />
                   <Line type="monotone" dataKey="leads_assigned" name="Leads" stroke="#3b82f6" strokeWidth={2} />
                   <Line type="monotone" dataKey="comments_added" name="Comments" stroke="#10b981" strokeWidth={2} />
-                  <Line type="monotone" dataKey="calls_started" name="Calls" stroke="#f59e0b" strokeWidth={2} />
+                  <Line type="monotone" dataKey="calls_started" name="Connected" stroke="#f59e0b" strokeWidth={2} />
+                  <Line type="monotone" dataKey="whatsapp_opened" name="WhatsApp shared" stroke="#14b8a6" strokeWidth={2} />
                   <Line type="monotone" dataKey="unique_leads_opened" name="Unique opens" stroke="#8b5cf6" strokeWidth={2} />
                 </LineChart>
               </ResponsiveContainer>
@@ -1127,18 +1149,33 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
           </div>
           <div className="h-[320px]">
             {hasTopUsersData ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={topUsers}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={70} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="Comments" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Calls" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Opens" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="h-full">
+                <div className="h-[230px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topUsers}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-20} textAnchor="end" height={70} />
+                      <YAxis tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="Comments" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Connected" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="WhatsApp" fill="#14b8a6" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Opens" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {topUsers.slice(0, 4).map((item) => (
+                    <div key={item.name} className="rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-gray-800">
+                      <div className="font-bold text-gray-900 dark:text-white">{item.name}</div>
+                      <div className="mt-1 text-gray-500">
+                        Cmt {number(item.Comments)} | Conn {number(item.Connected)} | WA {number(item.WhatsApp)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
               <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-800">
                 No active-user activity found for this date range.
@@ -1180,11 +1217,12 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                   <span>
                     <span className="block text-sm font-semibold text-gray-900 dark:text-white">{item.full_name}</span>
                     <span className="text-xs text-gray-500">
-                      {item.total_unread_leads} unread | {item.overdue_followups} overdue
+                      {item.attention_reason ||
+                        `${number(item.total_unread_leads)} unread | ${number(item.calls_started)} connected | ${number(item.comments_added)} comments`}
                     </span>
                   </span>
                   <span className="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-bold text-rose-700">
-                    {item.status === 'active' ? 'Review' : 'Low'}
+                    {item.unread_leads > 0 ? 'Unread' : item.calls_started === 0 ? 'No calls' : 'Review'}
                   </span>
                 </div>
               ))}
@@ -1279,7 +1317,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
         </div>
 
         <div className="overflow-auto rounded-xl border border-gray-100 dark:border-gray-700">
-          <table className="w-full min-w-[1380px] text-left text-sm">
+          <table className="w-full min-w-[1460px] text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500 dark:bg-gray-800">
               <tr>
                 <th className="px-4 py-3">User</th>
@@ -1290,7 +1328,8 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                 <th className="px-4 py-3 text-center">Read</th>
                 <th className="px-4 py-3 text-center">Unread</th>
                 <th className="px-4 py-3 text-center">Comments</th>
-                <th className="px-4 py-3 text-center">Calls</th>
+                <th className="px-4 py-3 text-center">Connected</th>
+                <th className="px-4 py-3 text-center">WhatsApp</th>
                 <th className="px-4 py-3 text-center">Unique Opens</th>
                 <th className="px-4 py-3 text-center">Follow-ups C/A</th>
                 <th className="px-4 py-3 text-center">Overdue</th>
@@ -1372,6 +1411,11 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                     </button>
                   </td>
                   <td className="px-4 py-3 text-center">
+                    <span className={cn('rounded-full px-2.5 py-1 text-xs font-bold', item.whatsapp_opened ? 'bg-teal-50 text-teal-600' : 'bg-gray-50 text-gray-500')}>
+                      {number(item.whatsapp_opened)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-center">
                     <button
                       type="button"
                       onClick={(event) => {
@@ -1422,6 +1466,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                 </td>
                 <td className="px-4 py-3 text-center text-emerald-600">{number(tableTotals.comments_added)}</td>
                 <td className="px-4 py-3 text-center text-amber-600">{number(tableTotals.calls_started)}</td>
+                <td className="px-4 py-3 text-center text-teal-600">{number(tableTotals.whatsapp_opened)}</td>
                 <td className="px-4 py-3 text-center text-violet-600">
                   {number(tableTotals.unique_leads_opened)}
                   <div className="text-[10px] font-semibold text-gray-500">{number(tableTotals.lead_open_events)} raw</div>
