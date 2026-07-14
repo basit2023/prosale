@@ -1,7 +1,18 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import {
   PiCalendarCheckDuotone,
   PiChatCircleTextDuotone,
@@ -15,16 +26,6 @@ import apiService from '@/utils/apiService';
 import cn from '@/utils/class-names';
 import { useUser } from '@/context/UserContext';
 
-const BarChart = dynamic<any>(() => import('recharts').then((mod) => mod.BarChart as any), { ssr: false });
-const Bar = dynamic<any>(() => import('recharts').then((mod) => mod.Bar as any), { ssr: false });
-const LineChart = dynamic<any>(() => import('recharts').then((mod) => mod.LineChart as any), { ssr: false });
-const Line = dynamic<any>(() => import('recharts').then((mod) => mod.Line as any), { ssr: false });
-const XAxis = dynamic<any>(() => import('recharts').then((mod) => mod.XAxis as any), { ssr: false });
-const YAxis = dynamic<any>(() => import('recharts').then((mod) => mod.YAxis as any), { ssr: false });
-const CartesianGrid = dynamic<any>(() => import('recharts').then((mod) => mod.CartesianGrid as any), { ssr: false });
-const Tooltip = dynamic<any>(() => import('recharts').then((mod) => mod.Tooltip as any), { ssr: false });
-const Legend = dynamic<any>(() => import('recharts').then((mod) => mod.Legend as any), { ssr: false });
-const ResponsiveContainer = dynamic<any>(() => import('recharts').then((mod) => mod.ResponsiveContainer as any), { ssr: false });
 
 type DetailType = 'leads' | 'comments' | 'calls' | 'opens' | 'followups';
 
@@ -49,6 +50,7 @@ type SuperAdminUser = {
   followups_due: number;
   overdue_followups: number;
   calls_started: number;
+  dialed_calls: number;
   whatsapp_opened: number;
   unique_leads_opened: number;
   lead_open_events: number;
@@ -144,7 +146,7 @@ const summaryCards = [
   {
     key: 'calls_started',
     label: 'Connected Leads',
-    hint: 'Phone N with 1+ minute duration',
+    hint: 'Unique phone N calls with 1+ minute duration',
     icon: PiPhoneCallDuotone,
     tone: 'bg-amber-50 text-amber-600',
   },
@@ -203,6 +205,18 @@ const summaryCards = [
 type SummaryCardKey = (typeof summaryCards)[number]['key'];
 type SummarySelection = { key: SummaryCardKey; label: string; hint: string };
 
+const uniqueConnectedCallRows = (rows: any[]) => {
+  const seen = new Set<string>();
+  return rows.filter((row: any) => {
+    if (Number(row.is_connected_call || 0) !== 1) return false;
+    const day = String(row.dt || row.opentime || '').slice(0, 10);
+    const key = `${row.username || '-'}|${day}|${row.lead_id || row.id || '-'}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[] => {
   const details = (data?.details || {}) as Partial<Record<DetailType, any[]>>;
   const leads = details.leads || [];
@@ -214,7 +228,7 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
   if (key === 'unread_leads') return leads.filter((row: any) => row.view_dt === 'new_lead');
   if (key === 'comments_added') return details.comments || [];
   if (key === 'calls_started') {
-    return (details.calls || []).filter((row: any) => Number(row.is_connected_call || 0) === 1);
+    return uniqueConnectedCallRows(details.calls || []);
   }
   if (key === 'whatsapp_opened') {
     return (details.calls || []).filter((row: any) => Number(row.is_whatsapp_shared || 0) === 1);
@@ -232,6 +246,14 @@ const summaryRowUser = (key: SummaryCardKey, row: any) => {
   return row.username || row.assigned_to || '-';
 };
 
+const callStatusText = (row: any) => {
+  const statuses = [];
+  if (Number(row.is_connected_call || 0) === 1) statuses.push('Connected 1+ min');
+  if (Number(row.is_phone_attempt || 0) === 1) statuses.push('Phone N attempt');
+  if (Number(row.is_whatsapp_shared || 0) === 1) statuses.push('WhatsApp shared');
+  return statuses.length ? statuses.join(' | ') : 'Call activity';
+};
+
 const summaryRowDetails = (key: SummaryCardKey, row: any) => {
   if (key === 'leads_assigned') return `Assigned to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data | By ${row.assigned_through || row.created_by || '-'}`;
   if (key === 'fresh_leads') return `Fresh lead | Lead ${row.lead_created_day || '-'} | Customer ${row.customer_created_day || '-'} | Assigned to ${row.assigned_to || '-'}`;
@@ -239,7 +261,7 @@ const summaryRowDetails = (key: SummaryCardKey, row: any) => {
   if (key === 'reassigned_leads') return `Reassigned by ${row.assigned_through || '-'} to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data`;
   if (key === 'unread_leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Not opened yet`;
   if (key === 'comments_added') return row.comments || '-';
-  if (key === 'calls_started') return `Connected call | Phone: ${row.phone || 'N'} | Duration: ${row.totaltime || '-'}`;
+  if (key === 'calls_started') return `${callStatusText(row)} | Phone: ${row.phone || 'N'} | Duration: ${row.totaltime || '-'}`;
   if (key === 'whatsapp_opened') return `WhatsApp details shared | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
   if (key === 'unique_leads_opened') return `Opened ${row.event_count || 1} time(s), counted as 1 unique lead.`;
   if (key === 'followups_attended') return `${row.followup || 'Follow-up'} | Done`;
@@ -381,7 +403,7 @@ function DetailPanel({
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
                     {selected.type === 'leads' ? `${row.assigned_to || '-'} | ${row.status || '-'} | ${row.label || 'No label'}` : null}
                     {selected.type === 'comments' ? row.comments || '-' : null}
-                    {selected.type === 'calls' ? `Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}` : null}
+                    {selected.type === 'calls' ? `${callStatusText(row)} | Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}` : null}
                     {selected.type === 'opens' ? `Opened ${row.event_count || 1} time(s), counted as 1 unique lead.` : null}
                     {selected.type === 'followups' ? `${row.followup || 'Follow-up'} | ${row.nextfollowup === 0 ? 'Done' : 'Pending'}` : null}
                   </td>
@@ -517,7 +539,7 @@ function UserActivityModal({
   const describeRow = (type: DetailType, row: any) => {
     if (type === 'leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Assigned by ${row.assigned_through || '-'}`;
     if (type === 'comments') return row.comments || '-';
-    if (type === 'calls') return `Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
+    if (type === 'calls') return `${callStatusText(row)} | Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
     if (type === 'followups') return `${row.followup || 'Follow-up'} | ${row.nextfollowup === 0 ? 'Done' : 'Pending'}`;
     return `Opened ${row.event_count || 1} time(s), counted once in unique opens.`;
   };
@@ -536,7 +558,7 @@ function UserActivityModal({
             <div className="text-xs font-bold uppercase tracking-wide text-rose-600">User activity</div>
             <h3 className="mt-1 text-xl font-black text-gray-900 dark:text-white">{user.full_name}</h3>
             <p className="text-sm text-gray-500">
-              {user.username} | Assigned {number(user.leads_assigned)} | Comments {number(user.comments_added)} | Calls {number(user.calls_started)}
+              {user.username} | Assigned {number(user.leads_assigned)} | Comments {number(user.comments_added)} | Connected {number(user.calls_started)} | Dialed {number(user.dialed_calls)}
             </p>
           </div>
           <button
@@ -559,7 +581,8 @@ function UserActivityModal({
               ['Read', user.read_leads],
               ['Unread', user.unread_leads],
               ['Comments', user.comments_added],
-              ['Calls', user.calls_started],
+              ['Connected', user.calls_started],
+              ['Dialed calls', user.dialed_calls],
               ['Follow-ups', `${user.followups_created} / ${user.followups_attended}`],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
@@ -818,6 +841,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
     name: item.full_name,
     Comments: item.comments_added,
     Connected: item.calls_started,
+    Dialed: item.dialed_calls,
     WhatsApp: item.whatsapp_opened,
     Opens: item.unique_leads_opened,
   }));
@@ -826,6 +850,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
     Number(row.leads_assigned || 0) > 0 ||
     Number(row.comments_added || 0) > 0 ||
     Number(row.calls_started || 0) > 0 ||
+    Number(row.dialed_calls || 0) > 0 ||
     Number(row.whatsapp_opened || 0) > 0 ||
     Number(row.followups_created || 0) > 0 ||
     Number(row.followups_attended || 0) > 0 ||
@@ -834,6 +859,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
   const hasTopUsersData = topUsers.some((row) =>
     Number(row.Comments || 0) > 0 ||
     Number(row.Connected || 0) > 0 ||
+    Number(row.Dialed || 0) > 0 ||
     Number(row.WhatsApp || 0) > 0 ||
     Number(row.Opens || 0) > 0
   );
@@ -849,6 +875,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       acc.total_unread_leads += Number(item.total_unread_leads || 0);
       acc.comments_added += Number(item.comments_added || 0);
       acc.calls_started += Number(item.calls_started || 0);
+      acc.dialed_calls += Number(item.dialed_calls || 0);
       acc.whatsapp_opened += Number(item.whatsapp_opened || 0);
       acc.unique_leads_opened += Number(item.unique_leads_opened || 0);
       acc.lead_open_events += Number(item.lead_open_events || 0);
@@ -869,6 +896,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       total_unread_leads: 0,
       comments_added: 0,
       calls_started: 0,
+      dialed_calls: 0,
       whatsapp_opened: 0,
       unique_leads_opened: 0,
       lead_open_events: 0,
@@ -918,6 +946,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       'Total Unread': item.total_unread_leads,
       Comments: item.comments_added,
       'Connected Leads': item.calls_started,
+      'Dialed Calls': item.dialed_calls,
       'WhatsApp Shared': item.whatsapp_opened,
       'Unique Opens': item.unique_leads_opened,
       'Raw Opens': item.lead_open_events,
@@ -944,6 +973,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       'Total Unread': tableTotals.total_unread_leads,
       Comments: tableTotals.comments_added,
       'Connected Leads': tableTotals.calls_started,
+      'Dialed Calls': tableTotals.dialed_calls,
       'WhatsApp Shared': tableTotals.whatsapp_opened,
       'Unique Opens': tableTotals.unique_leads_opened,
       'Raw Opens': tableTotals.lead_open_events,
@@ -1130,6 +1160,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                   <Line type="monotone" dataKey="leads_assigned" name="Leads" stroke="#3b82f6" strokeWidth={2} />
                   <Line type="monotone" dataKey="comments_added" name="Comments" stroke="#10b981" strokeWidth={2} />
                   <Line type="monotone" dataKey="calls_started" name="Connected" stroke="#f59e0b" strokeWidth={2} />
+                  <Line type="monotone" dataKey="dialed_calls" name="Dialed calls" stroke="#fb923c" strokeDasharray="4 4" strokeWidth={2} />
                   <Line type="monotone" dataKey="whatsapp_opened" name="WhatsApp shared" stroke="#14b8a6" strokeWidth={2} />
                   <Line type="monotone" dataKey="unique_leads_opened" name="Unique opens" stroke="#8b5cf6" strokeWidth={2} />
                 </LineChart>
@@ -1329,6 +1360,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                 <th className="px-4 py-3 text-center">Unread</th>
                 <th className="px-4 py-3 text-center">Comments</th>
                 <th className="px-4 py-3 text-center">Connected</th>
+                <th className="px-4 py-3 text-center">Dialed Calls</th>
                 <th className="px-4 py-3 text-center">WhatsApp</th>
                 <th className="px-4 py-3 text-center">Unique Opens</th>
                 <th className="px-4 py-3 text-center">Follow-ups C/A</th>
@@ -1411,6 +1443,18 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                     </button>
                   </td>
                   <td className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        selectMetric('calls', item);
+                      }}
+                      className="font-bold text-orange-500 hover:underline"
+                    >
+                      {number(item.dialed_calls)}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
                     <span className={cn('rounded-full px-2.5 py-1 text-xs font-bold', item.whatsapp_opened ? 'bg-teal-50 text-teal-600' : 'bg-gray-50 text-gray-500')}>
                       {number(item.whatsapp_opened)}
                     </span>
@@ -1466,6 +1510,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                 </td>
                 <td className="px-4 py-3 text-center text-emerald-600">{number(tableTotals.comments_added)}</td>
                 <td className="px-4 py-3 text-center text-amber-600">{number(tableTotals.calls_started)}</td>
+                <td className="px-4 py-3 text-center text-orange-500">{number(tableTotals.dialed_calls)}</td>
                 <td className="px-4 py-3 text-center text-teal-600">{number(tableTotals.whatsapp_opened)}</td>
                 <td className="px-4 py-3 text-center text-violet-600">
                   {number(tableTotals.unique_leads_opened)}
