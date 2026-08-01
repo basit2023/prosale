@@ -12,6 +12,9 @@ interface ActivityData {
   client_matured: number;
   daily_lead_follow_up: number;
   lead_assigned: number;
+  total_dialed_calls: number;
+  total_connected_calls: number;
+  total_whatsapp: number;
   dealers_meeting: number;
   dealers_register: number;
   office_activity: string;
@@ -83,12 +86,14 @@ export default function SingleReport({ slug }: { slug: string }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 print:divide-gray-300">
-              <TableRow label="Office Visits" value={slug_data.daily_office_visits} />
-              <TableRow label="Clients Matured" value={slug_data.client_matured} />
-              <TableRow label="Leads Followups" value={slug_data.daily_lead_follow_up} />
               <TableRow label="Current Leads Assigned" value={slug_data.lead_assigned} />
-              <TableRow label="Dealers Meetings" value={slug_data.dealers_meeting} />
-              <TableRow label="Dealers Registered" value={slug_data.dealers_register} />
+              <TableRow label="Total Dialed Calls" value={slug_data.total_dialed_calls ?? 'N/A'} />
+              <TableRow label="Total Connected Calls" value={slug_data.total_connected_calls ?? 'N/A'} />
+              <TableRow label="Total WhatsApp" value={slug_data.total_whatsapp ?? 'N/A'} />
+              <TableRow label="Leads Followups" value={slug_data.daily_lead_follow_up} />
+              <TableRow label="Visits / Sites Visited" value={slug_data.daily_office_visits} />
+              <TableRow label="Total Scheduled Meetings" value={slug_data.dealers_meeting} />
+              {/* Legacy rows hidden from the current activity report UI: Clients Matured, Dealers Registered */}
               <TableRow label="Other Office Activity" value={slug_data.office_activity} />
             </tbody>
           </table>

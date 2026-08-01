@@ -80,7 +80,7 @@ export const getColumns = ({
       render: (value: string | undefined) => (
         
         <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
+          {value ?? 'N/A'}
         </Text>
       ),
     }, 
@@ -101,71 +101,10 @@ export const getColumns = ({
       width: 150,
       render: (value: string | undefined) => (
         <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
+          {value ?? 'N/A'}
         </Text>
       ),
     },
-    {
-      title: (
-        <HeaderCell
-          title="Office Visits"
-          sortable
-          ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'daily_office_visits'
-          }
-        />
-      ),
-      onHeaderCell: () => onHeaderCellClick('daily_office_visits'),
-      dataIndex: 'daily_office_visits',
-      key: 'daily_office_visits',
-      width: 100,
-      render: (value: string | undefined) => (
-        <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
-        </Text>
-      ),
-    },
-    {
-      title: (
-        <HeaderCell
-          title="Clients Matured"
-          sortable
-          ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'client_matured'
-          }
-        />
-      ),
-      onHeaderCell: () => onHeaderCellClick('client_matured'),
-      dataIndex: 'client_matured',
-      key: 'client_matured',
-      width: 100,
-      render: (value: string | undefined) => (
-        <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
-        </Text>
-      ),
-    },
-    
-    {
-      title: (
-        <HeaderCell
-          title="Leads Followups"
-          sortable
-          ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'daily_lead_follow_up'
-          }
-        />
-      ),
-      onHeaderCell: () => onHeaderCellClick('daily_lead_follow_up'),
-      dataIndex: 'daily_lead_follow_up',
-      key: 'daily_lead_follow_up',
-      width: 100,
-      render: (value: string | undefined) => (
-        <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
-        </Text>
-      ),
-    },    
     {
       title: (
         <HeaderCell
@@ -182,14 +121,114 @@ export const getColumns = ({
       width: 100,
       render: (value: string | undefined) => (
         <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
+          {value ?? 'N/A'}
         </Text>
       ),
-    }, 
-     {
+    },
+    {
       title: (
         <HeaderCell
-          title="	Dealers Meetings"
+          title="Total Dialed Calls"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'total_dialed_calls'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('total_dialed_calls'),
+      dataIndex: 'total_dialed_calls',
+      key: 'total_dialed_calls',
+      width: 100,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value ?? 'N/A'}
+        </Text>
+      ),
+    },
+    {
+      title: (
+        <HeaderCell
+          title="Total Connected Calls"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'total_connected_calls'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('total_connected_calls'),
+      dataIndex: 'total_connected_calls',
+      key: 'total_connected_calls',
+      width: 100,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value ?? 'N/A'}
+        </Text>
+      ),
+    },
+    {
+      title: (
+        <HeaderCell
+          title="Total WhatsApp"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'total_whatsapp'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('total_whatsapp'),
+      dataIndex: 'total_whatsapp',
+      key: 'total_whatsapp',
+      width: 100,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value ?? 'N/A'}
+        </Text>
+      ),
+    },
+    {
+      title: (
+        <HeaderCell
+          title="Leads Followups"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'daily_lead_follow_up'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('daily_lead_follow_up'),
+      dataIndex: 'daily_lead_follow_up',
+      key: 'daily_lead_follow_up',
+      width: 100,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value ?? 'N/A'}
+        </Text>
+      ),
+    },
+    {
+      title: (
+        <HeaderCell
+          title="Visits / Sites Visited"
+          sortable
+          ascending={
+            sortConfig?.direction === 'asc' && sortConfig?.key === 'daily_office_visits'
+          }
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('daily_office_visits'),
+      dataIndex: 'daily_office_visits',
+      key: 'daily_office_visits',
+      width: 100,
+      render: (value: string | undefined) => (
+        <Text className="font-medium text-gray-700 dark:text-gray-600">
+          {value ?? 'N/A'}
+        </Text>
+      ),
+    },
+    {
+      title: (
+        <HeaderCell
+          title="Total Scheduled Meetings"
           sortable
           ascending={
             sortConfig?.direction === 'asc' && sortConfig?.key === 'dealers_meeting'
@@ -202,33 +241,38 @@ export const getColumns = ({
       width: 100,
       render: (value: string | undefined) => (
         <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
+          {value ?? 'N/A'}
         </Text>
       ),
-    },  
-    
-    
-
+    },
+    /* Legacy fields hidden from the current activity report UI.
+    {
+      title: (
+        <HeaderCell
+          title="Clients Matured"
+          sortable
+          ascending={sortConfig?.direction === 'asc' && sortConfig?.key === 'client_matured'}
+        />
+      ),
+      onHeaderCell: () => onHeaderCellClick('client_matured'),
+      dataIndex: 'client_matured',
+      key: 'client_matured',
+      width: 100,
+    },
     {
       title: (
         <HeaderCell
           title="Dealers Registered"
           sortable
-          ascending={
-            sortConfig?.direction === 'asc' && sortConfig?.key === 'dealers_register'
-          }
+          ascending={sortConfig?.direction === 'asc' && sortConfig?.key === 'dealers_register'}
         />
       ),
       onHeaderCell: () => onHeaderCellClick('dealers_register'),
       dataIndex: 'dealers_register',
       key: 'dealers_register',
       width: 100,
-      render: (value: string | undefined) => (
-        <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
-        </Text>
-      ),
-    }, 
+    },
+    */
     {
       title: (
         <HeaderCell
@@ -245,7 +289,7 @@ export const getColumns = ({
       width: 500,
       render: (value: string | undefined) => (
         <Text className="font-medium text-gray-700 dark:text-gray-600">
-          {value || 'N/A'}
+          {value ?? 'N/A'}
         </Text>
       ),
     }, 
@@ -305,5 +349,6 @@ export const getColumns = ({
 
   return columns;
 };
+
 
 

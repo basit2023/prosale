@@ -59,29 +59,29 @@ export default function ActivityReport() {
         return (
           <>
             <FormGroup
-              title="Employee Info"
-              description="Add Employee details here"
+              title="Daily Activity Report"
+              description="Add daily activity report here. This will help you to keep track of your daily activities and improve your performance."
               className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
             />
 
             <div className="mb-10 grid gap-7 divide-y divide-dashed divide-gray-200 @2xl:gap-9 @3xl:gap-11">
               <FormGroup
-                title="Daily Office Visits"
+                title="Leads Assigned (Currently)"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
                   type="number"
                   min={0}
                   step={1}
-                  {...register('daily_office_visits', { valueAsNumber: true })}
+                  {...register('lead_assigned', { valueAsNumber: true })}
                   suffix={
                     <div className="-mr-3.5 grid gap-[2px] p-0.5 rtl:-ml-3.5 rtl:-mr-0">
                       <button
                         type="button"
                         className="rounded-[3px] bg-gray-100 py-0.5 px-1.5 hover:bg-gray-200 focus:bg-gray-200"
                         onClick={() => {
-                          const current = getValues('daily_office_visits') || 0;
-                          setValue('daily_office_visits', current + 1);
+                          const current = getValues('lead_assigned') || 0;
+                          setValue('lead_assigned', current + 1);
                         }}
                       >
                         <ChevronUpIcon className="h-3 w-3" />
@@ -90,8 +90,78 @@ export default function ActivityReport() {
                         type="button"
                         className="rounded-[3px] bg-gray-100 py-0.5 px-1.5 hover:bg-gray-200 focus:bg-gray-200"
                         onClick={() => {
-                          const current = getValues('daily_office_visits') || 0;
-                          setValue('daily_office_visits', Math.max(0, current - 1));
+                          const current = getValues('lead_assigned') || 0;
+                          setValue('lead_assigned', Math.max(0, current - 1));
+                        }}
+                      >
+                        <ChevronDownIcon className="h-3 w-3" />
+                      </button>
+                    </div>
+                  }
+                />
+              </FormGroup>
+              <FormGroup
+                title="Total Dialed Calls"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  {...register('total_dialed_calls', { valueAsNumber: true })}
+                  suffix={
+                    <div className="-mr-3.5 grid gap-[2px] p-0.5 rtl:-ml-3.5 rtl:-mr-0">
+                      <button
+                        type="button"
+                        className="rounded-[3px] bg-gray-100 py-0.5 px-1.5 hover:bg-gray-200 focus:bg-gray-200"
+                        onClick={() => {
+                          const current = getValues('total_dialed_calls') || 0;
+                          setValue('total_dialed_calls', current + 1);
+                        }}
+                      >
+                        <ChevronUpIcon className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-[3px] bg-gray-100 py-0.5 px-1.5 hover:bg-gray-200 focus:bg-gray-200"
+                        onClick={() => {
+                          const current = getValues('total_dialed_calls') || 0;
+                          setValue('total_dialed_calls', Math.max(0, current - 1));
+                        }}
+                      >
+                        <ChevronDownIcon className="h-3 w-3" />
+                      </button>
+                    </div>
+                  }
+                />
+              </FormGroup>
+              <FormGroup
+                title="Total Connected Calls"
+                className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
+              >
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  {...register('total_connected_calls', { valueAsNumber: true })}
+                  suffix={
+                    <div className="-mr-3.5 grid gap-[2px] p-0.5 rtl:-ml-3.5 rtl:-mr-0">
+                      <button
+                        type="button"
+                        className="rounded-[3px] bg-gray-100 py-0.5 px-1.5 hover:bg-gray-200 focus:bg-gray-200"
+                        onClick={() => {
+                          const current = getValues('total_connected_calls') || 0;
+                          setValue('total_connected_calls', current + 1);
+                        }}
+                      >
+                        <ChevronUpIcon className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        className="rounded-[3px] bg-gray-100 py-0.5 px-1.5 hover:bg-gray-200 focus:bg-gray-200"
+                        onClick={() => {
+                          const current = getValues('total_connected_calls') || 0;
+                          setValue('total_connected_calls', Math.max(0, current - 1));
                         }}
                       >
                         <ChevronDownIcon className="h-3 w-3" />
@@ -101,7 +171,8 @@ export default function ActivityReport() {
                 />
               </FormGroup>
               
-              <FormGroup
+              
+              {/* <FormGroup
                 title="Clients Matured"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
@@ -135,7 +206,7 @@ export default function ActivityReport() {
                     </div>
                   }
                 />
-              </FormGroup>
+              </FormGroup> */}
 
               <FormGroup
                 title="Daily Leads Follow Ups"
@@ -172,24 +243,23 @@ export default function ActivityReport() {
                   }
                 />
               </FormGroup>
-
               <FormGroup
-                title="Leads Assigned (Currently)"
+                title="Visits / sites visited"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
                   type="number"
                   min={0}
                   step={1}
-                  {...register('lead_assigned', { valueAsNumber: true })}
+                  {...register('daily_office_visits', { valueAsNumber: true })}
                   suffix={
                     <div className="-mr-3.5 grid gap-[2px] p-0.5 rtl:-ml-3.5 rtl:-mr-0">
                       <button
                         type="button"
                         className="rounded-[3px] bg-gray-100 py-0.5 px-1.5 hover:bg-gray-200 focus:bg-gray-200"
                         onClick={() => {
-                          const current = getValues('lead_assigned') || 0;
-                          setValue('lead_assigned', current + 1);
+                          const current = getValues('daily_office_visits') || 0;
+                          setValue('daily_office_visits', current + 1);
                         }}
                       >
                         <ChevronUpIcon className="h-3 w-3" />
@@ -198,8 +268,8 @@ export default function ActivityReport() {
                         type="button"
                         className="rounded-[3px] bg-gray-100 py-0.5 px-1.5 hover:bg-gray-200 focus:bg-gray-200"
                         onClick={() => {
-                          const current = getValues('lead_assigned') || 0;
-                          setValue('lead_assigned', Math.max(0, current - 1));
+                          const current = getValues('daily_office_visits') || 0;
+                          setValue('daily_office_visits', Math.max(0, current - 1));
                         }}
                       >
                         <ChevronDownIcon className="h-3 w-3" />
@@ -209,8 +279,10 @@ export default function ActivityReport() {
                 />
               </FormGroup>
 
+              
+
               <FormGroup
-                title="Meetings With Dealers"
+                title="Total Scheduled Meetings"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
                 <Input
@@ -245,7 +317,7 @@ export default function ActivityReport() {
                 />
               </FormGroup>
 
-              <FormGroup
+              {/* <FormGroup
                 title="Dealers Registered"
                 className="pt-7 @2xl:pt-9 @3xl:grid-cols-12 @3xl:pt-11"
               >
@@ -279,7 +351,7 @@ export default function ActivityReport() {
                     </div>
                   }
                 />
-              </FormGroup>
+              </FormGroup> */}
 
               <FormGroup
                 title="Other Office Activity"

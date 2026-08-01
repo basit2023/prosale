@@ -8,6 +8,9 @@ export type Invoice = {
     client_matured: number;
     daily_lead_follow_up: number;
     lead_assigned: number;
+    total_dialed_calls: number;
+    total_connected_calls: number;
+    total_whatsapp: number;
     dealers_meeting: number;
     dealers_register: number;
     office_activity: number;
@@ -48,6 +51,9 @@ export const useEmployeeData = () => {
       client_matured: user.client_matured,
       daily_lead_follow_up: user.daily_lead_follow_up,
       lead_assigned: user.lead_assigned,
+      total_dialed_calls: user.total_dialed_calls,
+      total_connected_calls: user.total_connected_calls,
+      total_whatsapp: user.total_whatsapp,
       dealers_meeting: user.dealers_meeting,
       dealers_register: user.dealers_register,
       full_name: user.full_name,

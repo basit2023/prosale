@@ -62,6 +62,15 @@ type SuperAdminUser = {
   inactive_days?: number | null;
   is_inactive_attention?: boolean;
   inactive_reason?: string;
+  last_meeting_date?: string | null;
+  days_since_meeting?: number | null;
+  meeting_comments_total?: number;
+  is_meeting_inactive?: boolean;
+  meeting_inactive_reason?: string;
+  recovery_category_updates?: number;
+  recovery_category_leads?: number;
+  recovery_categories?: Array<{ category: string; count: number }>;
+  has_repeated_recovery_categories?: boolean;
   status: 'active' | 'low_activity' | 'no_activity';
 };
 
@@ -90,6 +99,11 @@ type SuperAdminData = {
   attentionUsers?: SuperAdminUser[];
   inactiveThresholdDays?: number;
   inactiveUsers?: SuperAdminUser[];
+  meetingInactiveThresholdDays?: number;
+  meetingAttentionUsers?: SuperAdminUser[];
+  recoveryCategoryUsers?: SuperAdminUser[];
+  recoveryCategoryDetails?: any[];
+  recoveryCategoryDetailsByUser?: Record<string, any[]>;
   reassignmentBreakdown?: ReassignmentBreakdown[];
   reassignmentByUser?: Record<string, any>;
   details?: Record<DetailType, any[]>;
@@ -526,9 +540,11 @@ function UserActivityModal({
   const leadRows = rowsFor('leads');
   const unreadLeadRows = leadRows.filter((row) => row.view_dt === 'new_lead');
   const reassignedLeadRows = leadRows.filter((row) => row.assigned_through);
+  const recoveryCategoryRows = data?.recoveryCategoryDetailsByUser?.[user.username] || [];
   const sections: Array<{ type: DetailType; title: string; rows: any[] }> = [
     { type: 'leads', title: 'Unread leads in range', rows: unreadLeadRows },
     { type: 'leads', title: 'Reassigned leads in range', rows: reassignedLeadRows },
+    { type: 'leads', title: 'Recovery category changes', rows: recoveryCategoryRows },
     { type: 'leads', title: 'Assigned leads in range', rows: leadRows },
     { type: 'comments', title: 'Comments', rows: rowsFor('comments') },
     { type: 'calls', title: 'Call history', rows: rowsFor('calls') },
@@ -537,6 +553,7 @@ function UserActivityModal({
   ];
 
   const describeRow = (type: DetailType, row: any) => {
+    if (type === 'leads' && row.category) return `${row.category} | Current: ${row.current_label || '-'} | Assigned to ${row.assigned_to || '-'}`;
     if (type === 'leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Assigned by ${row.assigned_through || '-'}`;
     if (type === 'comments') return row.comments || '-';
     if (type === 'calls') return `${callStatusText(row)} | Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
@@ -545,7 +562,7 @@ function UserActivityModal({
   };
 
   const rowTime = (type: DetailType, row: any) => {
-    if (type === 'leads') return row.assigned_on;
+    if (type === 'leads') return row.created_at || row.assigned_on;
     if (type === 'opens') return row.last_opened_at;
     return row.dt || row.attended_at || row.followupdate || row.opentime;
   };
@@ -837,6 +854,8 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
   const visibleTopCommenters = (data?.topCommenters || []).filter((item) => Number(item.permission_level || 0) < 9);
   const visibleAttentionUsers = (data?.attentionUsers || []).filter((item) => Number(item.permission_level || 0) < 9);
   const visibleInactiveUsers = (data?.inactiveUsers || []).filter((item) => Number(item.permission_level || 0) < 9);
+  const visibleMeetingAttentionUsers = (data?.meetingAttentionUsers || []).filter((item) => Number(item.permission_level || 0) < 9);
+  const visibleRecoveryCategoryUsers = (data?.recoveryCategoryUsers || []).filter((item) => Number(item.permission_level || 0) < 9);
   const topUsers = visibleUsers.slice(0, 10).map((item) => ({
     name: item.full_name,
     Comments: item.comments_added,
@@ -1306,6 +1325,87 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
           onClose={() => setSelected(null)}
           onLeadOpen={(lead) => setSelectedLead(lead)}
         />
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+        <div className="rounded-2xl border border-blue-100 bg-white p-5 shadow-sm dark:bg-gray-900">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <div className="text-xs font-bold uppercase text-blue-600">Meeting activity</div>
+              <h3 className="font-bold text-gray-900 dark:text-white">
+                No meeting activity {data?.meetingInactiveThresholdDays || 2}+ days
+              </h3>
+              <p className="text-xs text-gray-500">Detected from meeting or visit comments.</p>
+            </div>
+            <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
+              {number(visibleMeetingAttentionUsers.length)}
+            </span>
+          </div>
+          <div className="max-h-[420px] space-y-2 overflow-y-auto">
+            {visibleMeetingAttentionUsers.map((item) => (
+              <button
+                key={item.username}
+                type="button"
+                onClick={() => openUserDetails(item)}
+                className="flex w-full justify-between gap-3 rounded-xl bg-blue-50 px-3 py-2 text-left hover:bg-blue-100 dark:bg-blue-950/30"
+              >
+                <span>
+                  <span className="block text-sm font-semibold text-blue-950 dark:text-blue-100">{item.full_name}</span>
+                  <span className="text-xs text-blue-700 dark:text-blue-300">{item.meeting_inactive_reason}</span>
+                  {item.last_meeting_date ? <span className="block text-[11px] text-gray-500">Last: {formatDateTime(item.last_meeting_date)}</span> : null}
+                </span>
+                <span className="shrink-0 text-xs font-bold text-blue-700">
+                  {`${number(item.days_since_meeting)}d`}
+                </span>
+              </button>
+            ))}
+            {!visibleMeetingAttentionUsers.length ? (
+              <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-500">All users have recent meeting activity.</div>
+            ) : null}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-amber-100 bg-white p-5 shadow-sm dark:bg-gray-900">
+          <div className="mb-3 flex items-center justify-between">
+            <div>
+              <div className="text-xs font-bold uppercase text-amber-600">Category review</div>
+              <h3 className="font-bold text-gray-900 dark:text-white">Repeated category changes</h3>
+              <p className="text-xs text-gray-500">
+                Why was the client marked Not Interested or changed from Uncategorised?
+              </p>
+            </div>
+            <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
+              {number(visibleRecoveryCategoryUsers.length)}
+            </span>
+          </div>
+          <div className="max-h-[420px] space-y-2 overflow-y-auto">
+            {visibleRecoveryCategoryUsers.map((item) => (
+              <button
+                key={item.username}
+                type="button"
+                onClick={() => openUserDetails(item)}
+                className="w-full rounded-xl bg-amber-50 px-3 py-3 text-left hover:bg-amber-100 dark:bg-amber-950/30"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-semibold text-amber-950 dark:text-amber-100">{item.full_name}</span>
+                  <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-amber-700 dark:bg-gray-900">
+                    {number(item.recovery_category_leads)} leads
+                  </span>
+                </div>
+                <div className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                  {(item.recovery_categories || []).map((entry) => `${entry.category}: ${entry.count}`).join(' | ')}
+                </div>
+                <div className="mt-1 text-[11px] text-gray-500">
+                  {number(item.recovery_category_updates)} updates. Review why the client was not interested or the category was changed.
+                </div>
+              </button>
+            ))}
+            {!visibleRecoveryCategoryUsers.length ? (
+              <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-500">
+                No repeated Not Interested or Uncategorised changes found.
+              </div>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">

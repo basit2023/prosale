@@ -96,7 +96,7 @@ export default function RecentActivities({ className }: { className?: string }) 
                     <div className="mt-2 rounded-md border border-gray-100 bg-gray-50 p-2 text-xs text-gray-600">
                       <ul className="grid grid-cols-2 gap-1">
                         {item.daily_lead_follow_up > 0 && <li>Follow-ups: <span className="font-medium text-gray-800">{item.daily_lead_follow_up}</span></li>}
-                        {item.client_matured > 0 && <li>Clients Matured: <span className="font-medium text-gray-800">{item.client_matured}</span></li>}
+                        {/* {item.client_matured > 0 && <li>Clients Matured: <span className="font-medium text-gray-800">{item.client_matured}</span></li>} */}
                         {item.dealers_meeting > 0 && <li>Dealer Mtgs: <span className="font-medium text-gray-800">{item.dealers_meeting}</span></li>}
                         {item.daily_office_visits > 0 && <li>Office Visits: <span className="font-medium text-gray-800">{item.daily_office_visits}</span></li>}
                       </ul>

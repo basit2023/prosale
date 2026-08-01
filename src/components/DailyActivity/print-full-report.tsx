@@ -18,6 +18,9 @@ interface ActivityData {
   client_matured: number;
   daily_lead_follow_up: number;
   lead_assigned: number;
+  total_dialed_calls: number;
+  total_connected_calls: number;
+  total_whatsapp: number;
   dealers_meeting: number;
   dealers_register: number;
   office_activity: string;
@@ -62,6 +65,22 @@ export default function PrintFullReport({ slug }: { slug: string }) {
     month: 'short',
     year: 'numeric',
   });
+
+  const hasOfficeActivity = (activity?: string) => {
+    const value = activity?.trim();
+    return Boolean(value && value.toUpperCase() !== 'N/A');
+  };
+
+  const hasReportValue = (activity: ActivityData) => (
+    Boolean(activity.lead_assigned) ||
+    Boolean(activity.total_dialed_calls) ||
+    Boolean(activity.total_connected_calls) ||
+    Boolean(activity.total_whatsapp) ||
+    Boolean(activity.daily_lead_follow_up) ||
+    Boolean(activity.daily_office_visits) ||
+    Boolean(activity.dealers_meeting) ||
+    hasOfficeActivity(activity.office_activity)
+  );
 
   if (!isClient) {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -111,85 +130,32 @@ export default function PrintFullReport({ slug }: { slug: string }) {
                 <table className="w-full table-fixed border border-gray-300 text-sm print:text-xs">
                   <thead>
                     <tr>
-                      <th
-                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-left
-                                   print:static print:top-auto print:z-auto"
-                        style={{ width: '15%' }}
-                      >
-                        Employee
-                      </th>
-                      <th
-                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
-                                   print:static print:top-auto print:z-auto"
-                        style={{ width: '10%' }}
-                      >
-                        Office Visits
-                      </th>
-                      <th
-                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
-                                   print:static print:top-auto print:z-auto"
-                        style={{ width: '10%' }}
-                      >
-                        Clients Matured
-                      </th>
-                      <th
-                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
-                                   print:static print:top-auto print:z-auto"
-                        style={{ width: '10%' }}
-                      >
-                        Leads Followups
-                      </th>
-                      <th
-                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
-                                   print:static print:top-auto print:z-auto"
-                        style={{ width: '10%' }}
-                      >
-                        Leads Assigned
-                      </th>
-                      <th
-                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
-                                   print:static print:top-auto print:z-auto"
-                        style={{ width: '10%' }}
-                      >
-                        Dealer Meetings
-                      </th>
-                      <th
-                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
-                                   print:static print:top-auto print:z-auto"
-                        style={{ width: '10%' }}
-                      >
-                        Dealer Registered
-                      </th>
-                      <th
-                        className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center
-                                   print:static print:top-auto print:z-auto"
-                        style={{ width: '25%' }}
-                      >
-                        Other Activity
-                      </th>
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-left print:static print:top-auto print:z-auto" style={{ width: '13%' }}>Employee</th>
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center print:static print:top-auto print:z-auto" style={{ width: '9%' }}>Leads Assigned</th>
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center print:static print:top-auto print:z-auto" style={{ width: '9%' }}>Total Dialed Calls</th>
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center print:static print:top-auto print:z-auto" style={{ width: '9%' }}>Total Connected Calls</th>
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center print:static print:top-auto print:z-auto" style={{ width: '9%' }}>Total WhatsApp</th>
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center print:static print:top-auto print:z-auto" style={{ width: '9%' }}>Leads Followups</th>
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center print:static print:top-auto print:z-auto" style={{ width: '9%' }}>Visits / Sites Visited</th>
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center print:static print:top-auto print:z-auto" style={{ width: '9%' }}>Total Scheduled Meetings</th>
+                      {/* Legacy columns hidden from the current activity report UI: Clients Matured, Dealer Registered */}
+                      <th className="sticky top-0 z-10 bg-gray-100 px-2 py-1 border-b text-center print:static print:top-auto print:z-auto" style={{ width: '24%' }}>Other Activity</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {activities
-                      .filter(a =>
-                        a.daily_office_visits ||
-                        a.client_matured ||
-                        a.daily_lead_follow_up ||
-                        a.lead_assigned ||
-                        a.dealers_meeting ||
-                        a.dealers_register ||
-                        a.office_activity?.trim()
-                      )
+                      .filter(hasReportValue)
                       .map(a => (
                         <tr key={`${a.user_id}-${date}`} className="break-inside-avoid">
                           <td className="px-2 py-1 border print:border whitespace-nowrap">{a.full_name}</td>
-                          <td className="px-2 py-1 text-center border print:border">{a.daily_office_visits}</td>
-                          <td className="px-2 py-1 text-center border print:border">{a.client_matured}</td>
-                          <td className="px-2 py-1 text-center border print:border">{a.daily_lead_follow_up}</td>
                           <td className="px-2 py-1 text-center border print:border">{a.lead_assigned}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.total_dialed_calls}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.total_connected_calls}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.total_whatsapp}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.daily_lead_follow_up}</td>
+                          <td className="px-2 py-1 text-center border print:border">{a.daily_office_visits}</td>
                           <td className="px-2 py-1 text-center border print:border">{a.dealers_meeting}</td>
-                          <td className="px-2 py-1 text-center border print:border">{a.dealers_register}</td>
-                          <td className="px-2 py-1 text-center border print:border">{a.office_activity}</td>
+                          <td className="px-2 py-1 text-center border print:border">{hasOfficeActivity(a.office_activity) ? a.office_activity : 'N/A'}</td>
                         </tr>
                       ))}
                   </tbody>
