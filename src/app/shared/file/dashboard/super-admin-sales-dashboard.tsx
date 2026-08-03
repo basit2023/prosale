@@ -544,7 +544,7 @@ function UserActivityModal({
   const sections: Array<{ type: DetailType; title: string; rows: any[] }> = [
     { type: 'leads', title: 'Unread leads in range', rows: unreadLeadRows },
     { type: 'leads', title: 'Reassigned leads in range', rows: reassignedLeadRows },
-    { type: 'leads', title: 'Recovery category changes', rows: recoveryCategoryRows },
+    { type: 'leads', title: 'Current leads in labels 7 or 9', rows: recoveryCategoryRows },
     { type: 'leads', title: 'Assigned leads in range', rows: leadRows },
     { type: 'comments', title: 'Comments', rows: rowsFor('comments') },
     { type: 'calls', title: 'Call history', rows: rowsFor('calls') },
@@ -1335,7 +1335,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
               <h3 className="font-bold text-gray-900 dark:text-white">
                 No meeting activity {data?.meetingInactiveThresholdDays || 2}+ days
               </h3>
-              <p className="text-xs text-gray-500">Detected from meeting or visit comments.</p>
+              <p className="text-xs text-gray-500">Detected from scheduled Meeting or Visiting follow-ups.</p>
             </div>
             <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">
               {number(visibleMeetingAttentionUsers.length)}
@@ -1360,7 +1360,7 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
               </button>
             ))}
             {!visibleMeetingAttentionUsers.length ? (
-              <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-500">All users have recent meeting activity.</div>
+              <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-500">All active users scheduled a meeting or visit recently.</div>
             ) : null}
           </div>
         </div>
@@ -1368,9 +1368,9 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
           <div className="mb-3 flex items-center justify-between">
             <div>
               <div className="text-xs font-bold uppercase text-amber-600">Category review</div>
-              <h3 className="font-bold text-gray-900 dark:text-white">Repeated category changes</h3>
+              <h3 className="font-bold text-gray-900 dark:text-white">Repeated recovery categories</h3>
               <p className="text-xs text-gray-500">
-                Why was the client marked Not Interested or changed from Uncategorised?
+                Users with at least two current leads in label 7 or 9.
               </p>
             </div>
             <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-700">
@@ -1395,13 +1395,13 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
                   {(item.recovery_categories || []).map((entry) => `${entry.category}: ${entry.count}`).join(' | ')}
                 </div>
                 <div className="mt-1 text-[11px] text-gray-500">
-                  {number(item.recovery_category_updates)} updates. Review why the client was not interested or the category was changed.
+                  {number(item.recovery_category_leads)} current leads. Review why these clients remain in this category.
                 </div>
               </button>
             ))}
             {!visibleRecoveryCategoryUsers.length ? (
               <div className="rounded-xl bg-gray-50 p-3 text-sm text-gray-500">
-                No repeated Not Interested or Uncategorised changes found.
+                No user has multiple current leads in label 7 or 9.
               </div>
             ) : null}
           </div>
