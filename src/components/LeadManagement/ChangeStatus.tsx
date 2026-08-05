@@ -395,7 +395,7 @@ export default function ChangeStatus({ id }: any) {
         </button>
       </div>
 
-      <div className="mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
+      {/* <div className=" mb-6 rounded-xl border border-gray-100 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-900">
         <h3 className="font-bold text-gray-900 dark:text-white">Recent Call Results</h3>
         <div className="mt-3 space-y-2">
           {callLogs.slice(0, 5).map((log) => (
@@ -415,7 +415,7 @@ export default function ChangeStatus({ id }: any) {
           ))}
           {!callLogs.length ? <div className="text-sm text-gray-500">No calls logged for this lead.</div> : null}
         </div>
-      </div>
+      </div> */}
 
       {pendingCallResult ? (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50 p-4">

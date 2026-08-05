@@ -58,6 +58,9 @@ const AISmartInsights = dynamic(() => import('./ai-smart-insights'), {
 const SuperAdminSalesDashboard = dynamic(() => import('./super-admin-sales-dashboard'), {
   loading: () => skeleton('h-[720px]'),
 });
+const SalesExecutionWorkspace = dynamic(() => import('./sales-execution-workspace'), {
+  loading: () => skeleton('h-[560px]'),
+});
 
 function SalesCommandCenter({
   data,
@@ -292,6 +295,7 @@ export default function FileDashboard() {
             showTeamOverview={false}
           />
         </div>
+        <SalesExecutionWorkspace />
         {!isSuperAdmin && (
           <>
             <SalesCommandCenter
