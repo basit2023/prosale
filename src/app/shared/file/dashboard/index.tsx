@@ -268,11 +268,7 @@ export default function FileDashboard() {
           return;
         }
 
-        if (isSuperAdmin) {
-          setDashboardData(null);
-          setLoading(false);
-          return;
-        }
+
 
         setLoading(true);
         const response = await apiService.get('/total-items', { params: userParams });
@@ -287,22 +283,20 @@ export default function FileDashboard() {
     if (status === 'authenticated') {
       fetchDashboardData();
     }
-  }, [isSuperAdmin, userParams, status]);
+  }, [userParams, status]);
 
   return (
     <div className="mt-2 @container">
       <div className="grid grid-cols-1 gap-6 @container lg:grid-cols-12 2xl:gap-8">
-        {!isSuperAdmin && (
-          <div className="col-span-full">
-            <FileStats className="mb-4" data={dashboardData} loading={loading} />
-            <LeadStats
-              className="mb-4"
-              data={dashboardData}
-              loading={loading}
-              showTeamOverview={false}
-            />
-          </div>
-        )}
+        <div className="col-span-full">
+          <FileStats className="mb-4" data={dashboardData} loading={loading} />
+          <LeadStats
+            className="mb-4"
+            data={dashboardData}
+            loading={loading}
+            showTeamOverview={false}
+          />
+        </div>
         {!isSuperAdmin && <SalesExecutionWorkspace />}
         {!isSuperAdmin && (
           <>
@@ -400,3 +394,4 @@ export default function FileDashboard() {
     </div>
   );
 }
+
