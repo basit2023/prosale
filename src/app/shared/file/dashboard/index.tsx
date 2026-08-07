@@ -268,6 +268,12 @@ export default function FileDashboard() {
           return;
         }
 
+        if (isSuperAdmin) {
+          setDashboardData(null);
+          setLoading(false);
+          return;
+        }
+
         setLoading(true);
         const response = await apiService.get('/total-items', { params: userParams });
         setDashboardData(response.data.data);
@@ -281,21 +287,23 @@ export default function FileDashboard() {
     if (status === 'authenticated') {
       fetchDashboardData();
     }
-  }, [userParams, status]);
+  }, [isSuperAdmin, userParams, status]);
 
   return (
     <div className="mt-2 @container">
       <div className="grid grid-cols-1 gap-6 @container lg:grid-cols-12 2xl:gap-8">
-        <div className="col-span-full">
-          <FileStats className="mb-4" data={dashboardData} loading={loading} />
-          <LeadStats
-            className="mb-4"
-            data={dashboardData}
-            loading={loading}
-            showTeamOverview={false}
-          />
-        </div>
-        <SalesExecutionWorkspace />
+        {!isSuperAdmin && (
+          <div className="col-span-full">
+            <FileStats className="mb-4" data={dashboardData} loading={loading} />
+            <LeadStats
+              className="mb-4"
+              data={dashboardData}
+              loading={loading}
+              showTeamOverview={false}
+            />
+          </div>
+        )}
+        {!isSuperAdmin && <SalesExecutionWorkspace />}
         {!isSuperAdmin && (
           <>
             <SalesCommandCenter
@@ -325,14 +333,16 @@ export default function FileDashboard() {
         <div className="col-span-full">
           <AISmartInsights className="w-full" />
         </div>
-        <div className="col-span-full">
-          <LeadStats
-            className="mb-4"
-            data={dashboardData}
-            loading={loading}
-            showStatCards={false}
-          />
-        </div>
+        {!isSuperAdmin && (
+          <div className="col-span-full">
+            <LeadStats
+              className="mb-4"
+              data={dashboardData}
+              loading={loading}
+              showStatCards={false}
+            />
+          </div>
+        )}
 
         {isAdmin && (
           <>
