@@ -60,6 +60,7 @@ export const routes = {
     highly_interested: '/leads/highly_interested',
     search_leads: '/leads/search',
     followup: '/leads/followup',
+    meetings: '/leads/meetings',
     full_report: '/leads/activity-report/full-report',
     Activity_list: '/leads/activity-report/list',
     DailyActivity: '/leads/activity-report',
@@ -245,3 +246,4 @@ export const routes = {
     bookingform: '/bookingform'
   }
 };
+
