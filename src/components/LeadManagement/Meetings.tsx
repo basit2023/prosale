@@ -73,6 +73,8 @@ const defaultForm = {
   meeting_outcome: '',
   follow_up_action: '',
   next_meeting_at: '',
+  next_meeting_date: '',
+  next_meeting_time: '',
 };
 
 const meetingTypes = [
@@ -266,7 +268,9 @@ const saveMeeting = async (event: React.FormEvent<HTMLFormElement>) => {
         lead_id: form.lead_id ? Number(form.lead_id) : null,
         duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
         assigned_agent: (session as any)?.user?.username || (session as any)?.user?.name || null,
-        next_meeting_at: form.next_meeting_at || null,
+        next_meeting_at: null,
+        next_meeting_date: form.next_meeting_date || null,
+        next_meeting_time: form.next_meeting_time || null,
       });
       setForm(defaultForm);
       setLeadQuery('');
@@ -378,7 +382,10 @@ const saveMeeting = async (event: React.FormEvent<HTMLFormElement>) => {
             <Textarea label="Client feedback" value={form.client_feedback} onChange={(event) => updateForm('client_feedback', event.target.value)} />
             <Input label="Meeting outcome" value={form.meeting_outcome} onChange={(event) => updateForm('meeting_outcome', event.target.value)} />
             <Input label="Follow-up action" value={form.follow_up_action} onChange={(event) => updateForm('follow_up_action', event.target.value)} />
-            <Input label="Next meeting date" type="datetime-local" value={form.next_meeting_at} onChange={(event) => updateForm('next_meeting_at', event.target.value)} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input label="Next meeting date" type="date" value={form.next_meeting_date} onChange={(event) => updateForm('next_meeting_date', event.target.value)} />
+              <Input label="Next meeting time" type="time" value={form.next_meeting_time} onChange={(event) => updateForm('next_meeting_time', event.target.value)} />
+            </div>
             <div>
               <Text className="mb-1 text-xs font-medium text-gray-500">Meeting photos</Text>
               <input
@@ -483,5 +490,4 @@ function MeetingAttachmentPreview({ attachments }: { attachments?: Meeting['atta
     </div>
   );
 }
-
 
