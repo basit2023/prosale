@@ -18,7 +18,7 @@ import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
 import { useEffect, useState } from 'react';
-import apiService from '@/utils/apiService';
+import apiService, { deduplicatedGet } from '@/utils/apiService';
 import {
   defaultValues,
   personalInfoFormSchema,
@@ -54,7 +54,7 @@ export default function PersonalInfoView({id}:Props) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await apiService.get(`/emp-personalinfo/${id}`);
+        const response = await deduplicatedGet(`/emp-personalinfo/${id}`);
         
         const userData = response.data;
         setValue1(userData);
@@ -68,7 +68,7 @@ export default function PersonalInfoView({id}:Props) {
     if (session) {
       fetchData();
     }
-  }, [session]);
+  }, [session, id]);
 
   const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
     setIsLoading(true);

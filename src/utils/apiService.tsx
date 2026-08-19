@@ -1,5 +1,5 @@
 
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { AES, enc } from 'crypto-js';
 
 const baseURL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api').replace(/\/$/, '');
@@ -13,26 +13,54 @@ const apiService: AxiosInstance = axios.create({
   },
 });
 
+const pendingGetRequests = new Map<string, Promise<AxiosResponse<any>>>();
+
+// Share identical GETs that are already in flight. Results are not retained,
+// so mutations and later refreshes always receive fresh server data.
+export const deduplicatedGet = <T = any>(
+  url: string,
+  config: AxiosRequestConfig = {}
+): Promise<AxiosResponse<T>> => {
+  const key = `${url}|${JSON.stringify(config.params || {})}`;
+  const existing = pendingGetRequests.get(key);
+  if (existing) return existing as Promise<AxiosResponse<T>>;
+
+  const request = apiService.get<T>(url, config).finally(() => {
+    pendingGetRequests.delete(key);
+  });
+  pendingGetRequests.set(key, request);
+  return request;
+};
+
+let cachedEncryptedData: string | null | undefined;
+let cachedToken: string | null = null;
+
 const getStoredToken = () => {
   if (typeof window === 'undefined') return null;
 
   try {
     const encryptedData = localStorage.getItem('userData');
-    if (!encryptedData) return null;
+    if (encryptedData === cachedEncryptedData) return cachedToken;
+
+    cachedEncryptedData = encryptedData;
+    cachedToken = null;
+    if (!encryptedData) return cachedToken;
 
     const decryptedData = AES.decrypt(encryptedData, 'encryptionSecret');
     const text = decryptedData.toString(enc.Utf8);
-    if (!text) return null;
+    if (!text) return cachedToken;
 
     const parsed: any = JSON.parse(text);
-    return (
+    cachedToken = (
       parsed?.token ||
       parsed?.accessToken ||
       parsed?.data?.token ||
       parsed?.user?.token ||
       null
     );
+    return cachedToken;
   } catch {
+    cachedToken = null;
     return null;
   }
 };

@@ -160,14 +160,21 @@ const summaryCards = [
   {
     key: 'calls_started',
     label: 'Connected Leads',
-    hint: 'Unique phone N calls with 1+ minute duration',
+    hint: 'Disposition connected calls',
     icon: PiPhoneCallDuotone,
     tone: 'bg-amber-50 text-amber-600',
   },
   {
+    key: 'dialed_calls',
+    label: 'Dialed Calls',
+    hint: 'All call-log rows in range',
+    icon: PiPhoneCallDuotone,
+    tone: 'bg-orange-50 text-orange-600',
+  },
+  {
     key: 'whatsapp_opened',
     label: 'WhatsApp Shared',
-    hint: 'WhatsApp N means details shared',
+    hint: 'WhatsApp button clicks in range',
     icon: PiPhoneCallDuotone,
     tone: 'bg-teal-50 text-teal-600',
   },
@@ -244,6 +251,7 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
   if (key === 'calls_started') {
     return uniqueConnectedCallRows(details.calls || []);
   }
+  if (key === 'dialed_calls') return details.calls || [];
   if (key === 'whatsapp_opened') {
     return (details.calls || []).filter((row: any) => Number(row.is_whatsapp_shared || 0) === 1);
   }
@@ -262,8 +270,8 @@ const summaryRowUser = (key: SummaryCardKey, row: any) => {
 
 const callStatusText = (row: any) => {
   const statuses = [];
-  if (Number(row.is_connected_call || 0) === 1) statuses.push('Connected 1+ min');
-  if (Number(row.is_phone_attempt || 0) === 1) statuses.push('Phone N attempt');
+  if (Number(row.is_connected_call || 0) === 1) statuses.push('Connected');
+  if (Number(row.is_phone_attempt || 0) === 1) statuses.push('Dialed');
   if (Number(row.is_whatsapp_shared || 0) === 1) statuses.push('WhatsApp shared');
   return statuses.length ? statuses.join(' | ') : 'Call activity';
 };
@@ -276,7 +284,8 @@ const summaryRowDetails = (key: SummaryCardKey, row: any) => {
   if (key === 'unread_leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Not opened yet`;
   if (key === 'comments_added') return row.comments || '-';
   if (key === 'calls_started') return `${callStatusText(row)} | Phone: ${row.phone || 'N'} | Duration: ${row.totaltime || '-'}`;
-  if (key === 'whatsapp_opened') return `WhatsApp details shared | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
+  if (key === 'dialed_calls') return `${String(row.disposition || row.call_status || 'PENDING').replace(/_/g, ' ')} | Phone: ${row.phone || 'N'} | Duration: ${row.totaltime || '-'}`;
+  if (key === 'whatsapp_opened') return `WhatsApp opened | WhatsApp: ${row.whatsapp || 'Y'} | Duration: ${row.totaltime || '-'}`;
   if (key === 'unique_leads_opened') return `Opened ${row.event_count || 1} time(s), counted as 1 unique lead.`;
   if (key === 'followups_attended') return `${row.followup || 'Follow-up'} | Done`;
   if (key === 'followups_created') return `${row.followup || 'Follow-up'} | ${Number(row.nextfollowup) === 0 ? 'Done' : 'Pending'}`;

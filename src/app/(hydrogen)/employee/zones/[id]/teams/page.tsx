@@ -9,6 +9,7 @@ import { ZoneTeamData } from '@/components/AllZons/zone-teams'
 import TableLayout from './table-layout'
 import { metaObject } from '@/config/site.config';
 import { Empty } from "rizzui";
+import Spinner from '@/components/ui/spinner';
 type Props = {
   params: { id: string };
 };
@@ -20,13 +21,17 @@ const pageHeader = {
 
 export default function EnhancedTablePage({ params }: Props) {
   
-  const invoiceData = ZoneTeamData({ id: params.id });
+  const { data: invoiceData, loading, error } = ZoneTeamData({ id: params.id });
+
+  if (loading) {
+    return <div className="flex h-[70vh] items-center justify-center"><Spinner size="xl" /></div>;
+  }
+
+  if (error) {
+    return <div className="flex h-[70vh] items-center justify-center"><Empty text={error} textClassName="mt-2" /></div>;
+  }
   
   if (invoiceData.length === 0) {
-    setTimeout(() => {
-      renderComponents();
-    }, 1000);
-
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '24px' }}>
         

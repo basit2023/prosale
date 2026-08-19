@@ -29,30 +29,36 @@ export type Invoice = {
 };
 export const useEmployeeData = ({ id }:any) => {
     
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [value, setValue] = useState<any>([]);
-  const comanpy_id = localStorage.getItem('company_id');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   useEffect(() => {
+    if (status === 'loading') return;
+    if (!session?.user?.email) {
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
-        if (session) {
-          const response = await apiService.get(`/highly-interested-tabel/${id}?field=customer&email=${session?.user?.email}&company=${comanpy_id}`
-         );
-          const userData = response.data.leads;
-         
-          
-          setValue(userData);
-        }
+        setLoading(true);
+        setError(null);
+        const companyId = localStorage.getItem('company_id') || '';
+        const response = await apiService.get(`/highly-interested-tabel/${id}?field=customer&email=${session.user.email}&company=${companyId}`);
+        setValue(response.data.leads);
       } catch (error) {
         console.error('Error fetching label leads:', error);
+        setError('Failed to load assigned leads. Please try again.');
         toast.error('Error fetching label leads. Please try again.');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-  }, [session]);
-  let email=session?.user?.email;
+  }, [id, session?.user?.email, status]);
   let  productsData = (value || []).map((user:any) => ({
     id:user.id,
     name: user.customer_name,
@@ -69,7 +75,7 @@ export const useEmployeeData = ({ id }:any) => {
 
     
   }));
-  return productsData;
+  return { data: productsData, loading, error };
 };
 
 // export default useEmployeeData;

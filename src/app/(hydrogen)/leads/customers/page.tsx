@@ -1,11 +1,9 @@
 'use client';
-import { routes } from '@/config/routes';
 import InvoiceTable from '@/components/LeadManagement/AllCustomers/customers/table';
 import { useEmployeeData } from '@/components/LeadManagement/AllCustomers/AllCustomer';
 import TableLayout from './tabel-layout';
 import { useSession } from 'next-auth/react';
 import { Empty } from 'rizzui';
-import { useEffect, useState } from 'react';
 import Spinner from '@/components/ui/spinner';
 const pageHeader = {
   title: 'All Customers',
@@ -14,18 +12,7 @@ const pageHeader = {
 
 export default function EnhancedTablePage() {
   const { data: session, status } = useSession();
-  const invoiceData = useEmployeeData(session?.user?.email);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (status === 'loading') return; // Wait for session to load
-    // Wait until data is fetched
-    const timeout = setTimeout(() => {
-      setLoading(false);
-    }, 500); // optional slight delay for UX
-
-    return () => clearTimeout(timeout);
-  }, [status, invoiceData]);
+  const { data: invoiceData, loading, error } = useEmployeeData(session?.user?.email);
 
   if (loading || status === 'loading') {
     return (
@@ -35,7 +22,15 @@ export default function EnhancedTablePage() {
     );
   }
 
-  if (!invoiceData || invoiceData.length === 0) {
+  if (error) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Empty text={error} textClassName="mt-2" />
+      </div>
+    );
+  }
+
+  if (invoiceData.length === 0) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Empty text="No Customer found" textClassName="mt-2" />

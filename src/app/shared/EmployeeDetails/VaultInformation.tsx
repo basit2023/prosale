@@ -11,7 +11,7 @@ import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
 import { useEffect, useState, useMemo } from 'react';
-import apiService from '@/utils/apiService';
+import apiService, { deduplicatedGet } from '@/utils/apiService';
 import { decryptData } from '@/components/encriptdycriptdata';
 import { Password } from '@/components/ui/password';
 import { VaultInfoFormSchema, VaultInfoFormTypes, defaultValues } from '@/utils/validators/vault-info-shema';
@@ -36,10 +36,11 @@ export default function Vaultinformation({ id }: VaultInformationProps) {
   const [userTypes, setUserTypes] = useState<any[]>([]);
   const [userData, setUserData] = useState<any>(null);
   const [initialData, setInitialData] = useState<any>(null);
-const memoizedSession=useMemo(()=>session,[session])
   // Memoize the decrypted user data to avoid unnecessary decryption
 
   const decryptedUserData = useMemo(() => {
+    if (!session?.user?.email) return null;
+
     try {
       const encryptedData = localStorage.getItem('uData');
       return encryptedData ? decryptData(encryptedData) : null;
@@ -47,7 +48,7 @@ const memoizedSession=useMemo(()=>session,[session])
       console.error('Error decrypting user data:', error);
       return null;
     }
-  }, [session]);
+  }, [session?.user?.email]);
 
   // Fetch initial user data and user types in parallel
   useEffect(() => {
@@ -56,8 +57,8 @@ const memoizedSession=useMemo(()=>session,[session])
     const fetchData = async () => {
       try {
         const [userResponse, typesResponse] = await Promise.all([
-          apiService.get(`/emp-personalinfo/${id}`),
-          apiService.get('/all-user-type')
+          deduplicatedGet(`/emp-personalinfo/${id}`),
+          deduplicatedGet('/all-user-type')
         ]);
         
 
@@ -100,7 +101,7 @@ const memoizedSession=useMemo(()=>session,[session])
       if (result.data.success) {
         toast.success(result.data.message);
         setInitialData(data); // Update initial data after successful submission
-        logs({ user: memoizedSession?.user?.username, desc: 'Updated User Vault Info' });
+        logs({ user: session?.user?.username, desc: 'Updated User Vault Info' });
       }
     } catch (error) {
       console.error('Error updating profile:', error);

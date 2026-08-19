@@ -17,30 +17,41 @@ export type Invoice = {
 };
 
 export const useZoneData = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [value, setValue] = useState<any>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
 
   const fetchData = useCallback(async () => {
     try {
-      if (session) {
+      if (session?.user?.email) {
+        setLoading(true);
+        setError(null);
         const response = await apiService.get(
-          `/zones/${session?.user?.email}/?id=zonal_manager&&table=users_zones&&managerType=zonal`
+          `/zones/${session.user.email}/?id=zonal_manager&&table=users_zones&&managerType=zonal`
         );
-        console.log("the zoonal manage data is:",response)
         const userData = response.data.leads;
         setValue(userData);
       }
     } catch (error) {
       console.error('Error fetching label leads:', error);
+      setError('Failed to load zones. Please try again.');
       toast.error('Error fetching label leads. Please try again.');
+    } finally {
+      if (status !== 'loading') setLoading(false);
     }
-  }, [session]); 
+  }, [session?.user?.email, status]);
 
 
   useEffect(() => {
+    if (status === 'loading') return;
+    if (!session?.user?.email) {
+      setLoading(false);
+      return;
+    }
     fetchData();
-  }, [fetchData]);
+  }, [fetchData, session?.user?.email, status]);
 
 
   const productsData = useMemo(() => {
@@ -60,7 +71,7 @@ export const useZoneData = () => {
     }));
   }, [value]); 
 
-  return productsData;
+  return { data: productsData, loading, error };
 };
 
 

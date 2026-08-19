@@ -3,7 +3,6 @@ import dynamic from 'next/dynamic';
 import { LAYOUT_OPTIONS } from '@/config/enums';
 import { useLayout } from '@/hooks/use-layout';
 import HydrogenLayout from '@/layouts/hydrogen/layout';
-import { useIsMounted } from '@/hooks/use-is-mounted';
 import { UserProvider } from '@/context/UserContext';
 
 // Lazy-load alternative layouts — only the active one is ever used
@@ -17,11 +16,6 @@ export default function DefaultLayout({
   children: React.ReactNode;
 }) {
   const { layout } = useLayout();
-  const isMounted = useIsMounted();
-
-  if (!isMounted) {
-    return null;
-  }
 
   let content;
   if (layout === LAYOUT_OPTIONS.HELIUM) {

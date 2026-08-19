@@ -33,30 +33,39 @@ export type Invoice = {
      
 };
 export const useEmployeeData = (email:any) => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [value, setValue] = useState<any>([]);
-  const [value1, setValue1] = useState<any>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
 
   useEffect(() => {
+    if (status === 'loading') return;
+    if (status === 'unauthenticated' || !email) {
+      setValue([]);
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
-        if (session) {
-          const response = await apiService.get(`/all-customers/${email}`);
-          console.log("the customer that is assigned to:",response)
-          const userData = response.data.leads;
-          
-          setValue(userData);
-        }
+        setLoading(true);
+        setError(null);
+        const response = await apiService.get(`/all-customers/${email}`);
+        const userData = response.data.leads;
+        setValue(userData);
       } catch (error) {
         console.error('Error fetching label leads:', error);
+        setError('Error fetching customer data. Please try again.');
         toast.error('Error fetching label leads. Please try again.');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-  }, [session]);
+  }, [email, session?.user?.email, status]);
 
   const productsData = (value || []).map((user:any) => ({
     id:user.id,
@@ -80,7 +89,7 @@ export const useEmployeeData = (email:any) => {
     
   }));
 
-  return productsData;
+  return { data: productsData, loading, error };
 };
 
 

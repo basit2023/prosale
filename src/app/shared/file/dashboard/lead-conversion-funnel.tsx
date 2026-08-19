@@ -7,7 +7,15 @@ import apiService from '@/utils/apiService';
 import { PiFunnelDuotone } from 'react-icons/pi';
 import { useUser } from '@/context/UserContext';
 
-export default function LeadConversionFunnel({ className }: { className?: string }) {
+export default function LeadConversionFunnel({
+  className,
+  dashboardData,
+  dashboardLoading = false,
+}: {
+  className?: string;
+  dashboardData?: any;
+  dashboardLoading?: boolean;
+}) {
   const [data, setData] = useState({
     total: 0,
     open: 0,
@@ -29,13 +37,10 @@ export default function LeadConversionFunnel({ className }: { className?: string
         const role = userData?.user?.role || userData?.user?.user_type || '';
         const params = { user, email, permission: perm, id, role };
 
-        const [totalRes, openRes] = await Promise.all([
-          apiService.get('/total-items', { params }),
-          apiService.get('/highly-interested', { params }),
-        ]);
+        const openRes = await apiService.get('/highly-interested', { params });
 
-        const totalLeads = totalRes.data?.data?.Total_Leads || 0;
-        const closedLeads = totalRes.data?.data?.Close_Leads || 0;
+        const totalLeads = dashboardData?.Total_Leads || 0;
+        const closedLeads = dashboardData?.Close_Leads || 0;
         const openLeads = openRes.data?.total_unsigned || 0;
 
         setData({
@@ -50,8 +55,10 @@ export default function LeadConversionFunnel({ className }: { className?: string
       }
     };
 
-    fetchFunnelData();
-  }, [userData]);
+    if (!dashboardLoading) {
+      fetchFunnelData();
+    }
+  }, [dashboardData, dashboardLoading, userData]);
 
   const maxVal = Math.max(data.total, 1);
   

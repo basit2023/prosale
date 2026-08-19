@@ -15,7 +15,7 @@ import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
 import { useEffect, useState } from 'react';
-import apiService from '@/utils/apiService';
+import apiService, { deduplicatedGet } from '@/utils/apiService';
 import ProfileSettingsView from './profile-settings';
 import {
   defaultValues,
@@ -62,7 +62,7 @@ export default function PersonalInfoView() {
     const fetchData = async () => {
       try {
         if (session?.user?.email) {
-          const response = await apiService.get(`/personalinfo/${session.user.email}`);
+        const response = await deduplicatedGet(`/personalinfo/${session.user.email}`);
           // console.log("the result is:",response)
      
           setUserData(response.data);

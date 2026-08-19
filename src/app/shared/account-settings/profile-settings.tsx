@@ -19,7 +19,7 @@ import cn from '@/utils/class-names';
 import { useLayout } from '@/hooks/use-layout';
 import { useBerylliumSidebars } from '@/layouts/beryllium/beryllium-utils';
 import { LAYOUT_OPTIONS } from '@/config/enums';
-import apiService from '@/utils/apiService';
+import apiService, { deduplicatedGet } from '@/utils/apiService';
 import PersonalInfoView from './profile-edit';
 
 const QuillEditor = dynamic(() => import('@/components/ui/quill-editor'), {
@@ -50,7 +50,7 @@ export default function ProfileSettingsView() {
     const fetchData = async () => {
       try {
         if (session?.user?.email) {
-          const response = await apiService.get(`/personalinfo/${session.user.email}`);
+        const response = await deduplicatedGet(`/personalinfo/${session.user.email}`);
           setUserData(response.data);
         }
       } catch (error) {

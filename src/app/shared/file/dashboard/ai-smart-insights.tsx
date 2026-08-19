@@ -8,6 +8,9 @@ import apiService from '@/utils/apiService';
 import { decryptData } from '@/components/encriptdycriptdata';
 import { motion } from 'framer-motion';
 
+const CACHE_TTL_MS = 15 * 60 * 1000;
+const CACHE_KEY_PREFIX = 'daily-ai-insight';
+
 export default function AISmartInsights({ className }: { className?: string }) {
   const [insight, setInsight] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -28,6 +31,28 @@ export default function AISmartInsights({ className }: { className?: string }) {
           return;
         }
 
+        const cacheKey = `${CACHE_KEY_PREFIX}:${userData.user.id}`;
+        const cachedValue = sessionStorage.getItem(cacheKey);
+        if (cachedValue) {
+          try {
+            const cached = JSON.parse(cachedValue) as {
+              insight?: string;
+              timestamp?: number;
+            };
+            if (
+              cached.timestamp &&
+              cached.insight &&
+              Date.now() - cached.timestamp < CACHE_TTL_MS
+            ) {
+              setInsight(cached.insight);
+              setLoading(false);
+              return;
+            }
+          } catch {
+            sessionStorage.removeItem(cacheKey);
+          }
+        }
+
         // Send a silent background prompt to the AI to get a daily summary
         const response = await apiService.post('/ai-chat', {
           message: "Give me a 2-sentence summary of my performance today and suggest what I should focus on. Keep it encouraging but brief. Do not use markdown.",
@@ -40,6 +65,10 @@ export default function AISmartInsights({ className }: { className?: string }) {
 
         if (response.data && response.data.message) {
           setInsight(response.data.message);
+          sessionStorage.setItem(cacheKey, JSON.stringify({
+            insight: response.data.message,
+            timestamp: Date.now(),
+          }));
         } else {
           setError("Could not generate insight at this time.");
         }
@@ -56,7 +85,21 @@ export default function AISmartInsights({ className }: { className?: string }) {
       }
     };
 
-    fetchInsight();
+    const windowWithIdleCallback = window as unknown as {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const handle = windowWithIdleCallback.requestIdleCallback
+      ? windowWithIdleCallback.requestIdleCallback(fetchInsight, { timeout: 2000 })
+      : window.setTimeout(fetchInsight, 500);
+
+    return () => {
+      if (windowWithIdleCallback.cancelIdleCallback && windowWithIdleCallback.requestIdleCallback) {
+        windowWithIdleCallback.cancelIdleCallback(handle);
+      } else {
+        window.clearTimeout(handle);
+      }
+    };
   }, []);
 
   return (

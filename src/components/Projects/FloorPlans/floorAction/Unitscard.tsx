@@ -79,7 +79,7 @@ export default function Unitscard({ slug, id }: any) {
   const onSubmit: SubmitHandler<NewProjectInfoFormTypes> = async (data) => {
     setIsLoading(true); 
     try {
-      const result = await apiService.post(`/create-n-project`, {
+      const result = await apiService.post(`/create-new-project`, {
         ...data,
         user: sessionRef?.current?.user?.username
       });

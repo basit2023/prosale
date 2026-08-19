@@ -13,7 +13,7 @@ import Spinner from '@/components/ui/spinner';
 import FormGroup from '@/app/shared/form-group';
 import FormFooter from '@/components/form-footer';
 import { useEffect, useState } from 'react';
-import apiService from '@/utils/apiService';
+import apiService, { deduplicatedGet } from '@/utils/apiService';
 import { DatePicker } from '@/components/ui/datepicker';
 import { PiBuildingsThin,PiLinkedinLogoBold,PiFacebookLogoBold,PiHouseLineThin  } from "react-icons/pi";
 import { FaFacebook,FaFacebookF, FaWhatsapp, FaInstagram, FaTwitter, FaLinkedin,FaHome,  } from 'react-icons/fa';
@@ -71,14 +71,14 @@ export default function EmployeeDetails({id}:any) {
     if (session) {
       fetchData();
     }
-  }, [session]);
+  }, [session, id]);
 
 
   //useEffect for the user
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await apiService.get(`/emp-personalinfo/${id}}`);
+        const response = await deduplicatedGet(`/emp-personalinfo/${id}`);
         const userData = response.data;
         setUserValue(userData);
       } catch (error) {
@@ -90,7 +90,7 @@ export default function EmployeeDetails({id}:any) {
     if (session) {
       fetchUserData();
     }
-  }, [session]);
+  }, [session, id]);
 // console.log("the user data is:--->",userValue)
 const onSubmit: SubmitHandler<PersonalInfoFormTypes> = async (data) => {
   // console.log("onSubmit function is called with data:", data);

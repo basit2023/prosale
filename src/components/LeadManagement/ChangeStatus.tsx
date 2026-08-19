@@ -25,6 +25,7 @@ type CallOutcome = 'CONNECTED' | 'NO_ANSWER' | 'BUSY' | 'REJECTED' | 'FAILED' | 
 
 type PendingWebCall = {
   logId: number;
+  leadId: string;
   startedAt: number;
 };
 
@@ -33,6 +34,8 @@ type PendingWebCallResult = {
   endTime: string;
   durationSeconds: number;
 };
+
+const PENDING_WEB_CALL_STORAGE_KEY = 'prosale.webPendingCallReturn';
 
 export default function ChangeStatus({ id }: any) {
   const { data: session } = useSession();
@@ -44,6 +47,7 @@ export default function ChangeStatus({ id }: any) {
   const [phone, setPhone] = useState<any>('N');
   const pendingCallRef = useRef<PendingWebCall | null>(null);
   const [pendingCallResult, setPendingCallResult] = useState<PendingWebCallResult | null>(null);
+  const [showNotConnectedReasons, setShowNotConnectedReasons] = useState(false);
   const [callLogs, setCallLogs] = useState<any[]>([]);
   const previousPathname = useRef<string | null>(null); // Ref to store previous pathname
   const memoizedSession = useMemo(() => session, [session])
@@ -186,13 +190,47 @@ export default function ChangeStatus({ id }: any) {
       endTime: new Date().toISOString(),
       durationSeconds: Math.max(0, Math.round((Date.now() - pending.startedAt) / 1000)),
     });
+    setShowNotConnectedReasons(false);
     pendingCallRef.current = null;
     setIsCalling(false);
   }, []);
 
+  const restorePendingCall = useCallback(() => {
+    try {
+      const raw = localStorage.getItem(PENDING_WEB_CALL_STORAGE_KEY);
+      if (!raw) return;
+
+      const pending = JSON.parse(raw);
+      if (String(pending?.leadId || '') !== String(id)) return;
+
+      const startedAt = Number(pending.startedAt || 0);
+      const logId = Number(pending.logId || 0);
+      const ageMs = Date.now() - startedAt;
+      if (!startedAt || !logId || ageMs < 2000 || ageMs > 2 * 60 * 60 * 1000) return;
+
+      pendingCallRef.current = null;
+      setIsCalling(false);
+      setShowNotConnectedReasons(false);
+      setPendingCallResult({
+        logId,
+        endTime: new Date().toISOString(),
+        durationSeconds: Math.max(0, Math.round(ageMs / 1000)),
+      });
+    } catch (error) {
+      console.error('Error restoring pending call:', error);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    restorePendingCall();
+  }, [restorePendingCall]);
+
   useEffect(() => {
     const handleReturn = () => {
-      if (document.visibilityState === 'visible') finalizePendingCall();
+      if (document.visibilityState === 'visible') {
+        finalizePendingCall();
+        restorePendingCall();
+      }
     };
     window.addEventListener('focus', handleReturn);
     document.addEventListener('visibilitychange', handleReturn);
@@ -200,7 +238,7 @@ export default function ChangeStatus({ id }: any) {
       window.removeEventListener('focus', handleReturn);
       document.removeEventListener('visibilitychange', handleReturn);
     };
-  }, [finalizePendingCall]);
+  }, [finalizePendingCall, restorePendingCall]);
 
   const saveCallOutcome = async (outcome: CallOutcome) => {
     if (!pendingCallResult) return;
@@ -212,7 +250,9 @@ export default function ChangeStatus({ id }: any) {
         disposition_source: 'user_confirmed',
       });
       toast.success(`Call result saved: ${outcome.replace('_', ' ')}`);
+      localStorage.removeItem(PENDING_WEB_CALL_STORAGE_KEY);
       setPendingCallResult(null);
+      setShowNotConnectedReasons(false);
       await loadCallLogs();
     } catch (error) {
       console.error('Error saving call outcome:', error);
@@ -255,7 +295,9 @@ export default function ChangeStatus({ id }: any) {
         });
         const callLogId = Number(callLogResponse?.data?.id);
         if (callLogId) {
-          pendingCallRef.current = { logId: callLogId, startedAt };
+          const pending = { logId: callLogId, leadId: String(id), startedAt };
+          pendingCallRef.current = pending;
+          localStorage.setItem(PENDING_WEB_CALL_STORAGE_KEY, JSON.stringify(pending));
           window.setTimeout(finalizePendingCall, 3000);
         }
       } catch (callLogError) {
@@ -424,25 +466,52 @@ export default function ChangeStatus({ id }: any) {
             <p className="mt-1 text-sm text-gray-500">
               Select the actual result. Dialer time: {pendingCallResult.durationSeconds}s.
             </p>
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              {([
-                ['CONNECTED', 'Connected'],
-                ['NO_ANSWER', 'No Answer'],
-                ['BUSY', 'Busy'],
-                ['REJECTED', 'Rejected'],
-                ['FAILED', 'Failed'],
-                ['CANCELLED', 'Cancelled'],
-              ] as Array<[CallOutcome, string]>).map(([outcome, label]) => (
+            {!showNotConnectedReasons ? (
+              <div className="mt-4 grid grid-cols-2 gap-2">
                 <button
-                  key={outcome}
                   type="button"
-                  onClick={() => saveCallOutcome(outcome)}
+                  onClick={() => saveCallOutcome('CONNECTED')}
+                  className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                >
+                  Connected
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowNotConnectedReasons(true)}
                   className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800"
                 >
-                  {label}
+                  Not Connected
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="mt-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    ['NO_ANSWER', 'No Answer'],
+                    ['BUSY', 'Busy'],
+                    ['REJECTED', 'Rejected'],
+                    ['FAILED', 'Failed'],
+                    ['CANCELLED', 'Cancelled'],
+                  ] as Array<[CallOutcome, string]>).map(([outcome, label]) => (
+                    <button
+                      key={outcome}
+                      type="button"
+                      onClick={() => saveCallOutcome(outcome)}
+                      className="rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-50 dark:border-gray-700 dark:text-white dark:hover:bg-gray-800"
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowNotConnectedReasons(false)}
+                  className="mt-3 text-sm font-semibold text-gray-500 hover:text-gray-900 dark:hover:text-white"
+                >
+                  Back
+                </button>
+              </div>
+            )}
           </div>
         </div>
       ) : null}

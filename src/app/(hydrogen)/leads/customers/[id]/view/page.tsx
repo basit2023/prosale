@@ -8,7 +8,7 @@ import { CustomerDetails, InvoiceDetails } from '@/components/LeadManagement/All
 import { Empty } from "rizzui";
 import TableLayout from './tabel-layout';
 import InvoiceTable from '@/components/LeadManagement/AllCustomers/AssignedLeads/table';
-import { useEmployeeData } from '@/components/LeadManagement/AllCustomers/AssignedLeads/AssignedLead';
+import { Invoice, useEmployeeData } from '@/components/LeadManagement/AllCustomers/AssignedLeads/AssignedLead';
 import { useSession } from 'next-auth/react';
 
 type Props = {
@@ -28,7 +28,7 @@ let pageHeader = {
 };
 
 export default function InvoiceEditPage({ params }: Props) {
-  const invoiceData = useEmployeeData({ id: params.id });
+  const { data: invoiceData, loading, error } = useEmployeeData({ id: params.id });
 
   return (
     <>
@@ -43,19 +43,29 @@ export default function InvoiceEditPage({ params }: Props) {
           </div>
         </div>
       </div>
-      <EnhancedTable id={params.id} />
+      <EnhancedTable invoiceData={invoiceData} loading={loading} error={error} />
     </>
   );
 }
 
-export function EnhancedTable({ id }:any) {
-  const invoiceData = useEmployeeData({ id });
+export function EnhancedTable({
+  invoiceData,
+  loading,
+  error,
+}: {
+  invoiceData: Invoice[];
+  loading: boolean;
+  error: string | null;
+}) {
+  if (loading) {
+    return <div className="flex h-[50vh] items-center justify-center">Loading leads...</div>;
+  }
+
+  if (error) {
+    return <div className="flex h-[50vh] items-center justify-center"><Empty text={error} textClassName="mt-2" /></div>;
+  }
 
   if (invoiceData.length === 0) {
-    setTimeout(() => {
-      renderComponents();
-    }, 1000);
-
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', fontSize: '24px' }}>
         <Empty text="No Data found" textClassName="mt-2" />

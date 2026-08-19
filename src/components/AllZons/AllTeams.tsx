@@ -22,29 +22,36 @@ export type Invoice = {
 };
 export const useTeamData = () => {
 
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [value, setValue] = useState<any>([]);
-  const [value1, setValue1] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (status === 'loading') return;
+    if (!session?.user?.email) {
+      setLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
-        if (session) {
-          const response = await apiService.get(`/teams/${session?.user?.email}/?id=manager_id&&table=users_teams&&managerType=manager`
-         );
-          const userData = response.data.leads;
-         
-          setValue(userData);
-        }
+        setLoading(true);
+        setError(null);
+        const response = await apiService.get(`/teams/${session.user.email}/?id=manager_id&&table=users_teams&&managerType=manager`);
+        setValue(response.data.leads);
       } catch (error) {
         console.error('Error fetching label leads:', error);
+        setError('Failed to load teams. Please try again.');
         toast.error('Error fetching label leads. Please try again.');
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
     // eslint-disable-next-line react-hooks/rules-of-hooks
-  }, [session]);
+  }, [session?.user?.email, status]);
 
   const productsData = (value || []).map((user:any) => ({
     id:user.id,
@@ -63,7 +70,7 @@ export const useTeamData = () => {
     
   }));
 
-  return productsData;
+  return { data: productsData, loading, error };
 };
 
 // export default useEmployeeData;

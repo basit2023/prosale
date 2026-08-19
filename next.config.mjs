@@ -2,6 +2,7 @@ import withPWA from 'next-pwa';
 
 const nextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
   trailingSlash: true,
   swcMinify: true,
   typescript: {
@@ -53,6 +54,7 @@ const nextConfig = {
   },
   experimental: {
     webpackBuildWorker: true,
+    optimizePackageImports: ['react-icons', 'lodash'],
   },
 };
 

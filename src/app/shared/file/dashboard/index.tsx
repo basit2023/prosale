@@ -342,7 +342,11 @@ export default function FileDashboard() {
           <>
             <div className="col-span-full grid grid-cols-1 gap-6 lg:grid-cols-12">
               <TopPerformersLeaderboard className="col-span-12 lg:col-span-6" />
-              <LeadConversionFunnel className="col-span-12 lg:col-span-6" />
+              <LeadConversionFunnel
+                className="col-span-12 lg:col-span-6"
+                dashboardData={dashboardData}
+                dashboardLoading={loading}
+              />
             </div>
             <div className="col-span-full">
               <StorageReport className="w-full" />

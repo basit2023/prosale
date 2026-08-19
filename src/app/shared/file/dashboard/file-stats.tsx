@@ -70,14 +70,26 @@ export function FileStatGrid({ className, data }: { className?: string; data?: a
     },
     {
       id: 1,
-      title: 'Today\'s Calls',
-      metric: count?.Total_Calls ?? 0,
+      title: 'Connected Calls',
+      metric: count?.Total_Connected_Calls ?? count?.Total_Calls ?? 0,
       fill: getProgressColor(count?.TotalCallsPercentage ?? 0),
       slightfill: getSlightFill(count?.TotalCallsPercentage ?? 0),
       percentage: count?.TotalCallsPercentage ?? 0,
       increased: true,
       decreased: false,
       value: count?.TotalCallsPercentage ?? '0.00',
+      timePeriod: 'today'
+    },
+    {
+      id: 10,
+      title: 'Dialed Calls',
+      metric: count?.Total_Dialed_Calls ?? 0,
+      fill: '#fb923c',
+      slightfill: '#ffedd5',
+      percentage: 100,
+      increased: true,
+      decreased: false,
+      value: '100',
       timePeriod: 'today'
     },
     {
