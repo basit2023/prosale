@@ -251,7 +251,9 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
   if (key === 'calls_started') {
     return uniqueConnectedCallRows(details.calls || []);
   }
-  if (key === 'dialed_calls') return details.calls || [];
+  if (key === 'dialed_calls') {
+    return (details.calls || []).filter((row: any) => Number(row.is_phone_attempt || 0) === 1);
+  }
   if (key === 'whatsapp_opened') {
     return (details.calls || []).filter((row: any) => Number(row.is_whatsapp_shared || 0) === 1);
   }
