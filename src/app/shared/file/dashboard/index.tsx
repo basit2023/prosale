@@ -2,7 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   PiCalendarCheckDuotone,
@@ -238,6 +238,7 @@ export default function FileDashboard() {
   const { status } = useSession();
   const { userData } = useUser() as { userData?: any };
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [superAdminSummary, setSuperAdminSummary] = useState<Record<string, any> | null>(null);
   const [loading, setLoading] = useState(true);
 
   const user = userData?.user;
@@ -285,11 +286,34 @@ export default function FileDashboard() {
     }
   }, [userParams, status]);
 
+  const handleSuperAdminSummaryChange = useCallback((summary: Record<string, any> | null) => {
+    setSuperAdminSummary(summary);
+  }, []);
+
+  const cardData = useMemo(() => {
+    if (!isSuperAdmin || !superAdminSummary) return dashboardData;
+    const connectedCalls = Number(superAdminSummary.calls_started || 0);
+    const dialedCalls = Number(superAdminSummary.dialed_calls || 0);
+    const connectedPercentage = dialedCalls ? Number(((connectedCalls / dialedCalls) * 100).toFixed(2)) : 0;
+
+    return {
+      ...dashboardData,
+      Today_Leads: superAdminSummary.leads_assigned ?? 0,
+      Unread_Leads: superAdminSummary.unread_leads ?? 0,
+      FollowUps_Created: superAdminSummary.followups_created ?? 0,
+      FollowUps_Attended: superAdminSummary.followups_attended ?? 0,
+      Total_Connected_Calls: connectedCalls,
+      Total_Dialed_Calls: dialedCalls,
+      Total_Calls: connectedCalls,
+      TotalCallsPercentage: connectedPercentage,
+    };
+  }, [dashboardData, isSuperAdmin, superAdminSummary]);
+
   return (
     <div className="mt-2 @container">
       <div className="grid grid-cols-1 gap-6 @container lg:grid-cols-12 2xl:gap-8">
         <div className="col-span-full">
-          <FileStats className="mb-4" data={dashboardData} loading={loading} />
+          <FileStats className="mb-4" data={cardData} loading={loading} />
           <LeadStats
             className="mb-4"
             data={dashboardData}
@@ -316,7 +340,7 @@ export default function FileDashboard() {
         )}
         {isSuperAdmin && (
           <div className="col-span-full">
-            <SuperAdminSalesDashboard className="w-full" />
+            <SuperAdminSalesDashboard className="w-full" onSummaryChange={handleSuperAdminSummaryChange} />
           </div>
         )}
         {!isSuperAdmin && (isAdmin || isManager) && (

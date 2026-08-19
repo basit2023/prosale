@@ -227,13 +227,8 @@ type SummaryCardKey = (typeof summaryCards)[number]['key'];
 type SummarySelection = { key: SummaryCardKey; label: string; hint: string };
 
 const uniqueConnectedCallRows = (rows: any[]) => {
-  const seen = new Set<string>();
   return rows.filter((row: any) => {
     if (Number(row.is_connected_call || 0) !== 1) return false;
-    const day = String(row.dt || row.opentime || '').slice(0, 10);
-    const key = `${row.username || '-'}|${day}|${row.lead_id || row.id || '-'}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
     return true;
   });
 };
@@ -793,7 +788,13 @@ function LeadDetailModal({
   );
 }
 
-export default function SuperAdminSalesDashboard({ className = '' }: { className?: string }) {
+export default function SuperAdminSalesDashboard({
+  className = '',
+  onSummaryChange,
+}: {
+  className?: string;
+  onSummaryChange?: (summary: Record<string, any> | null) => void;
+}) {
   const { userData } = useUser() as { userData?: any };
   const user = userData?.user;
   const permission = Number(user?.permissions?.permission_level || user?.permission || 0);
@@ -823,16 +824,19 @@ export default function SuperAdminSalesDashboard({ className = '' }: { className
       try {
         setLoading(true);
         const response = await apiService.get('/super-admin-dashboard', { params });
-        setData(response.data?.data || null);
+        const nextData = response.data?.data || null;
+        setData(nextData);
+        onSummaryChange?.(nextData?.summary || null);
       } catch (error) {
         console.error('Error fetching super admin dashboard:', error);
+        onSummaryChange?.(null);
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboard();
-  }, [params]);
+  }, [onSummaryChange, params]);
 
   const summary = data?.summary || {};
   const users = data?.users || [];
