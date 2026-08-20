@@ -27,7 +27,7 @@ import cn from '@/utils/class-names';
 import { useUser } from '@/context/UserContext';
 
 
-type DetailType = 'leads' | 'comments' | 'calls' | 'opens' | 'followups';
+type DetailType = 'leads' | 'comments' | 'calls' | 'opens' | 'followups' | 'autoLandedLeads';
 
 type SuperAdminUser = {
   user_id: number;
@@ -104,6 +104,7 @@ type SuperAdminData = {
   recoveryCategoryUsers?: SuperAdminUser[];
   recoveryCategoryDetails?: any[];
   recoveryCategoryDetailsByUser?: Record<string, any[]>;
+  autoLandedByProject?: Array<{ project_id?: number | string | null; project_name: string; lead_count: number }>;
   reassignmentBreakdown?: ReassignmentBreakdown[];
   reassignmentByUser?: Record<string, any>;
   details?: Record<DetailType, any[]>;
@@ -135,6 +136,13 @@ const detailLabels: Record<DetailType, string> = {
 };
 
 const summaryCards = [
+  {
+    key: 'auto_landed_leads',
+    label: 'Auto Landed Leads',
+    hint: 'Facebook/lead campaign leads landed in CRM',
+    icon: PiEnvelopeOpenDuotone,
+    tone: 'bg-sky-50 text-sky-600',
+  },
   {
     key: 'fresh_leads',
     label: 'Fresh Leads',
@@ -238,6 +246,7 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
   const leads = details.leads || [];
 
   if (key === 'leads_assigned') return leads;
+  if (key === 'auto_landed_leads') return details.autoLandedLeads || [];
   if (key === 'fresh_leads') return leads.filter((row: any) => row.data_temperature === 'fresh');
   if (key === 'cool_leads') return leads.filter((row: any) => row.data_temperature !== 'fresh');
   if (key === 'reassigned_leads') return leads.filter((row: any) => row.assigned_through);
@@ -259,7 +268,7 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
 };
 
 const summaryRowUser = (key: SummaryCardKey, row: any) => {
-  if (key === 'leads_assigned' || key === 'fresh_leads' || key === 'cool_leads' || key === 'reassigned_leads' || key === 'unread_leads') {
+  if (key === 'leads_assigned' || key === 'auto_landed_leads' || key === 'fresh_leads' || key === 'cool_leads' || key === 'reassigned_leads' || key === 'unread_leads') {
     return row.assigned_to || row.username || '-';
   }
   return row.username || row.assigned_to || '-';
@@ -275,6 +284,9 @@ const callStatusText = (row: any) => {
 
 const summaryRowDetails = (key: SummaryCardKey, row: any) => {
   if (key === 'leads_assigned') return `Assigned to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data | By ${row.assigned_through || row.created_by || '-'}`;
+  if (key === 'auto_landed_leads') {
+    return `Project: ${row.project_name || 'No project'} | Assigned to ${row.assigned_to || '-'} | Campaign: ${row.campaign_name || '-'} / ${row.campaign_type || '-'}`;
+  }
   if (key === 'fresh_leads') return `Fresh lead | Lead ${row.lead_created_day || '-'} | Customer ${row.customer_created_day || '-'} | Assigned to ${row.assigned_to || '-'}`;
   if (key === 'cool_leads') return `Cool data | Lead ${row.lead_created_day || '-'} | Customer ${row.customer_created_day || '-'} | Assigned to ${row.assigned_to || '-'}`;
   if (key === 'reassigned_leads') return `Reassigned by ${row.assigned_through || '-'} to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data`;
@@ -290,6 +302,7 @@ const summaryRowDetails = (key: SummaryCardKey, row: any) => {
 };
 
 const summaryRowTime = (key: SummaryCardKey, row: any) => {
+  if (key === 'auto_landed_leads') return row.lead_created_at || row.assigned_on;
   if (key === 'leads_assigned' || key === 'fresh_leads' || key === 'cool_leads' || key === 'reassigned_leads' || key === 'unread_leads') return row.assigned_on;
   if (key === 'unique_leads_opened') return row.last_opened_at;
   if (key === 'followups_attended') return row.attended_at || row.followupdate || row.dt;
@@ -458,6 +471,7 @@ function SummaryDetailModal({
   if (!selected) return null;
 
   const rows = summaryRowsFor(data, selected.key);
+  const projectBreakdown = selected.key === 'auto_landed_leads' ? data?.autoLandedByProject || [] : [];
 
   return (
     <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/45 p-4">
@@ -480,6 +494,29 @@ function SummaryDetailModal({
         </div>
 
         <div className="max-h-[calc(92vh-96px)] overflow-auto p-5">
+          {projectBreakdown.length ? (
+            <div className="mb-4 rounded-xl border border-sky-100 bg-sky-50/60 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+              <div className="mb-3 text-xs font-bold uppercase tracking-wide text-sky-700 dark:text-sky-300">
+                Project breakdown
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {projectBreakdown.map((project) => (
+                  <div
+                    key={`${project.project_id || project.project_name}`}
+                    className="rounded-lg bg-white px-3 py-2 shadow-sm dark:bg-gray-900"
+                  >
+                    <div className="truncate text-sm font-bold text-gray-900 dark:text-white">
+                      {project.project_name || 'No project'}
+                    </div>
+                    <div className="text-xs font-semibold text-sky-600">
+                      {number(project.lead_count)} leads
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           {rows.length ? (
             <div className="overflow-auto rounded-xl border border-gray-100 dark:border-gray-700">
               <table className="w-full min-w-[960px] text-left text-sm">
