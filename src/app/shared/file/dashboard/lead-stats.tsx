@@ -48,6 +48,7 @@ const LazyResponsiveContainer = dynamic<any>(
 );
 
 interface StatsData {
+  Auto_Landed_Leads?: number;
   Today_Leads: number;
   Unread_Leads: number;
   FollowUps_Created: number;
@@ -58,9 +59,10 @@ interface StatsData {
   CardDetails?: Record<DetailKey, any[]>;
 }
 
-type DetailKey = 'todayAssigned' | 'unreadLeads' | 'followupsCreated' | 'followupsAttended';
+type DetailKey = 'autoLandedLeads' | 'todayAssigned' | 'unreadLeads' | 'followupsCreated' | 'followupsAttended';
 
 const detailTitles: Record<DetailKey, string> = {
+  autoLandedLeads: 'Auto Landed Leads',
   todayAssigned: "Today's Assigned Leads",
   unreadLeads: 'Unread Leads',
   followupsCreated: 'Follow-ups Created',
@@ -100,6 +102,14 @@ export default function LeadStats({
   }
 
   const statCards = [
+    {
+      title: 'Auto Landed Leads',
+      metric: stats?.Auto_Landed_Leads || 0,
+      detailKey: 'autoLandedLeads' as DetailKey,
+      icon: <PiEnvelopeOpenDuotone className="h-6 w-6" />,
+      color: 'text-sky-600',
+      fill: 'bg-sky-50',
+    },
     {
       title: "Today's Assigned",
       metric: stats?.Today_Leads || 0,
@@ -143,6 +153,10 @@ export default function LeadStats({
   const detailRows = selectedDetail ? stats?.CardDetails?.[selectedDetail] || [] : [];
 
   const rowDetail = (row: any) => {
+    if (selectedDetail === 'autoLandedLeads') {
+      return `Campaign: ${row.campaign_name || '-'} / ${row.campaign_type || '-'} | Assigned to ${row.assigned_to || '-'}`;
+    }
+
     if (selectedDetail === 'followupsCreated' || selectedDetail === 'followupsAttended') {
       return row.followup || '-';
     }
@@ -151,6 +165,7 @@ export default function LeadStats({
   };
 
   const rowTime = (row: any) => {
+    if (selectedDetail === 'autoLandedLeads') return row.lead_created_at || row.assigned_on;
     if (selectedDetail === 'followupsCreated') return row.dt;
     if (selectedDetail === 'followupsAttended') return row.attended_at;
     return row.assigned_on;
@@ -159,7 +174,7 @@ export default function LeadStats({
   return (
     <div className={cn('space-y-6', className)}>
       {showStatCards && (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
           {statCards.map((item) => (
             <button
               key={item.title}

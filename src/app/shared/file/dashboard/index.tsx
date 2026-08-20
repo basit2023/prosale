@@ -298,6 +298,7 @@ export default function FileDashboard() {
 
     return {
       ...dashboardData,
+      Auto_Landed_Leads: superAdminSummary.auto_landed_leads ?? 0,
       Today_Leads: superAdminSummary.leads_assigned ?? 0,
       Unread_Leads: superAdminSummary.unread_leads ?? 0,
       FollowUps_Created: superAdminSummary.followups_created ?? 0,
