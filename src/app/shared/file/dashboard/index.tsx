@@ -61,6 +61,9 @@ const SuperAdminSalesDashboard = dynamic(() => import('./super-admin-sales-dashb
 const SalesExecutionWorkspace = dynamic(() => import('./sales-execution-workspace'), {
   loading: () => skeleton('h-[560px]'),
 });
+const AutoLandedFacebookSection = dynamic(() => import('./auto-landed-facebook-section'), {
+  loading: () => skeleton('h-[460px]'),
+});
 
 function SalesCommandCenter({
   data,
@@ -322,6 +325,11 @@ export default function FileDashboard() {
             showTeamOverview={false}
           />
         </div>
+        {!isSuperAdmin && isAdmin && (
+          <div className="col-span-full">
+            <AutoLandedFacebookSection className="w-full" />
+          </div>
+        )}
         {!isSuperAdmin && <SalesExecutionWorkspace />}
         {!isSuperAdmin && (
           <>
