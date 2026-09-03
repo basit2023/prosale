@@ -251,7 +251,7 @@ useEffect(() => {
                 />
 
                 <Input
-                  label="CNIC (Required)"
+                  label="CNIC (Optional)"
                   placeholder="XXXXX-XXXXXXX-X"
                   {...register('cnic')}
                   error={errors.cnic?.message}

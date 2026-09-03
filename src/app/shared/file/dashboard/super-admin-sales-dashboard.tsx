@@ -35,6 +35,8 @@ type SuperAdminUser = {
   full_name: string;
   email?: string;
   user_type?: string;
+  business_t?: string | null;
+  business_segment?: 'b2b' | 'b2c';
   permission_level?: number;
   leads_assigned: number;
   fresh_leads: number;
@@ -119,6 +121,10 @@ const localDate = () => {
 };
 
 const number = (value: any) => Number(value || 0).toLocaleString();
+
+const userBusinessSegment = (user: Pick<SuperAdminUser, 'business_t' | 'business_segment'>) => {
+  return String(user.business_segment || user.business_t || '').trim().toLowerCase() === 'b2b' ? 'b2b' : 'b2c';
+};
 
 const formatDateTime = (value?: string) => {
   if (!value) return '-';
@@ -934,7 +940,7 @@ export default function SuperAdminSalesDashboard({
     Number(row.WhatsApp || 0) > 0 ||
     Number(row.Opens || 0) > 0
   );
-  const tableTotals = visibleUsers.reduce(
+  const buildUserTotals = (items: SuperAdminUser[]) => items.reduce(
     (acc, item) => {
       acc.leads_assigned += Number(item.leads_assigned || 0);
       acc.fresh_leads += Number(item.fresh_leads || 0);
@@ -977,6 +983,25 @@ export default function SuperAdminSalesDashboard({
       work_score: 0,
     }
   );
+  const b2cUsers = visibleUsers.filter((item) => userBusinessSegment(item) !== 'b2b');
+  const b2bUsers = visibleUsers.filter((item) => userBusinessSegment(item) === 'b2b');
+  const userSections = [
+    {
+      key: 'b2c',
+      title: 'Every active user',
+      description: 'B2C users only. Read/unread leads, fresh/cool data, comments, calls, opens, and follow-ups for the selected day/range.',
+      users: b2cUsers,
+      totals: buildUserTotals(b2cUsers),
+    },
+    {
+      key: 'b2b',
+      title: 'B2B active users',
+      description: 'B2B users only. Read/unread leads, fresh/cool data, comments, calls, opens, and follow-ups for the selected day/range.',
+      users: b2bUsers,
+      totals: buildUserTotals(b2bUsers),
+    },
+  ];
+  const tableTotals = buildUserTotals(visibleUsers);
 
   const selectMetric = (type: DetailType, item: SuperAdminUser) => {
     setSelected({ type, username: item.username, fullName: item.full_name });
@@ -1007,6 +1032,7 @@ export default function SuperAdminSalesDashboard({
     ...visibleUsers.map((item) => ({
       User: item.full_name,
       Username: item.username,
+      'Business Type': userBusinessSegment(item).toUpperCase(),
       Assigned: item.leads_assigned,
       Fresh: item.fresh_leads,
       Cool: item.cool_leads,
@@ -1034,6 +1060,7 @@ export default function SuperAdminSalesDashboard({
     {
       User: 'Total',
       Username: '',
+      'Business Type': 'ALL',
       Assigned: tableTotals.leads_assigned,
       Fresh: tableTotals.fresh_leads,
       Cool: tableTotals.cool_leads,
@@ -1460,12 +1487,13 @@ export default function SuperAdminSalesDashboard({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      {userSections.map((section) => (
+      <div key={section.key} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="font-bold text-gray-900 dark:text-white">Every active user</h3>
+            <h3 className="font-bold text-gray-900 dark:text-white">{section.title}</h3>
             <p className="text-sm text-gray-500">
-              Read/unread leads, fresh/cool data, comments, calls, opens, and follow-ups for the selected day/range.
+              {section.description}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -1494,7 +1522,7 @@ export default function SuperAdminSalesDashboard({
               PDF
             </button>
             <div className="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800">
-              {loading ? 'Loading...' : `${visibleUsers.length} users`}
+              {loading ? 'Loading...' : `${section.users.length} users`}
             </div>
           </div>
         </div>
@@ -1521,7 +1549,7 @@ export default function SuperAdminSalesDashboard({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-              {visibleUsers.map((item) => (
+              {section.users.map((item) => (
                 <tr
                   key={item.user_id || item.username}
                   onClick={() => openUserDetails(item)}
@@ -1648,34 +1676,35 @@ export default function SuperAdminSalesDashboard({
             <tfoot className="border-t border-gray-200 bg-gray-50 text-sm font-black text-gray-900 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
               <tr>
                 <td className="px-4 py-3">Total</td>
-                <td className="px-4 py-3 text-center">{number(tableTotals.leads_assigned)}</td>
-                <td className="px-4 py-3 text-center text-emerald-600">{number(tableTotals.fresh_leads)}</td>
-                <td className="px-4 py-3 text-center text-amber-600">{number(tableTotals.cool_leads)}</td>
+                <td className="px-4 py-3 text-center">{number(section.totals.leads_assigned)}</td>
+                <td className="px-4 py-3 text-center text-emerald-600">{number(section.totals.fresh_leads)}</td>
+                <td className="px-4 py-3 text-center text-amber-600">{number(section.totals.cool_leads)}</td>
                 <td className="px-4 py-3 text-center">
-                  {number(tableTotals.reassigned_leads)}
-                  <div className="text-[10px] font-semibold text-gray-500">{number(tableTotals.reassignments_made)} by them</div>
+                  {number(section.totals.reassigned_leads)}
+                  <div className="text-[10px] font-semibold text-gray-500">{number(section.totals.reassignments_made)} by them</div>
                 </td>
-                <td className="px-4 py-3 text-center text-blue-600">{number(tableTotals.read_leads)}</td>
+                <td className="px-4 py-3 text-center text-blue-600">{number(section.totals.read_leads)}</td>
                 <td className="px-4 py-3 text-center text-rose-600">
-                  {number(tableTotals.unread_leads)}
-                  <div className="text-[10px] font-semibold text-gray-500">{number(tableTotals.total_unread_leads)} total</div>
+                  {number(section.totals.unread_leads)}
+                  <div className="text-[10px] font-semibold text-gray-500">{number(section.totals.total_unread_leads)} total</div>
                 </td>
-                <td className="px-4 py-3 text-center text-emerald-600">{number(tableTotals.comments_added)}</td>
-                <td className="px-4 py-3 text-center text-amber-600">{number(tableTotals.calls_started)}</td>
-                <td className="px-4 py-3 text-center text-orange-500">{number(tableTotals.dialed_calls)}</td>
-                <td className="px-4 py-3 text-center text-teal-600">{number(tableTotals.whatsapp_opened)}</td>
+                <td className="px-4 py-3 text-center text-emerald-600">{number(section.totals.comments_added)}</td>
+                <td className="px-4 py-3 text-center text-amber-600">{number(section.totals.calls_started)}</td>
+                <td className="px-4 py-3 text-center text-orange-500">{number(section.totals.dialed_calls)}</td>
+                <td className="px-4 py-3 text-center text-teal-600">{number(section.totals.whatsapp_opened)}</td>
                 <td className="px-4 py-3 text-center text-violet-600">
-                  {number(tableTotals.unique_leads_opened)}
-                  <div className="text-[10px] font-semibold text-gray-500">{number(tableTotals.lead_open_events)} raw</div>
+                  {number(section.totals.unique_leads_opened)}
+                  <div className="text-[10px] font-semibold text-gray-500">{number(section.totals.lead_open_events)} raw</div>
                 </td>
-                <td className="px-4 py-3 text-center">{number(tableTotals.followups_created)} / {number(tableTotals.followups_attended)}</td>
-                <td className="px-4 py-3 text-center text-rose-600">{number(tableTotals.overdue_followups)}</td>
-                <td className="px-4 py-3 text-center">{number(tableTotals.work_score)}</td>
+                <td className="px-4 py-3 text-center">{number(section.totals.followups_created)} / {number(section.totals.followups_attended)}</td>
+                <td className="px-4 py-3 text-center text-rose-600">{number(section.totals.overdue_followups)}</td>
+                <td className="px-4 py-3 text-center">{number(section.totals.work_score)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
       </div>
+      ))}
 
       <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">

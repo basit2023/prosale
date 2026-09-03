@@ -6,12 +6,19 @@ const isoDate = /^\d{4}-\d{2}-\d{2}$/;
 const cnicRegex = /^\d{5}-\d{7}-\d$/;                   
 const phoneRegex = /^[0-9+\-\s]{6,20}$/;                 
 const ibanRegex = /^[A-Z]{2}[0-9A-Z]{13,32}$/i;
+const optionalCnic = z
+  .string()
+  .trim()
+  .refine((value) => !value || cnicRegex.test(value), {
+    message: 'CNIC must be like 82401-5282826-7',
+  })
+  .optional();
 
 export const BusinessProfileSchema = z.object({
   // REQUIRED (must NOT be optional; no .default() here)
   full_name: z.string().min(2, 'Full name is required'),
   dob: z.string().regex(isoDate, 'Date must be YYYY-MM-DD').optional(),
-  cnic: z.string().regex(cnicRegex, 'CNIC must be like 82401-5282826-7'),
+  cnic: optionalCnic,
   mobile: z.string().regex(phoneRegex, 'Phone looks invalid'),
   nationality: z.string().min(1, 'Nationality is required').optional(), 
   filer_status: z.enum(['Active Filer', 'Non-Filer']),
