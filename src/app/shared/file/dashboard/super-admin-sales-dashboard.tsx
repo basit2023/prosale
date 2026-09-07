@@ -53,6 +53,10 @@ type SuperAdminUser = {
   overdue_followups: number;
   calls_started: number;
   dialed_calls: number;
+  total_calls: number;
+  mismatched_calls: number;
+  incoming_calls: number;
+  outgoing_calls: number;
   whatsapp_opened: number;
   unique_leads_opened: number;
   lead_open_events: number;
@@ -139,6 +143,7 @@ const detailLabels: Record<DetailType, string> = {
   calls: 'Calls',
   opens: 'Lead opens',
   followups: 'Follow-ups',
+  autoLandedLeads: 'Auto landed leads',
 };
 
 const summaryCards = [
@@ -283,9 +288,19 @@ const summaryRowUser = (key: SummaryCardKey, row: any) => {
 const callStatusText = (row: any) => {
   const statuses = [];
   if (Number(row.is_connected_call || 0) === 1) statuses.push('Connected');
-  if (Number(row.is_phone_attempt || 0) === 1) statuses.push('Dialed');
+  if (Number(row.is_mismatched_call || 0) === 1) statuses.push('Mismatched lead');
+  if (Number(row.is_incoming_call || 0) === 1) statuses.push('Incoming');
+  if (Number(row.is_outgoing_call || 0) === 1) statuses.push('Outgoing');
+  if (Number(row.is_phone_attempt || 0) === 1) statuses.push('Call log');
   if (Number(row.is_whatsapp_shared || 0) === 1) statuses.push('WhatsApp shared');
   return statuses.length ? statuses.join(' | ') : 'Call activity';
+};
+
+const isMismatchedCall = (row: any) => Number(row.is_mismatched_call || 0) === 1;
+
+const callContactText = (row: any) => {
+  if (isMismatchedCall(row)) return 'Number hidden for mismatched lead';
+  return `Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'}`;
 };
 
 const summaryRowDetails = (key: SummaryCardKey, row: any) => {
@@ -298,8 +313,8 @@ const summaryRowDetails = (key: SummaryCardKey, row: any) => {
   if (key === 'reassigned_leads') return `Reassigned by ${row.assigned_through || '-'} to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data`;
   if (key === 'unread_leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Not opened yet`;
   if (key === 'comments_added') return row.comments || '-';
-  if (key === 'calls_started') return `${callStatusText(row)} | Phone: ${row.phone || 'N'} | Duration: ${row.totaltime || '-'}`;
-  if (key === 'dialed_calls') return `${String(row.disposition || row.call_status || 'PENDING').replace(/_/g, ' ')} | Phone: ${row.phone || 'N'} | Duration: ${row.totaltime || '-'}`;
+  if (key === 'calls_started') return `${callStatusText(row)} | ${callContactText(row)} | Duration: ${row.totaltime || '-'}`;
+  if (key === 'dialed_calls') return `${String(row.disposition || row.call_status || 'PENDING').replace(/_/g, ' ')} | ${callContactText(row)} | Duration: ${row.totaltime || '-'}`;
   if (key === 'whatsapp_opened') return `WhatsApp opened | WhatsApp: ${row.whatsapp || 'Y'} | Duration: ${row.totaltime || '-'}`;
   if (key === 'unique_leads_opened') return `Opened ${row.event_count || 1} time(s), counted as 1 unique lead.`;
   if (key === 'followups_attended') return `${row.followup || 'Follow-up'} | Done`;
@@ -380,7 +395,7 @@ function DetailPanel({
   onLeadOpen,
 }: {
   data: SuperAdminData | null;
-  selected: { type: DetailType; username: string; fullName: string } | null;
+  selected: { type: DetailType; username: string; fullName: string; callFilter?: 'connected' | 'all' | 'mismatched' | 'incoming' | 'outgoing' } | null;
   onClose: () => void;
   onLeadOpen: (lead: any) => void;
 }) {
@@ -392,13 +407,25 @@ function DetailPanel({
     );
   }
 
-  const rows = data?.detailsByUser?.[selected.type]?.[selected.username] || [];
+  const allRows = data?.detailsByUser?.[selected.type]?.[selected.username] || [];
+  const rows = selected.type === 'calls' && selected.callFilter
+    ? allRows.filter((row: any) => {
+        if (selected.callFilter === 'connected') return Number(row.is_connected_call || 0) === 1;
+        if (selected.callFilter === 'mismatched') return isMismatchedCall(row);
+        if (selected.callFilter === 'incoming') return Number(row.is_incoming_call || 0) === 1;
+        if (selected.callFilter === 'outgoing') return Number(row.is_outgoing_call || 0) === 1;
+        return Number(row.is_phone_attempt || 0) === 1;
+      })
+    : allRows;
+  const detailTitle = selected.type === 'calls' && selected.callFilter
+    ? `${detailLabels[selected.type]} - ${selected.callFilter.replace(/_/g, ' ')}`
+    : detailLabels[selected.type];
 
   return (
     <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <div className="text-xs font-bold uppercase tracking-wide text-rose-600">{detailLabels[selected.type]}</div>
+          <div className="text-xs font-bold uppercase tracking-wide text-rose-600">{detailTitle}</div>
           <h4 className="mt-1 text-lg font-bold text-gray-900 dark:text-white">{selected.fullName}</h4>
           <p className="text-sm text-gray-500">{rows.length} tracked rows for the selected date/range.</p>
         </div>
@@ -432,17 +459,19 @@ function DetailPanel({
                   <td className="px-4 py-3 font-semibold text-gray-900 dark:text-white">#{row.lead_id || '-'}</td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-gray-900 dark:text-white">{row.customer_name || 'Customer'}</div>
-                    {row.mobile ? (
+                    {!isMismatchedCall(row) && row.mobile ? (
                       <a href={`tel:${row.mobile}`} className="text-xs font-semibold text-amber-600 hover:underline">
                         {row.mobile}
                       </a>
+                    ) : isMismatchedCall(row) ? (
+                      <div className="text-xs font-semibold text-rose-600">Number hidden</div>
                     ) : null}
                     <div className="text-xs text-gray-500">{row.project_name || 'No project'}</div>
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
                     {selected.type === 'leads' ? `${row.assigned_to || '-'} | ${row.status || '-'} | ${row.label || 'No label'}` : null}
                     {selected.type === 'comments' ? row.comments || '-' : null}
-                    {selected.type === 'calls' ? `${callStatusText(row)} | Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}` : null}
+                    {selected.type === 'calls' ? `${callStatusText(row)} | ${callContactText(row)} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}` : null}
                     {selected.type === 'opens' ? `Opened ${row.event_count || 1} time(s), counted as 1 unique lead.` : null}
                     {selected.type === 'followups' ? `${row.followup || 'Follow-up'} | ${row.nextfollowup === 0 ? 'Done' : 'Pending'}` : null}
                   </td>
@@ -605,7 +634,7 @@ function UserActivityModal({
     if (type === 'leads' && row.category) return `${row.category} | Current: ${row.current_label || '-'} | Assigned to ${row.assigned_to || '-'}`;
     if (type === 'leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Assigned by ${row.assigned_through || '-'}`;
     if (type === 'comments') return row.comments || '-';
-    if (type === 'calls') return `${callStatusText(row)} | Mobile: ${row.mobile || '-'} | Phone: ${row.phone || 'N'} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
+    if (type === 'calls') return `${callStatusText(row)} | ${callContactText(row)} | WhatsApp: ${row.whatsapp || 'N'} | Duration: ${row.totaltime || '-'}`;
     if (type === 'followups') return `${row.followup || 'Follow-up'} | ${row.nextfollowup === 0 ? 'Done' : 'Pending'}`;
     return `Opened ${row.event_count || 1} time(s), counted once in unique opens.`;
   };
@@ -624,7 +653,7 @@ function UserActivityModal({
             <div className="text-xs font-bold uppercase tracking-wide text-rose-600">User activity</div>
             <h3 className="mt-1 text-xl font-black text-gray-900 dark:text-white">{user.full_name}</h3>
             <p className="text-sm text-gray-500">
-              {user.username} | Assigned {number(user.leads_assigned)} | Comments {number(user.comments_added)} | Connected {number(user.calls_started)} | Dialed {number(user.dialed_calls)}
+              {user.username} | Assigned {number(user.leads_assigned)} | Comments {number(user.comments_added)} | Connected {number(user.calls_started)} | Total calls {number(user.total_calls || user.dialed_calls)}
             </p>
           </div>
           <button
@@ -648,7 +677,10 @@ function UserActivityModal({
               ['Unread', user.unread_leads],
               ['Comments', user.comments_added],
               ['Connected', user.calls_started],
-              ['Dialed calls', user.dialed_calls],
+              ['Total calls', user.total_calls || user.dialed_calls],
+              ['Mismatched', user.mismatched_calls],
+              ['Incoming', user.incoming_calls],
+              ['Outgoing', user.outgoing_calls],
               ['Follow-ups', `${user.followups_created} / ${user.followups_attended}`],
             ].map(([label, value]) => (
               <div key={label} className="rounded-xl bg-gray-50 p-3 dark:bg-gray-800">
@@ -689,7 +721,7 @@ function UserActivityModal({
                             <td className="px-4 py-3 font-bold text-gray-900 dark:text-white">#{row.lead_id || '-'}</td>
                             <td className="px-4 py-3">
                               <div className="font-semibold text-gray-900 dark:text-white">{row.customer_name || 'Customer'}</div>
-                              <div className="text-xs text-amber-600">{row.mobile || '-'}</div>
+                              <div className="text-xs text-amber-600">{isMismatchedCall(row) ? 'Number hidden' : row.mobile || '-'}</div>
                             </td>
                             <td className="px-4 py-3">
                               <div className="text-gray-700 dark:text-gray-200">{row.project_name || 'No project'}</div>
@@ -749,7 +781,7 @@ function LeadDetailModal({
       time: row.dt,
       title: 'Call or WhatsApp',
       user: row.username,
-      details: `Phone ${row.phone || 'N'} | WhatsApp ${row.whatsapp || 'N'} | Duration ${row.totaltime || '-'}`,
+      details: `${callContactText(row)} | WhatsApp ${row.whatsapp || 'N'} | Duration ${row.totaltime || '-'}`,
     })),
     ...detailRows('comments').map((row) => ({
       time: row.dt,
@@ -845,7 +877,7 @@ export default function SuperAdminSalesDashboard({
   const [to, setTo] = useState(localDate());
   const [data, setData] = useState<SuperAdminData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<{ type: DetailType; username: string; fullName: string } | null>(null);
+  const [selected, setSelected] = useState<{ type: DetailType; username: string; fullName: string; callFilter?: 'connected' | 'all' | 'mismatched' | 'incoming' | 'outgoing' } | null>(null);
   const [selectedSummary, setSelectedSummary] = useState<SummarySelection | null>(null);
   const [selectedUser, setSelectedUser] = useState<SuperAdminUser | null>(null);
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
@@ -953,6 +985,10 @@ export default function SuperAdminSalesDashboard({
       acc.comments_added += Number(item.comments_added || 0);
       acc.calls_started += Number(item.calls_started || 0);
       acc.dialed_calls += Number(item.dialed_calls || 0);
+      acc.total_calls += Number(item.total_calls || item.dialed_calls || 0);
+      acc.mismatched_calls += Number(item.mismatched_calls || 0);
+      acc.incoming_calls += Number(item.incoming_calls || 0);
+      acc.outgoing_calls += Number(item.outgoing_calls || 0);
       acc.whatsapp_opened += Number(item.whatsapp_opened || 0);
       acc.unique_leads_opened += Number(item.unique_leads_opened || 0);
       acc.lead_open_events += Number(item.lead_open_events || 0);
@@ -974,6 +1010,10 @@ export default function SuperAdminSalesDashboard({
       comments_added: 0,
       calls_started: 0,
       dialed_calls: 0,
+      total_calls: 0,
+      mismatched_calls: 0,
+      incoming_calls: 0,
+      outgoing_calls: 0,
       whatsapp_opened: 0,
       unique_leads_opened: 0,
       lead_open_events: 0,
@@ -1003,8 +1043,12 @@ export default function SuperAdminSalesDashboard({
   ];
   const tableTotals = buildUserTotals(visibleUsers);
 
-  const selectMetric = (type: DetailType, item: SuperAdminUser) => {
-    setSelected({ type, username: item.username, fullName: item.full_name });
+  const selectMetric = (
+    type: DetailType,
+    item: SuperAdminUser,
+    callFilter?: 'connected' | 'all' | 'mismatched' | 'incoming' | 'outgoing'
+  ) => {
+    setSelected({ type, username: item.username, fullName: item.full_name, callFilter });
     setSelectedUser(item);
   };
 
@@ -1043,7 +1087,10 @@ export default function SuperAdminSalesDashboard({
       'Total Unread': item.total_unread_leads,
       Comments: item.comments_added,
       'Connected Leads': item.calls_started,
-      'Dialed Calls': item.dialed_calls,
+      'Total Calls': item.total_calls || item.dialed_calls,
+      'Mismatched Calls': item.mismatched_calls,
+      'Incoming Calls': item.incoming_calls,
+      'Outgoing Calls': item.outgoing_calls,
       'WhatsApp Shared': item.whatsapp_opened,
       'Unique Opens': item.unique_leads_opened,
       'Raw Opens': item.lead_open_events,
@@ -1051,7 +1098,6 @@ export default function SuperAdminSalesDashboard({
       'Follow-ups Attended': item.followups_attended,
       'Follow-ups Due': item.followups_due,
       Overdue: item.overdue_followups,
-      Score: item.work_score,
       Status: item.status,
       'Last Activity': item.last_activity_date || '',
       'Inactive Days': item.inactive_days ?? '',
@@ -1071,7 +1117,10 @@ export default function SuperAdminSalesDashboard({
       'Total Unread': tableTotals.total_unread_leads,
       Comments: tableTotals.comments_added,
       'Connected Leads': tableTotals.calls_started,
-      'Dialed Calls': tableTotals.dialed_calls,
+      'Total Calls': tableTotals.total_calls || tableTotals.dialed_calls,
+      'Mismatched Calls': tableTotals.mismatched_calls,
+      'Incoming Calls': tableTotals.incoming_calls,
+      'Outgoing Calls': tableTotals.outgoing_calls,
       'WhatsApp Shared': tableTotals.whatsapp_opened,
       'Unique Opens': tableTotals.unique_leads_opened,
       'Raw Opens': tableTotals.lead_open_events,
@@ -1079,7 +1128,6 @@ export default function SuperAdminSalesDashboard({
       'Follow-ups Attended': tableTotals.followups_attended,
       'Follow-ups Due': '',
       Overdue: tableTotals.overdue_followups,
-      Score: tableTotals.work_score,
       Status: '',
       'Last Activity': '',
       'Inactive Days': '',
@@ -1540,12 +1588,14 @@ export default function SuperAdminSalesDashboard({
                 <th className="px-4 py-3 text-center">Unread</th>
                 <th className="px-4 py-3 text-center">Comments</th>
                 <th className="px-4 py-3 text-center">Connected</th>
-                <th className="px-4 py-3 text-center">Dialed Calls</th>
+                <th className="px-4 py-3 text-center">Total Calls</th>
+                <th className="px-4 py-3 text-center">Mismatched</th>
+                <th className="px-4 py-3 text-center">Incoming</th>
+                <th className="px-4 py-3 text-center">Outgoing</th>
                 <th className="px-4 py-3 text-center">WhatsApp</th>
                 <th className="px-4 py-3 text-center">Unique Opens</th>
                 <th className="px-4 py-3 text-center">Follow-ups C/A</th>
                 <th className="px-4 py-3 text-center">Overdue</th>
-                <th className="px-4 py-3 text-center">Score</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -1615,7 +1665,7 @@ export default function SuperAdminSalesDashboard({
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
-                        selectMetric('calls', item);
+                        selectMetric('calls', item, 'connected');
                       }}
                       className="font-bold text-amber-600 hover:underline"
                     >
@@ -1627,11 +1677,47 @@ export default function SuperAdminSalesDashboard({
                       type="button"
                       onClick={(event) => {
                         event.stopPropagation();
-                        selectMetric('calls', item);
+                        selectMetric('calls', item, 'all');
                       }}
                       className="font-bold text-orange-500 hover:underline"
                     >
-                      {number(item.dialed_calls)}
+                      {number(item.total_calls || item.dialed_calls)}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        selectMetric('calls', item, 'mismatched');
+                      }}
+                      className="font-bold text-rose-600 hover:underline"
+                    >
+                      {number(item.mismatched_calls)}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        selectMetric('calls', item, 'incoming');
+                      }}
+                      className="font-bold text-sky-600 hover:underline"
+                    >
+                      {number(item.incoming_calls)}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        selectMetric('calls', item, 'outgoing');
+                      }}
+                      className="font-bold text-indigo-600 hover:underline"
+                    >
+                      {number(item.outgoing_calls)}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -1669,7 +1755,6 @@ export default function SuperAdminSalesDashboard({
                       {number(item.overdue_followups)}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-center font-black">{number(item.work_score)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1690,7 +1775,10 @@ export default function SuperAdminSalesDashboard({
                 </td>
                 <td className="px-4 py-3 text-center text-emerald-600">{number(section.totals.comments_added)}</td>
                 <td className="px-4 py-3 text-center text-amber-600">{number(section.totals.calls_started)}</td>
-                <td className="px-4 py-3 text-center text-orange-500">{number(section.totals.dialed_calls)}</td>
+                <td className="px-4 py-3 text-center text-orange-500">{number(section.totals.total_calls || section.totals.dialed_calls)}</td>
+                <td className="px-4 py-3 text-center text-rose-600">{number(section.totals.mismatched_calls)}</td>
+                <td className="px-4 py-3 text-center text-sky-600">{number(section.totals.incoming_calls)}</td>
+                <td className="px-4 py-3 text-center text-indigo-600">{number(section.totals.outgoing_calls)}</td>
                 <td className="px-4 py-3 text-center text-teal-600">{number(section.totals.whatsapp_opened)}</td>
                 <td className="px-4 py-3 text-center text-violet-600">
                   {number(section.totals.unique_leads_opened)}
@@ -1698,7 +1786,6 @@ export default function SuperAdminSalesDashboard({
                 </td>
                 <td className="px-4 py-3 text-center">{number(section.totals.followups_created)} / {number(section.totals.followups_attended)}</td>
                 <td className="px-4 py-3 text-center text-rose-600">{number(section.totals.overdue_followups)}</td>
-                <td className="px-4 py-3 text-center">{number(section.totals.work_score)}</td>
               </tr>
             </tfoot>
           </table>
