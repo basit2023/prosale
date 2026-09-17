@@ -93,6 +93,30 @@ export function FileStatGrid({ className, data }: { className?: string; data?: a
       timePeriod: 'today'
     },
     {
+      id: 11,
+      title: 'Verified Calls',
+      metric: count?.Total_Verified_Calls ?? 0,
+      fill: '#0891b2',
+      slightfill: '#cffafe',
+      percentage: 100,
+      increased: true,
+      decreased: false,
+      value: '100',
+      timePeriod: 'today'
+    },
+    {
+      id: 12,
+      title: 'Qualified Calls',
+      metric: count?.Total_Qualified_Calls ?? 0,
+      fill: '#16a34a',
+      slightfill: '#dcfce7',
+      percentage: 100,
+      increased: true,
+      decreased: false,
+      value: '100',
+      timePeriod: 'today'
+    },
+    {
       id: 2,
       title: 'Total Leads',
       metric: count?.Total_Leads,

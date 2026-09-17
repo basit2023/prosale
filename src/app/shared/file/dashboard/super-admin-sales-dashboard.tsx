@@ -52,6 +52,8 @@ type SuperAdminUser = {
   followups_due: number;
   overdue_followups: number;
   calls_started: number;
+  verified_calls: number;
+  qualified_calls: number;
   actual_connected_calls: number;
   dialed_calls: number;
   total_calls: number;
@@ -187,6 +189,20 @@ const summaryCards = [
     tone: 'bg-amber-50 text-amber-600',
   },
   {
+    key: 'verified_calls',
+    label: 'Verified Calls',
+    hint: 'Connected calls lasting over 30 and under 60 seconds',
+    icon: PiPhoneCallDuotone,
+    tone: 'bg-cyan-50 text-cyan-600',
+  },
+  {
+    key: 'qualified_calls',
+    label: 'Qualified Calls',
+    hint: 'Connected calls lasting over 60 seconds',
+    icon: PiPhoneCallDuotone,
+    tone: 'bg-green-50 text-green-600',
+  },
+  {
     key: 'dialed_calls',
     label: 'Dialed Calls',
     hint: 'All call-log rows in range',
@@ -269,6 +285,10 @@ const summaryRowsFor = (data: SuperAdminData | null, key: SummaryCardKey): any[]
   if (key === 'calls_started') {
     return uniqueConnectedCallRows(details.calls || []);
   }
+  if (key === 'verified_calls' || key === 'qualified_calls') {
+    const flag = key === 'verified_calls' ? 'is_verified_call' : 'is_qualified_call';
+    return (details.calls || []).filter((row: any) => Number(row[flag] || 0) === 1);
+  }
   if (key === 'dialed_calls') {
     return (details.calls || []).filter((row: any) => Number(row.is_outgoing_call || 0) === 1);
   }
@@ -317,7 +337,7 @@ const summaryRowDetails = (key: SummaryCardKey, row: any) => {
   if (key === 'reassigned_leads') return `Reassigned by ${row.assigned_through || '-'} to ${row.assigned_to || '-'} | ${row.data_temperature || 'cool'} data`;
   if (key === 'unread_leads') return `${row.status || '-'} | ${row.label || 'No label'} | ${row.data_temperature || 'cool'} data | Not opened yet`;
   if (key === 'comments_added') return row.comments || '-';
-  if (key === 'calls_started') return `${callStatusText(row)} | ${callContactText(row)} | Duration: ${row.totaltime || '-'}`;
+  if (key === 'calls_started' || key === 'verified_calls' || key === 'qualified_calls') return `${callStatusText(row)} | ${callContactText(row)} | Duration: ${row.totaltime || '-'}`;
   if (key === 'dialed_calls') return `${String(row.disposition || row.call_status || 'PENDING').replace(/_/g, ' ')} | ${callContactText(row)} | Duration: ${row.totaltime || '-'}`;
   if (key === 'whatsapp_opened') return `WhatsApp opened | WhatsApp: ${row.whatsapp || 'Y'} | Duration: ${row.totaltime || '-'}`;
   if (key === 'unique_leads_opened') return `Opened ${row.event_count || 1} time(s), counted as 1 unique lead.`;
@@ -399,7 +419,7 @@ function DetailPanel({
   onLeadOpen,
 }: {
   data: SuperAdminData | null;
-  selected: { type: DetailType; username: string; fullName: string; callFilter?: 'connected' | 'actual_connected' | 'dialed' | 'all' | 'mismatched' | 'mismatched_connected' | 'incoming' | 'outgoing' } | null;
+  selected: { type: DetailType; username: string; fullName: string; callFilter?: 'connected' | 'verified' | 'qualified' | 'actual_connected' | 'dialed' | 'all' | 'mismatched' | 'mismatched_connected' | 'incoming' | 'outgoing' } | null;
   onClose: () => void;
   onLeadOpen: (lead: any) => void;
 }) {
@@ -415,6 +435,8 @@ function DetailPanel({
   const rows = selected.type === 'calls' && selected.callFilter
     ? allRows.filter((row: any) => {
         if (selected.callFilter === 'connected') return Number(row.is_connected_call || 0) === 1;
+        if (selected.callFilter === 'verified') return Number(row.is_verified_call || 0) === 1;
+        if (selected.callFilter === 'qualified') return Number(row.is_qualified_call || 0) === 1;
         if (selected.callFilter === 'actual_connected') return Number(row.is_actual_connected_call || 0) === 1;
         if (selected.callFilter === 'dialed' || selected.callFilter === 'outgoing') return Number(row.is_outgoing_call || 0) === 1;
         if (selected.callFilter === 'mismatched') return isMismatchedCall(row);
@@ -683,6 +705,8 @@ function UserActivityModal({
               ['Unread', user.unread_leads],
               ['Comments', user.comments_added],
               ['Connected', user.calls_started],
+              ['Verified', user.verified_calls],
+              ['Qualified', user.qualified_calls],
               ['Actual connected', user.actual_connected_calls],
               ['Dialed calls', user.dialed_calls || user.outgoing_calls],
               ['Incoming', user.incoming_calls],
@@ -885,7 +909,7 @@ export default function SuperAdminSalesDashboard({
   const [to, setTo] = useState(localDate());
   const [data, setData] = useState<SuperAdminData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [selected, setSelected] = useState<{ type: DetailType; username: string; fullName: string; callFilter?: 'connected' | 'actual_connected' | 'dialed' | 'all' | 'mismatched' | 'mismatched_connected' | 'incoming' | 'outgoing' } | null>(null);
+  const [selected, setSelected] = useState<{ type: DetailType; username: string; fullName: string; callFilter?: 'connected' | 'verified' | 'qualified' | 'actual_connected' | 'dialed' | 'all' | 'mismatched' | 'mismatched_connected' | 'incoming' | 'outgoing' } | null>(null);
   const [selectedSummary, setSelectedSummary] = useState<SummarySelection | null>(null);
   const [selectedUser, setSelectedUser] = useState<SuperAdminUser | null>(null);
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
@@ -993,6 +1017,8 @@ export default function SuperAdminSalesDashboard({
       acc.total_unread_leads += Number(item.total_unread_leads || 0);
       acc.comments_added += Number(item.comments_added || 0);
       acc.calls_started += Number(item.calls_started || 0);
+      acc.verified_calls += Number(item.verified_calls || 0);
+      acc.qualified_calls += Number(item.qualified_calls || 0);
       acc.actual_connected_calls += Number(item.actual_connected_calls || 0);
       acc.dialed_calls += Number(item.dialed_calls || 0);
       acc.total_calls += Number(item.total_calls || item.total_result_calls || item.dialed_calls || 0);
@@ -1021,6 +1047,8 @@ export default function SuperAdminSalesDashboard({
       total_unread_leads: 0,
       comments_added: 0,
       calls_started: 0,
+      verified_calls: 0,
+      qualified_calls: 0,
       actual_connected_calls: 0,
       dialed_calls: 0,
       total_calls: 0,
@@ -1061,7 +1089,7 @@ export default function SuperAdminSalesDashboard({
   const selectMetric = (
     type: DetailType,
     item: SuperAdminUser,
-    callFilter?: 'connected' | 'actual_connected' | 'dialed' | 'all' | 'mismatched' | 'mismatched_connected' | 'incoming' | 'outgoing'
+    callFilter?: 'connected' | 'verified' | 'qualified' | 'actual_connected' | 'dialed' | 'all' | 'mismatched' | 'mismatched_connected' | 'incoming' | 'outgoing'
   ) => {
     setSelected({ type, username: item.username, fullName: item.full_name, callFilter });
     setSelectedUser(item);
@@ -1102,6 +1130,8 @@ export default function SuperAdminSalesDashboard({
       'Total Unread': item.total_unread_leads,
       Comments: item.comments_added,
       'Connected Leads': item.calls_started,
+      'Verified Calls': item.verified_calls,
+      'Qualified Calls': item.qualified_calls,
       'Actual Connected': item.actual_connected_calls,
       'Dialed Calls': item.dialed_calls || item.outgoing_calls,
       'Incoming Calls': item.incoming_calls,
@@ -1134,6 +1164,8 @@ export default function SuperAdminSalesDashboard({
       'Total Unread': tableTotals.total_unread_leads,
       Comments: tableTotals.comments_added,
       'Connected Leads': tableTotals.calls_started,
+      'Verified Calls': tableTotals.verified_calls,
+      'Qualified Calls': tableTotals.qualified_calls,
       'Actual Connected': tableTotals.actual_connected_calls,
       'Dialed Calls': tableTotals.dialed_calls || tableTotals.outgoing_calls,
       'Incoming Calls': tableTotals.incoming_calls,
@@ -1325,6 +1357,8 @@ export default function SuperAdminSalesDashboard({
                   <Line type="monotone" dataKey="leads_assigned" name="Leads" stroke="#3b82f6" strokeWidth={2} />
                   <Line type="monotone" dataKey="comments_added" name="Comments" stroke="#10b981" strokeWidth={2} />
                   <Line type="monotone" dataKey="calls_started" name="Connected" stroke="#f59e0b" strokeWidth={2} />
+                  <Line type="monotone" dataKey="verified_calls" name="Verified" stroke="#0891b2" strokeWidth={2} />
+                  <Line type="monotone" dataKey="qualified_calls" name="Qualified" stroke="#16a34a" strokeWidth={2} />
                   <Line type="monotone" dataKey="dialed_calls" name="Dialed calls" stroke="#fb923c" strokeDasharray="4 4" strokeWidth={2} />
                   <Line type="monotone" dataKey="whatsapp_opened" name="WhatsApp shared" stroke="#14b8a6" strokeWidth={2} />
                   <Line type="monotone" dataKey="unique_leads_opened" name="Unique opens" stroke="#8b5cf6" strokeWidth={2} />
@@ -1607,6 +1641,8 @@ export default function SuperAdminSalesDashboard({
                 <th className="px-4 py-3 text-center">Unread</th>
                 <th className="px-4 py-3 text-center">Comments</th>
                 <th className="px-4 py-3 text-center">Connected</th>
+                <th className="px-4 py-3 text-center">Verified</th>
+                <th className="px-4 py-3 text-center">Qualified</th>
                 <th className="px-4 py-3 text-center">Actual Connected</th>
                 <th className="px-4 py-3 text-center">Dialed Calls</th>
                 <th className="px-4 py-3 text-center">Incoming</th>
@@ -1691,6 +1727,16 @@ export default function SuperAdminSalesDashboard({
                       className="font-bold text-amber-600 hover:underline"
                     >
                       {number(item.calls_started)}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button type="button" onClick={(event) => { event.stopPropagation(); selectMetric('calls', item, 'verified'); }} className="font-bold text-cyan-600 hover:underline">
+                      {number(item.verified_calls)}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-center">
+                    <button type="button" onClick={(event) => { event.stopPropagation(); selectMetric('calls', item, 'qualified'); }} className="font-bold text-green-600 hover:underline">
+                      {number(item.qualified_calls)}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -1820,6 +1866,8 @@ export default function SuperAdminSalesDashboard({
                 </td>
                 <td className="px-4 py-3 text-center text-emerald-600">{number(section.totals.comments_added)}</td>
                 <td className="px-4 py-3 text-center text-amber-600">{number(section.totals.calls_started)}</td>
+                <td className="px-4 py-3 text-center text-cyan-600">{number(section.totals.verified_calls)}</td>
+                <td className="px-4 py-3 text-center text-green-600">{number(section.totals.qualified_calls)}</td>
                 <td className="px-4 py-3 text-center text-green-600">{number(section.totals.actual_connected_calls)}</td>
                 <td className="px-4 py-3 text-center text-orange-500">{number(section.totals.dialed_calls || section.totals.outgoing_calls)}</td>
                 <td className="px-4 py-3 text-center text-sky-600">{number(section.totals.incoming_calls)}</td>
