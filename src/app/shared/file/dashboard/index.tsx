@@ -64,6 +64,9 @@ const SalesExecutionWorkspace = dynamic(() => import('./sales-execution-workspac
 const AdminReassignmentHandoff = dynamic(() => import('./admin-reassignment-handoff'), {
   loading: () => skeleton('h-64'),
 });
+const FreshLeadAssignmentMatrix = dynamic(() => import('./fresh-lead-assignment-matrix'), {
+  loading: () => skeleton('h-80'),
+});
 const AutoLandedFacebookSection = dynamic(() => import('./auto-landed-facebook-section'), {
   loading: () => skeleton('h-[460px]'),
 });
@@ -333,6 +336,7 @@ export default function FileDashboard() {
             <AutoLandedFacebookSection className="w-full" />
           </div>
         )}
+        {!isSuperAdmin && isAdmin && <FreshLeadAssignmentMatrix />}
         {!isSuperAdmin && isAdmin && (
           <AdminReassignmentHandoff data={dashboardData} loading={loading} />
         )}
