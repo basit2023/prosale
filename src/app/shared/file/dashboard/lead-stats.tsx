@@ -76,18 +76,22 @@ const formatDateTime = (value?: string) => {
   return date.toLocaleString();
 };
 
+const number = (value: unknown) => Number(value || 0);
+
 export default function LeadStats({
   className,
   data,
   loading,
   showStatCards = true,
   showTeamOverview = true,
+  detailedTeamOverview = false,
 }: {
   className?: string;
   data?: any;
   loading?: boolean;
   showStatCards?: boolean;
   showTeamOverview?: boolean;
+  detailedTeamOverview?: boolean;
 }) {
   const [view, setView] = useState<'table' | 'chart'>('table');
   const [selectedDetail, setSelectedDetail] = useState<DetailKey | null>(null);
@@ -287,7 +291,7 @@ export default function LeadStats({
 
           {view === 'table' ? (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className={cn('w-full text-left text-sm', detailedTeamOverview && 'min-w-[1180px]')}>
                 <thead>
                   <tr className="border-b border-gray-100 text-gray-500">
                     <th className="pb-3 font-medium">Member</th>
@@ -295,6 +299,14 @@ export default function LeadStats({
                     <th className="pb-3 text-center font-medium">Open Today</th>
                     <th className="pb-3 text-center font-medium">Unread Today</th>
                     <th className="pb-3 text-center font-medium">Calls Today</th>
+                    {detailedTeamOverview && (
+                      <>
+                        <th className="pb-3 text-center font-medium">Dialed</th>
+                        <th className="pb-3 text-center font-medium">Verified</th>
+                        <th className="pb-3 text-center font-medium">Qualified</th>
+                        <th className="pb-3 text-center font-medium">Follow-ups C/A</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -317,6 +329,16 @@ export default function LeadStats({
                         </span>
                       </td>
                       <td className="py-4 text-center text-gray-600 dark:bg-gray-800 dark:text-gray-400">{user.today_calls}</td>
+                      {detailedTeamOverview && (
+                        <>
+                          <td className="py-4 text-center font-semibold text-orange-600">{number(user.today_dialed_calls)}</td>
+                          <td className="py-4 text-center font-semibold text-teal-600">{number(user.today_verified_calls)}</td>
+                          <td className="py-4 text-center font-semibold text-blue-600">{number(user.today_qualified_calls)}</td>
+                          <td className="py-4 text-center font-semibold text-gray-700 dark:text-gray-200">
+                            {number(user.followups_created)} / {number(user.followups_attended)}
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>

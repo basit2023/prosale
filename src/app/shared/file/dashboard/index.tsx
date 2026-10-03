@@ -61,6 +61,9 @@ const SuperAdminSalesDashboard = dynamic(() => import('./super-admin-sales-dashb
 const SalesExecutionWorkspace = dynamic(() => import('./sales-execution-workspace'), {
   loading: () => skeleton('h-[560px]'),
 });
+const AdminReassignmentHandoff = dynamic(() => import('./admin-reassignment-handoff'), {
+  loading: () => skeleton('h-64'),
+});
 const AutoLandedFacebookSection = dynamic(() => import('./auto-landed-facebook-section'), {
   loading: () => skeleton('h-[460px]'),
 });
@@ -330,7 +333,10 @@ export default function FileDashboard() {
             <AutoLandedFacebookSection className="w-full" />
           </div>
         )}
-        {!isSuperAdmin && <SalesExecutionWorkspace />}
+        {!isSuperAdmin && isAdmin && (
+          <AdminReassignmentHandoff data={dashboardData} loading={loading} />
+        )}
+        {!isSuperAdmin && !isAdmin && <SalesExecutionWorkspace />}
         {!isSuperAdmin && (
           <>
             <SalesCommandCenter
@@ -367,6 +373,7 @@ export default function FileDashboard() {
               data={dashboardData}
               loading={loading}
               showStatCards={false}
+              detailedTeamOverview={isAdmin}
             />
           </div>
         )}
