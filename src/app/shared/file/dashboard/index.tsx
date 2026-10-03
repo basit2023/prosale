@@ -67,6 +67,9 @@ const AdminReassignmentHandoff = dynamic(() => import('./admin-reassignment-hand
 const FreshLeadAssignmentMatrix = dynamic(() => import('./fresh-lead-assignment-matrix'), {
   loading: () => skeleton('h-80'),
 });
+const DailyTeamActivity = dynamic(() => import('./daily-team-activity'), {
+  loading: () => skeleton('h-96'),
+});
 const AutoLandedFacebookSection = dynamic(() => import('./auto-landed-facebook-section'), {
   loading: () => skeleton('h-[460px]'),
 });
@@ -337,6 +340,7 @@ export default function FileDashboard() {
           </div>
         )}
         {!isSuperAdmin && isAdmin && <FreshLeadAssignmentMatrix />}
+        {(isAdmin || isManager) && <DailyTeamActivity />}
         {!isSuperAdmin && isAdmin && (
           <AdminReassignmentHandoff data={dashboardData} loading={loading} />
         )}
