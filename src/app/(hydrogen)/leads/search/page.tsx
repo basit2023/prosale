@@ -20,7 +20,10 @@ export default function SearchLeadsPage() {
   const [toDate, setToDate] = useState<Date | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [targetUser, setTargetUser] = useState<any>(null);
+  const [category, setCategory] = useState<any>(null);
+  const [unopenedOnly, setUnopenedOnly] = useState(false);
   const [users, setUsers] = useState<{ label: string; value: string }[]>([]);
+  const [categories, setCategories] = useState<{ label: string; value: string }[]>([]);
 
   const { data, loading, search, loadMore, total } = useAdvancedSearchLeads(50);
 
@@ -40,6 +43,18 @@ export default function SearchLeadsPage() {
     }
   }, [permission, session]);
 
+  useEffect(() => {
+    apiService.get('/all-labels').then(res => {
+      const labels = res.data?.show_labels || [];
+      setCategories(labels.map((item: any) => ({
+        label: item.name || item.label || item.value,
+        value: item.value || item.label || item.name,
+      })));
+    }).catch(error => {
+      console.error('Error fetching lead categories:', error);
+    });
+  }, []);
+
   const formatDate = (date: Date | null) => {
     if (!date) return undefined;
     // Fix for timezone offset to get local YYYY-MM-DD
@@ -54,6 +69,8 @@ export default function SearchLeadsPage() {
       toDate: formatDate(toDate),
       searchTerm,
       targetUser: targetUser?.value,
+      category: category?.value,
+      unopened: unopenedOnly,
     };
     console.log("search params : ",params);
     search(params);
@@ -65,6 +82,8 @@ export default function SearchLeadsPage() {
       toDate: formatDate(toDate),
       searchTerm,
       targetUser: targetUser?.value,
+      category: category?.value,
+      unopened: unopenedOnly,
     };
     loadMore(params);
   };
@@ -114,6 +133,28 @@ export default function SearchLeadsPage() {
               className="w-full"
             />
           </div>
+          <div className="flex flex-col gap-1">
+            <Text className="text-xs font-medium text-gray-500">Search by Category</Text>
+            <Select
+              options={categories}
+              value={category}
+              onChange={setCategory}
+              placeholder="Select a category"
+              isSearchable
+              clearable
+              onClear={() => setCategory(null)}
+              className="w-full"
+            />
+          </div>
+          <label className="flex h-10 cursor-pointer items-center gap-3 self-end rounded-lg border border-gray-200 px-4 text-sm font-medium text-gray-700">
+            <input
+              type="checkbox"
+              checked={unopenedOnly}
+              onChange={(event) => setUnopenedOnly(event.target.checked)}
+              className="h-4 w-4 rounded border-gray-300"
+            />
+            Leads not opened
+          </label>
         </div>
         <div className="flex justify-end">
           <Button onClick={onSearch} isLoading={loading} className="px-8">

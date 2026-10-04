@@ -49,10 +49,15 @@ export const useAdvancedSearchLeads = (pageSize = 50) => {
         interested_in: lead.interested_in,
         city: lead.city,
         status: lead.status,
+        view_dt: lead.view_dt,
+        user: lead.user,
+        assigned_on: lead.assigned_on,
         assigned_to: lead.assigned_to,
         last_updated: lead.last_updated,
         label: lead.label,
         bg_color: lead.bg_color,
+        permission: lead.permission,
+        history: Array.isArray(lead.history) ? lead.history : [],
       }));
 
       setData(prev => (append ? [...prev, ...mapped] : mapped));
