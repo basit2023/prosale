@@ -167,6 +167,7 @@ export default function TableFooter({
                           <SelectBox
                             value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null}
                             placeholder="Select One"
+                            searchable={true}
                             options={country.map((item: { name: any; value: any }) => ({
                               label: item.name,
                               value: String(item.value),
