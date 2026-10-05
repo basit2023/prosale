@@ -12,7 +12,7 @@ import { SubmitHandler, Controller, useForm } from 'react-hook-form';
 import { Form } from '@/components/ui/form';
 import { defaultValues, footAssinedFormSchema, editTeamZoneFormTypes } from '@/utils/validators/footer-assign.schema';
 
-const SelectBox = dynamic(() => import('@/components/ui/select'), {
+const SelectBox = dynamic(() => import('react-select'), {
   ssr: false,
   loading: () => (
     <div className="grid h-10 place-content-center">
@@ -167,7 +167,9 @@ export default function TableFooter({
                           <SelectBox
                             value={selectedOption ? { label: selectedOption.name, value: String(selectedOption.value) } : null}
                             placeholder="Select One"
-                            searchable={true}
+                            isSearchable
+                            menuPlacement="auto"
+                            noOptionsMessage={() => 'No users found'}
                             options={country.map((item: { name: any; value: any }) => ({
                               label: item.name,
                               value: String(item.value),
@@ -175,8 +177,12 @@ export default function TableFooter({
                             onChange={(selectedOption: SelectOption | null) => {
                               onChange(selectedOption ? selectedOption.value : '');
                             }}
-                            error={errors?.assigned_to?.message}
                           />
+                          {errors?.assigned_to?.message && (
+                            <Text className="mt-1 text-xs text-red">
+                              {errors.assigned_to.message}
+                            </Text>
+                          )}
                         </div>
                       );
                     }}
